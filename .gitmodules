@@ -1,0 +1,3 @@
+[submodule "Lib/Isbm2RestClient"]
+	path = Lib/Isbm2RestClient
+	url = https://github.com/tmr-imd/Isbm2RestClient.git
