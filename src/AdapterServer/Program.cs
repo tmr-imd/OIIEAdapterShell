@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using Isbm2Client.Model;
+using AdapterServer.Extensions;
+using AdapterServer.Pages;
 using AdapterServer.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,7 +8,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
+
+var clientConfig = builder.Configuration.GetSection("Isbm").Get<ClientConfig>();
+builder.Services.AddIsbmRestClient(clientConfig);
+
+builder.Services.AddScoped<StructureAssetService>();
+builder.Services.AddScoped<RequestViewModel>();
+
 
 var app = builder.Build();
 
