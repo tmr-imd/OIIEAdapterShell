@@ -15,7 +15,6 @@ builder.Services.AddIsbmRestClient(clientConfig);
 builder.Services.AddScoped<StructureAssetService>();
 builder.Services.AddScoped<RequestViewModel>();
 
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
