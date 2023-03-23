@@ -24,7 +24,6 @@ public class RequestViewModel : IAsyncDisposable
     public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
 
     private readonly IChannelManagement channelManagement;
-    private readonly IProviderRequest provider;
     private readonly IConsumerRequest consumer;
     private readonly StructureAssetService service;
 
@@ -37,7 +36,6 @@ public class RequestViewModel : IAsyncDisposable
         Endpoint = config.Value?.EndPoint ?? "";
 
         this.channelManagement = channelManagement;
-        this.provider = provider;
         this.consumer = consumer;
         this.service = service;
     }
@@ -59,7 +57,6 @@ public class RequestViewModel : IAsyncDisposable
             requestChannel = await channelManagement.CreateChannel<RequestChannel>(ChannelUri, "Test");
         }
 
-        providerSession = await provider.OpenSession(ChannelUri, Topic);
         consumerSession = await consumer.OpenSession(ChannelUri);
 
         Ready = true;
@@ -68,7 +65,6 @@ public class RequestViewModel : IAsyncDisposable
     private async Task Teardown()
     {
         if ( consumer != null && consumerSession != null ) await consumer.CloseSession(consumerSession.Id);
-        if ( provider != null && providerSession != null ) await provider.CloseSession(providerSession.Id);
 
         if ( requestChannel != null ) await channelManagement.DeleteChannel( requestChannel.Uri );
     }
@@ -82,8 +78,6 @@ public class RequestViewModel : IAsyncDisposable
     {
         var requestId = await Request();
 
-        await Respond();
-
         StructureAssets = await ReadResponse( requestId );
     }
 
@@ -94,19 +88,6 @@ public class RequestViewModel : IAsyncDisposable
         var request = await consumer.PostRequest( consumerSession.Id, requestFilter, Topic );
 
         return request.Id;
-    }
-
-    public async Task Respond()
-    {
-        var requestMessage = await provider.ReadRequest(providerSession.Id);
-        if (requestMessage is null) throw new Exception("There was no Request to read");
-
-        await provider.RemoveRequest(providerSession.Id);
-
-        var requestFilter = requestMessage.MessageContent.Deserialise<StructureAssetsFilter>();
-        var structures = service.GetStructures( requestFilter );
-
-        _ = await provider.PostResponse(providerSession.Id, requestMessage.Id, new RequestStructures(structures) );
     }
 
     public async Task<IEnumerable<StructureAsset>> ReadResponse( string requestId )
