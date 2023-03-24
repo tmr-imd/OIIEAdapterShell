@@ -9,9 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-var clientConfig = builder.Configuration.GetSection("Isbm").Get<ClientConfig>();
-builder.Services.AddIsbmRestClient(clientConfig);
+var isbmSection = builder.Configuration.GetSection("Isbm");
+builder.Services.Configure<ClientConfig>(isbmSection);
+builder.Services.AddIsbmRestClient(isbmSection);
 
+builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<StructureAssetService>();
 builder.Services.AddScoped<RequestViewModel>();
 

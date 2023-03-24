@@ -7,8 +7,10 @@ namespace AdapterServer.Extensions;
 
 public static class IsbmClientExtensions
 {
-    public static void AddIsbmRestClient( this IServiceCollection services, ClientConfig config )
+    public static void AddIsbmRestClient( this IServiceCollection services, IConfigurationSection isbmSection )
     {
+        var config = isbmSection.Get<ClientConfig>();
+
         services.AddScoped<RestApi.IChannelManagementApi>(x => new RestApi.ChannelManagementApi(config.EndPoint));
         services.AddScoped<RestApi.IConsumerRequestServiceApi>(x => new RestApi.ConsumerRequestServiceApi(config.EndPoint));
         services.AddScoped<RestApi.IProviderRequestServiceApi>(x => new RestApi.ProviderRequestServiceApi(config.EndPoint));

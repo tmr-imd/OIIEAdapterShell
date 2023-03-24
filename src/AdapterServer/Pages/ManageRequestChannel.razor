@@ -1,0 +1,76 @@
+﻿@using AdapterServer.Components
+@using AdapterServer.Data;
+@using Isbm2Client.Interface;
+@using Isbm2Client.Model;
+@using Microsoft.Extensions.Options;
+
+@inject ILogger<Request> Logger
+@inject SettingsService settings
+@inject IOptions<ClientConfig> clientConfig
+
+@inject IChannelManagement channel
+@inject IConsumerRequest consumer
+
+<PageTitle>Adapter Shell - Manage Request Channel</PageTitle>
+
+<EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
+    <Modal Title="Manage Request Channel">
+        <HeaderAction>
+            <a class="btn-danger" href="#" @onclick="Destroy" @onclick:preventDefault>Destroy Channel</a>
+        </HeaderAction>
+        <ChildContent>
+            <div class="grid gap-2">
+                <div>
+                    <h3 class="col-span-2">ISBM Endpoint</h3>
+                    <InputText type="text" class="form-input w-full" disabled @bind-Value="viewModel.Endpoint" />
+                </div>
+
+                <div>
+                    <h3>ISBM Channel</h3>
+                    <InputText type="text" class="form-input w-full" @bind-Value="viewModel.ChannelUri" />
+                </div>
+
+                <div>
+                    <h3>ISBM Topic</h3>
+                    <InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Topic" />
+                </div>
+            </div>
+        </ChildContent>
+        <Footer>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto @(viewModel.SessionId == "" ? "" : "hidden")">Open Session</button>
+            <button type="submit" class="btn inline-flex w-full sm:ml-3 sm:w-auto @(viewModel.SessionId == "" ? "hidden" : "")">Close Session</button>
+            <a href="/request-response" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
+        </Footer>
+    </Modal>
+</EditForm>
+
+@code {
+    [Parameter]
+    public string ChannelName { get; set; }
+
+    private ManageRequestChannelViewModel viewModel = new ManageRequestChannelViewModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        viewModel.Endpoint = clientConfig.Value.EndPoint;
+
+        await viewModel.Load( settings, ChannelName );
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (!string.IsNullOrEmpty(viewModel.SessionId))
+            await viewModel.CloseSession( channel, consumer, settings, ChannelName );
+        else
+            await viewModel.OpenSession( channel, consumer, settings, ChannelName );
+
+        Logger.LogInformation("HandleSubmit called");
+    }
+
+    private async Task Destroy()
+    {
+        await viewModel.DestroyChannel( channel, settings, ChannelName );
+    }
+}

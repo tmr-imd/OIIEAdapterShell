@@ -1,29 +1,39 @@
 ﻿@page "/request-response"
+@page "/request-response/edit/channel"
 @using AdapterServer.Data;
 
 @inject ILogger<Request> Logger
 
 @inject RequestViewModel viewModel
+@inject NavigationManager navigation
 
 <PageTitle>Adapter Shell - Request/Response</PageTitle>
 
 <h1>Adapter Shell - Request/Response</h1>
 
+@if ( Edit == "channel" )
+{
+    <ManageRequestChannel ChannelName="Request" />
+}
+
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
     <div class="grid grid-cols-4 gap-2">
-        <h2 class="col-span-full mt-6">ISBM Settings</h2>
+        <div class="col-span-full flex justify-between items-center mt-6">
+            <h2>ISBM Settings</h2>
+            <a class="btn-primary" href="/request-response?edit=channel">Edit</a>
+        </div>
 
         <h3 class="col-span-2">ISBM Endpoint</h3>
         <h3>ISBM Channel</h3>
         <h3>ISBM Topic</h3>
         <div class="col-span-2">
-            <InputText type="text" class="form-input w-full bg-gray-100" disabled @bind-Value="viewModel.Endpoint" />
+            <InputText type="text" class="form-input w-full" disabled @bind-Value="viewModel.Endpoint" />
         </div>
         <div>
-            <InputText type="text" class="form-input w-full" @bind-Value="viewModel.ChannelUri" />
+            <InputText type="text" class="form-input w-full" disabled @bind-Value="viewModel.ChannelUri" />
         </div>
         <div>
-            <InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Topic" />
+            <InputText type="text" class="form-input w-full" disabled @bind-Value="@viewModel.Topic" />
         </div>
 
         <h2 class="col-span-full mt-6">Message Settings</h2>
@@ -58,7 +68,7 @@
                         </svg>
                         <span class="sr-only">Loading...</span>
                     </span>
-                    <span class="align-center">@(working ? (!viewModel.Ready ? "Preparing..." : "Working...") : "Request")</span>
+                    <span class="align-center">Request</span>
                 </div>
             </button>
             <button class="btn" disabled="@working" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>
@@ -104,17 +114,15 @@
     bool working;
     string error = "";
 
-    protected override async Task OnInitializedAsync()
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Edit { get; set; }
+
+    protected override async Task OnParametersSetAsync()
     {
-        working = true;
+        await viewModel.Setup("Request");
 
-        await InvokeAsync( StateHasChanged );
-
-        await viewModel.Setup();
-
-        working = false;
-
-        await base.OnInitializedAsync();
+        await base.OnParametersSetAsync();
     }
 
     private async Task HandleSubmit()
