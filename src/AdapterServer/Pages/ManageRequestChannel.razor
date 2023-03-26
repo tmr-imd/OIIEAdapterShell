@@ -27,12 +27,12 @@
 
                 <div>
                     <h3>ISBM Channel</h3>
-                    <InputText type="text" class="form-input w-full" @bind-Value="viewModel.ChannelUri" />
+                    <InputText type="text" class="form-input w-full" disabled=@(viewModel.SessionId != "") @bind-Value="viewModel.ChannelUri" />
                 </div>
 
                 <div>
                     <h3>ISBM Topic</h3>
-                    <InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Topic" />
+                    <InputText type="text" class="form-input w-full" disabled=@(viewModel.SessionId != "") @bind-Value="@viewModel.Topic" />
                 </div>
             </div>
         </ChildContent>
@@ -46,7 +46,7 @@
 
 @code {
     [Parameter]
-    public string ChannelName { get; set; }
+    public string ChannelName { get; set; } = null!;
 
     private ManageRequestChannelViewModel viewModel = new ManageRequestChannelViewModel();
 
