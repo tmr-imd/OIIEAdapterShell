@@ -8,27 +8,27 @@ namespace AdapterServer.Data;
 
 public class SettingsService
 {
-    public async Task<T> LoadSettings<T>( string name )
+    public async Task<T> LoadSettings<T>(string name)
     {
-        using var reader = new StreamReader( $"./Data/{name}.json" );
+        using var reader = new StreamReader($"./Data/Settings/{name}.json");
         var json = await reader.ReadToEndAsync();
 
-        if ( string.IsNullOrEmpty(json) )
-            throw new InvalidOperationException( "json can't be empty" );
+        if (string.IsNullOrEmpty(json))
+            throw new InvalidOperationException("json can't be empty");
 
-        var result = JsonSerializer.Deserialize<T>( json );
+        var result = JsonSerializer.Deserialize<T>(json);
 
-        if ( result is null ) throw new InvalidOperationException( $"Could not deserialise json to type {typeof(T).FullName}");
+        if (result is null) throw new InvalidOperationException($"Could not deserialise json to type {typeof(T).FullName}");
 
         return result;
     }
 
-    public async Task SaveSettings<T>( T settings, string name )
+    public async Task SaveSettings<T>(T settings, string name)
     {
-        using var writer = new StreamWriter( $"./Data/{name}.json" );
+        using var writer = new StreamWriter($"./Data/Settings/{name}.json");
 
-        var json = JsonSerializer.Serialize( settings );
+        var json = JsonSerializer.Serialize(settings);
 
-        await writer.WriteAsync( json );
+        await writer.WriteAsync(json);
     }
 }
