@@ -13,7 +13,7 @@
 
 @if ( Edit == "channel" )
 {
-    <ManageRequestChannel ChannelName="Request" />
+    <ManageRequestChannel ChannelName="@channelName" />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
@@ -111,8 +111,9 @@
 </EditForm>
 
 @code {
-    bool working;
-    string error = "";
+    private bool working;
+    private string error = "";
+    private string channelName = "request-response";
 
     [Parameter]
     [SupplyParameterFromQuery]
@@ -120,7 +121,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await viewModel.Setup("Request");
+        await viewModel.Setup(channelName);
 
         await base.OnParametersSetAsync();
     }
