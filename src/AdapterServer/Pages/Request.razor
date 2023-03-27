@@ -7,13 +7,13 @@
 @inject RequestViewModel viewModel
 @inject NavigationManager navigation
 
-<PageTitle>Adapter Shell - Request/Response</PageTitle>
+<PageTitle>Request/Response - Adapter Shell</PageTitle>
 
-<h1>Adapter Shell - Request/Response</h1>
+<h1>Request/Response</h1>
 
 @if ( Edit == "channel" )
 {
-    <ManageRequestChannel ChannelName="@channelName" />
+    <ManageRequestChannel ChannelName="@channelName" BackTo="/request-response" />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
