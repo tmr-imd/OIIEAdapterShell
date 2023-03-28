@@ -1,0 +1,69 @@
+@using AdapterServer.Components
+@using AdapterServer.Data;
+
+@inject ILogger<ConfirmBODConfig> Logger
+@inject SettingsService settings
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adapter Shell - Edit Confirmation Configuration</PageTitle>
+
+<EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
+    <Modal Title="Request Confirmation Rule">
+        <HeaderAction>
+            <a class="btn-danger @(ID == "new" ? "hidden" : "")" href="#" @onclick="Destroy" @onclick:preventDefault>Delete Rule</a>
+        </HeaderAction>
+        <ChildContent>
+            <div class="grid gap-2">
+                <div>
+                    <h3 class="col-span-2">Channel URI</h3>
+                    <InputText type="text" class="form-input w-full" @bind-Value="viewModel.ChannelUri" />
+                    <small>An asterisk '*' indicates it applies to all channels</small>
+                </div>
+
+                <div>
+                    <h3>Topic</h3>
+                    <InputText type="text" class="form-input w-full" @bind-Value="viewModel.Topic" />
+                    <small>An asterisk '*' indicates it applies to all topics</small>
+                </div>
+
+                <div>
+                    <h3>Requires Confirmation</h3>
+                    <InputCheckbox class="form-input" @bind-Value="@viewModel.RequiresConfirmation" />
+                </div>
+            </div>
+        </ChildContent>
+        <Footer>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(ID == "new" ? "Add Rule" : "Update")</button>
+            <a href="/configure-confirm-bods" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
+        </Footer>
+    </Modal>
+</EditForm>
+
+@code {
+    [Parameter]
+    public string ID { get; set; } = "";
+
+    private EditConfirmBODSettingViewModel viewModel = new EditConfirmBODSettingViewModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await viewModel.Load( settings );
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        await viewModel.Save(settings);
+
+        Logger.LogInformation("Confirmation Rule Saved");
+        
+        NavigationManager.NavigateTo("/configure-confirm-bods");
+    }
+
+    private async Task Destroy()
+    {
+        await Task.Yield();
+        // TODO: remove the rule
+    }
+}

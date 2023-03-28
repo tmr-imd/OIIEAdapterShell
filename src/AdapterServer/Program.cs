@@ -65,6 +65,7 @@ builder.Services.AddScoped<RequestViewModel>();
 builder.Services.AddScoped<ResponseViewModel>();
 builder.Services.AddScoped<PublicationService>();
 builder.Services.AddScoped<PublicationViewModel>();
+builder.Services.AddScoped<ConfirmBODConfigViewModel>();
 
 var app = builder.Build();
 

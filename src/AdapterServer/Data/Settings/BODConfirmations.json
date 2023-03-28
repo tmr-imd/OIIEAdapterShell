@@ -1,0 +1,9 @@
+{
+    "Settings":[
+        {
+            "ChannelUri":"*",
+            "Topic":"*",
+            "RequiresConfirmation":false
+        }
+    ]
+}
