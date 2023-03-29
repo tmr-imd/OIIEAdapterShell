@@ -1,39 +1,59 @@
+using System.ComponentModel.DataAnnotations;
 using AdapterServer.Data;
 
 namespace AdapterServer.Pages
 {
     public class EditConfirmBODSettingViewModel
     {
+        [Required(AllowEmptyStrings = false)]
+        [RegularExpression(@"^((\*)|(/[^/]+(/[^/]+)*))$", ErrorMessage = "The field Channel URI must be either an asterisk or an absolute URI path")]
+        [Display(Name = "Channel URI")]
         public string ChannelUri { get; set; } = "*";
-        public string Topic { get; set; } = "*";
-        public bool RequiresConfirmation { get; set; } = false;
 
-        public async Task Load( SettingsService settings )
+        [Required(AllowEmptyStrings = false)]
+        public string Topic { get; set; } = "*";
+
+        [Required]
+        public ConfirmationOptions RequiresConfirmation { get; set; } = ConfirmationOptions.Never;
+
+        public async Task Load( SettingsService settings, string id )
         {
             try
             {
-                await Task.Yield();
-                // var channelSettings = await settings.LoadSettings<ChannelSettings>( channelName );
+                var confirmations = await settings.LoadSettings<ConfirmationSettings>( "BODConfirmations" );
+                var current = (from setting in confirmations.Settings
+                                where setting.GetHashCode().ToString() == id
+                                select setting).First();
 
-                // ChannelUri = channelSettings.ChannelUri;
-                // Topic = channelSettings.Topic;
-                // SessionId = channelSettings.SessionId;
+                ChannelUri = current.ChannelUri;
+                Topic = current.Topic;
+                RequiresConfirmation = current.RequiresConfirmation;
             }
             catch( FileNotFoundException )
             {
                 // Just leave things as they are
             }
+            catch ( InvalidOperationException )
+            {
+                // Just leave things as they are
+            }
         }
 
-        public async Task Save( SettingsService settings )
+        public async Task Save( SettingsService settings, string id )
         {
             var confirmBODSetting = new ConfirmBODSetting(ChannelUri, Topic, RequiresConfirmation);
+
+            // No change: shortcut
+            if (confirmBODSetting.GetHashCode().ToString() == id) return;
 
             ConfirmationSettings confirmations;
             try
             {
                 confirmations = await settings.LoadSettings<ConfirmationSettings>( "BODConfirmations" );
-                confirmations = confirmations with { Settings = confirmations.Settings.Append(confirmBODSetting) };
+                confirmations = confirmations with {
+                    // remove the old and add the new
+                    Settings = confirmations.Settings.Where( (s) => s.GetHashCode().ToString() != id ).Append(confirmBODSetting)
+                };
             }
             catch( FileNotFoundException )
             {
@@ -42,6 +62,16 @@ namespace AdapterServer.Pages
             }
 
             await settings.SaveSettings( confirmations, "BODConfirmations" );
+        }
+
+        public async Task Remove( SettingsService settings, string id )
+        {
+            var confirmations = await settings.LoadSettings<ConfirmationSettings>( "BODConfirmations" );
+            confirmations = confirmations with
+            {
+                Settings = from s in confirmations.Settings where s.GetHashCode().ToString() != id select s
+            };
+            await settings.SaveSettings(confirmations, "BODConfirmations");
         }
     }
 }

@@ -12,15 +12,15 @@
 <h1>Adapter Shell - Configure ConfirmBOD Requirements</h1>
 
 <p>
-    Specify whether specific auto-respond confirmations are to be provided for
-    requests when received on some or all channels and/or topics.
+    Specify whether auto-respond confirmations are desired when making
+    specific requests on some or all channels and/or topics.
     An asterisk '*' indicates that it applies to all channels/topics.
     More specific rules override more general rules.
 </p>
 
 @if ( !String.IsNullOrWhiteSpace(Edit) )
 {
-    <EditConfirmBODSetting ID=Edit />
+    <EditConfirmBODSetting ID=@Edit />
 }
 
 <div class="col-span-full flex justify-between items-center mt-6 mb-6">
@@ -42,7 +42,7 @@
             <tr>
                 <td>@setting.ChannelUri</td>
                 <td>@setting.Topic</td>
-                <td>@(setting.RequiresConfirmation ? "Yes" : "No" )</td>
+                <td>@(setting.RequiresConfirmation.ToString())</td>
                 <td><a class="btn-primary" href="/configure-confirm-bods?edit=@(setting.GetHashCode())">Edit</a></td>
             </tr>
         }

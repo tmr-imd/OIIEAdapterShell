@@ -1,5 +1,10 @@
 namespace AdapterServer.Data
 {
-    public record class ConfirmBODSetting(string ChannelUri, string Topic, bool RequiresConfirmation);
+    public enum ConfirmationOptions
+    {
+        Never, OnError, Always
+    }
+
+    public record class ConfirmBODSetting(string ChannelUri, string Topic, ConfirmationOptions RequiresConfirmation);
     public record class ConfirmationSettings(IEnumerable<ConfirmBODSetting> Settings);
 }
