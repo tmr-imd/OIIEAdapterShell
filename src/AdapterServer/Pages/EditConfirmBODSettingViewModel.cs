@@ -22,7 +22,7 @@ namespace AdapterServer.Pages
             {
                 var confirmations = await settings.LoadSettings<ConfirmationSettings>( "BODConfirmations" );
                 var current = (from setting in confirmations.Settings
-                                where setting.GetHashCode().ToString() == id
+                                where setting.GetId() == id
                                 select setting).First();
 
                 ChannelUri = current.ChannelUri;
@@ -44,15 +44,18 @@ namespace AdapterServer.Pages
             var confirmBODSetting = new ConfirmBODSetting(ChannelUri, Topic, RequiresConfirmation);
 
             // No change: shortcut
-            if (confirmBODSetting.GetHashCode().ToString() == id) return;
+            if (confirmBODSetting.GetId() == id) return;
 
             ConfirmationSettings confirmations;
             try
             {
                 confirmations = await settings.LoadSettings<ConfirmationSettings>( "BODConfirmations" );
+                // remove the old and add the new
                 confirmations = confirmations with {
-                    // remove the old and add the new
-                    Settings = confirmations.Settings.Where( (s) => s.GetHashCode().ToString() != id ).Append(confirmBODSetting)
+                    Settings = confirmations.Settings
+                                .Where( s => s.GetId() != id )
+                                .Append(confirmBODSetting)
+                                .OrderBy( s => s)
                 };
             }
             catch( FileNotFoundException )
@@ -69,7 +72,7 @@ namespace AdapterServer.Pages
             var confirmations = await settings.LoadSettings<ConfirmationSettings>( "BODConfirmations" );
             confirmations = confirmations with
             {
-                Settings = from s in confirmations.Settings where s.GetHashCode().ToString() != id select s
+                Settings = from s in confirmations.Settings where s.GetId() != id select s
             };
             await settings.SaveSettings(confirmations, "BODConfirmations");
         }

@@ -43,7 +43,7 @@
                 <td>@setting.ChannelUri</td>
                 <td>@setting.Topic</td>
                 <td>@(setting.RequiresConfirmation.ToString())</td>
-                <td><a class="btn-primary" href="/configure-confirm-bods?edit=@(setting.GetHashCode())">Edit</a></td>
+                <td><a class="btn-primary" href="/configure-confirm-bods?edit=@(setting.GetId())">Edit</a></td>
             </tr>
         }
     </tbody>
@@ -65,6 +65,7 @@
     protected override async Task OnInitializedAsync()
     {
         await viewModel.Setup(settings);
+
         await base.OnInitializedAsync();
     }
 }
