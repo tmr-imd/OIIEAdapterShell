@@ -5,6 +5,8 @@ using Hangfire.Storage;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
 using TaskQueueing;
+using TaskQueueing.ObjectModel;
+using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages;
 
@@ -23,17 +25,20 @@ public class RequestViewModel
     public string FilterInspector { get; set; } = "";
 
     public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
+    public IEnumerable<TaskQueueing.ObjectModel.Models.Request> Requests { get; set; } = Enumerable.Empty<TaskQueueing.ObjectModel.Models.Request>();
 
     private readonly SettingsService settings;
+    private readonly RequestService service;
 
-    public RequestViewModel( IOptions<ClientConfig> config, SettingsService settings)
+    public RequestViewModel( IOptions<ClientConfig> config, SettingsService settings, RequestService service )
     {
         Endpoint = config.Value?.EndPoint ?? "";
 
         this.settings = settings;
+        this.service = service;
     }
 
-    public async Task Load( string channelName )
+    public async Task LoadSettings( string channelName )
     {
         try
         {
@@ -47,6 +52,11 @@ public class RequestViewModel
         {
             // Just leave things as they are
         }
+    }
+
+    public async Task Load( IJobContext context )
+    {
+        Requests = await service.ListRequests(context);
     }
 
     public void Clear()

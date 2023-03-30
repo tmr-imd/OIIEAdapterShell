@@ -37,6 +37,7 @@ builder.Services.AddIsbmRestClient(isbmSection);
 
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<StructureAssetService>();
+builder.Services.AddScoped<RequestService>();
 builder.Services.AddScoped<RequestViewModel>();
 
 var app = builder.Build();
