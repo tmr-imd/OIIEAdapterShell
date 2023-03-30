@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Lib\Isbm2RestClient\src\Isbm2Client\Isbm2Client.csproj" />
+  </ItemGroup>
+
 </Project>

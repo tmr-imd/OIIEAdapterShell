@@ -2,8 +2,27 @@ using Isbm2Client.Model;
 using AdapterServer.Extensions;
 using AdapterServer.Pages;
 using AdapterServer.Data;
+using Hangfire;
+using Hangfire.SqlServer;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Hangfire services.
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection"), new SqlServerStorageOptions
+    {
+        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+        QueuePollInterval = TimeSpan.Zero,
+        UseRecommendedIsolationLevel = true,
+        DisableGlobalLocks = true
+    }));
+
+// Add the processing server as IHostedService
+builder.Services.AddHangfireServer();
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -32,6 +51,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseHangfireDashboard();
+// backgroundJobs.Enqueue(() => Console.WriteLine("Hello world from Hangfire!"));
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

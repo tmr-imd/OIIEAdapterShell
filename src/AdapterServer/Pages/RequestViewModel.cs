@@ -1,15 +1,15 @@
 ﻿using AdapterServer.Data;
-using Isbm2Client.Interface;
+using Hangfire;
+using Hangfire.Storage;
 using Isbm2Client.Model;
-using Isbm2RestClient.Model;
 using Microsoft.Extensions.Options;
+using TaskQueueing;
 
 namespace AdapterServer.Pages;
 
-public class RequestViewModel : IAsyncDisposable
+public class RequestViewModel
 {
     public string Endpoint { get; set; } = "";
-    //public string ChannelUri { get; set; } = "/fred";
     public string ChannelUri { get; set; } = "/asset-institute/demo/request-response";
     public string Topic { get; set; } = "Test Topic";
     public string SessionId { get; set; } = "";
@@ -25,21 +25,14 @@ public class RequestViewModel : IAsyncDisposable
 
     private readonly SettingsService settings;
 
-    //private RequestChannel requestChannel = null!;
-    //private RequestConsumerSession consumerSession = null!;
-    private readonly IConsumerRequest consumer;
-
-    public RequestViewModel( IOptions<ClientConfig> config, SettingsService settings, IConsumerRequest consumer)
+    public RequestViewModel( IOptions<ClientConfig> config, SettingsService settings)
     {
         Endpoint = config.Value?.EndPoint ?? "";
 
         this.settings = settings;
-        this.consumer = consumer;
     }
 
-    public async ValueTask DisposeAsync() => await Teardown();
-
-    public async Task Setup( string channelName )
+    public async Task Load( string channelName )
     {
         try
         {
@@ -53,27 +46,6 @@ public class RequestViewModel : IAsyncDisposable
         {
             // Just leave things as they are
         }
-
-        //try
-        //{
-        //    requestChannel = await channelManagement.CreateChannel<RequestChannel>(ChannelUri, "Test");
-        //}
-        //catch (IsbmFault e) when (e.FaultType == IsbmFaultType.ChannelFault)
-        //{
-        //    await channelManagement.DeleteChannel(ChannelUri);
-
-        //    requestChannel = await channelManagement.CreateChannel<RequestChannel>(ChannelUri, "Test");
-        //}
-
-        //consumerSession = await consumer.OpenSession(ChannelUri);
-    }
-
-    private async Task Teardown()
-    {
-        await Task.Yield();
-        //if ( consumer != null && consumerSession != null ) await consumer.CloseSession(consumerSession.Id);
-
-        //if ( requestChannel != null ) await channelManagement.DeleteChannel( requestChannel.Uri );
     }
 
     public void Clear()
@@ -81,31 +53,33 @@ public class RequestViewModel : IAsyncDisposable
         StructureAssets = Enumerable.Empty<StructureAsset>();
     }
 
-    public async Task Process()
-    {
-        var requestId = await Request();
-
-        StructureAssets = await ReadResponse( requestId );
-    }
-
-    public async Task<string> Request()
+    public void Request()
     {
         var requestFilter = new StructureAssetsFilter( FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector );
 
-        var request = await consumer.PostRequest( SessionId, requestFilter, Topic );
+        BackgroundJob.Enqueue<ConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic) );
 
-        return request.Id;
+        //var storage = JobStorage.Current;
+        //var api = storage.GetMonitoringApi();
+        //var queues = api.Queues();
+        //foreach (var queue in queues)
+        //{
+        //    var jobs = api.FetchedJobs(queue.Name, 0, 100);
+        //    Console.WriteLine(jobs.Count().ToString());
+        //}
+        //var jobs = conn.GetRecurringJobs();
+
     }
 
-    public async Task<IEnumerable<StructureAsset>> ReadResponse( string requestId )
-    {
-        var message = await consumer.ReadResponse(SessionId, requestId );
-        if (message is null) throw new Exception("There was no Response to read");
+    //public async Task<IEnumerable<StructureAsset>> ReadResponse( string requestId )
+    //{
+    //    var message = await consumer.ReadResponse(SessionId, requestId );
+    //    if (message is null) throw new Exception("There was no Response to read");
 
-        await consumer.RemoveResponse(SessionId, requestId );
+    //    await consumer.RemoveResponse(SessionId, requestId );
 
-        var payload = message.MessageContent.Deserialise<RequestStructures>();
+    //    var payload = message.MessageContent.Deserialise<RequestStructures>();
 
-        return payload.StructureAssets;
-    }
+    //    return payload.StructureAssets;
+    //}
 }

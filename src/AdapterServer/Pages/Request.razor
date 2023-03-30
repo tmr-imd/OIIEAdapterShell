@@ -136,12 +136,12 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await viewModel.Setup(channelName);
+        await viewModel.Load(channelName);
 
         await base.OnParametersSetAsync();
     }
 
-    private async Task HandleSubmit()
+    private void HandleSubmit()
     {
         Logger.LogInformation("HandleSubmit called");
 
@@ -153,16 +153,11 @@
             Clear();
 
             // Process the form
-            await viewModel.Process();
+            viewModel.Request();
         }
         catch( Exception ex )
         {
             error = ex.Message;
-        }
-        finally
-        {
-            working = false;
-            StateHasChanged();
         }
     }
 

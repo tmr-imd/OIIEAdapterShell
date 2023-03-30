@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Lib\Isbm2RestClient\src\Isbm2Client\Isbm2Client.csproj" />
+    <ProjectReference Include="..\TaskQueueing\TaskQueueing.csproj" />
   </ItemGroup>
 
 	<Target Name="CheckForNpm" BeforeTargets="BuildCSS">
