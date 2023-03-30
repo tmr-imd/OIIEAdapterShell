@@ -10,7 +10,7 @@ namespace AdapterServer.Pages;
 public class RequestViewModel
 {
     public string Endpoint { get; set; } = "";
-    public string ChannelUri { get; set; } = "/asset-institute/demo/request-response";
+    public string ChannelUri { get; set; } = "/asset-institute/server/request-response";
     public string Topic { get; set; } = "Test Topic";
     public string SessionId { get; set; } = "";
 
@@ -43,7 +43,7 @@ public class RequestViewModel
 
             ChannelUri = channelSettings.ChannelUri;
             Topic = channelSettings.Topic;
-            SessionId = channelSettings.SessionId;
+            SessionId = channelSettings.ConsumerSessionId;
         }
         catch (FileNotFoundException)
         {

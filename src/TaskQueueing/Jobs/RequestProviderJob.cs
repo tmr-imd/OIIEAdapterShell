@@ -23,7 +23,7 @@ public class RequestProviderJob
     {
         using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
 
-        var sessionIds = await context.ChannelSettings.Select(x => x.SessionId).ToListAsync();
+        var sessionIds = await context.ChannelSettings.Select(x => x.ProviderSessionId).ToListAsync();
 
         foreach( var sessionId in sessionIds )
         {

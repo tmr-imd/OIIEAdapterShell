@@ -13,7 +13,8 @@ namespace AdapterServer.Pages
 
         public string ChannelUri { get; set; } = "/asset-institute/demo/request-response";
         public string Topic { get; set; } = "Test Topic";
-        public string SessionId { get; set; } = "";
+        public string ConsumerSessionId { get; set; } = "";
+        public string ProviderSessionId { get; set; } = "";
 
         public async Task Load( SettingsService settings, string channelName )
         {
@@ -23,9 +24,10 @@ namespace AdapterServer.Pages
 
                 ChannelUri = channelSettings.ChannelUri;
                 Topic = channelSettings.Topic;
-                SessionId = channelSettings.SessionId;
+                ConsumerSessionId = channelSettings.ConsumerSessionId;
+                ProviderSessionId = channelSettings.ProviderSessionId;
             }
-            catch( FileNotFoundException )
+            catch ( FileNotFoundException )
             {
                 // Just leave things as they are
             }
@@ -37,13 +39,14 @@ namespace AdapterServer.Pages
             {
                 ChannelUri = ChannelUri,
                 Topic = Topic,
-                SessionId = SessionId
+                ConsumerSessionId = ConsumerSessionId,
+                ProviderSessionId = ProviderSessionId
             };
 
             await settings.SaveSettings( channelSettings, channelName );
         }
 
-        public async Task OpenSession( IChannelManagement channel, IConsumerRequest consumer, JobContext context, SettingsService settings, string channelName )
+        public async Task OpenSession( IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName )
         {
             try
             {
@@ -54,9 +57,12 @@ namespace AdapterServer.Pages
                 await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
             }
 
-            var session = await consumer.OpenSession(ChannelUri);
+            var consumerSession = await consumer.OpenSession(ChannelUri);
+            ConsumerSessionId = consumerSession.Id;
 
-            SessionId = session.Id;
+            // We're cheating for the demo
+            var providerSession = await provider.OpenSession(ChannelUri, Topic);
+            ProviderSessionId = providerSession.Id;
 
             await Save( settings, channelName );
 
@@ -68,7 +74,8 @@ namespace AdapterServer.Pages
                 storedSetting = new ChannelSetting 
                 { 
                     Name = channelName,
-                    SessionId = session.Id
+                    ConsumerSessionId = consumerSession.Id,
+                    ProviderSessionId = providerSession.Id
                 };
 
                 await context.ChannelSettings.AddAsync( storedSetting );
@@ -77,20 +84,22 @@ namespace AdapterServer.Pages
             }
         }
 
-        public async Task CloseSession( IChannelManagement channel, IConsumerRequest consumer, JobContext context, SettingsService settings, string channelName )
+        public async Task CloseSession( IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName )
         {
             try
             {
                 await channel.GetChannel(ChannelUri);
 
-                await consumer.CloseSession(SessionId);
+                await consumer.CloseSession(ConsumerSessionId);
+                await provider.CloseSession(ProviderSessionId);
 
             }
             catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
             {
             }
 
-            SessionId = "";
+            ConsumerSessionId = "";
+            ProviderSessionId = "";
 
             await Save(settings, channelName);
 
@@ -117,7 +126,7 @@ namespace AdapterServer.Pages
             {
             }
 
-            SessionId = "";
+            ConsumerSessionId = "";
 
             await Save(settings, channelName);
         }

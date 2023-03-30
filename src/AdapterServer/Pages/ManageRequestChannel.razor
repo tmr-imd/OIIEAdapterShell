@@ -11,6 +11,7 @@
 
 @inject IChannelManagement channel
 @inject IConsumerRequest consumer
+@inject IProviderRequest provider
 
 @inject NavigationManager navigation
 @inject IJSRuntime JS
@@ -21,7 +22,7 @@
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
     <Modal Title="Manage Request Channel">
         <HeaderAction>
-            <button class="btn-danger" @onclick="Destroy" @onclick:preventDefault disabled="@(viewModel.SessionId == "")">
+            <button class="btn-danger" @onclick="Destroy" @onclick:preventDefault disabled="@(viewModel.ConsumerSessionId == "")">
                 <span>Destroy Channel</span>
 
                 <span role="status" class="ml-2 align-center @(!deleteWorking ? "hidden" : "")">
@@ -42,18 +43,18 @@
 
                 <div>
                     <h3>ISBM Channel</h3>
-                    <InputText type="text" class="form-input w-full" disabled=@(viewModel.SessionId != "") @bind-Value="viewModel.ChannelUri" />
+                    <InputText type="text" class="form-input w-full" disabled=@(viewModel.ConsumerSessionId != "") @bind-Value="viewModel.ChannelUri" />
                 </div>
 
                 <div>
                     <h3>ISBM Topic</h3>
-                    <InputText type="text" class="form-input w-full" disabled=@(viewModel.SessionId != "") @bind-Value="@viewModel.Topic" />
+                    <InputText type="text" class="form-input w-full" disabled=@(viewModel.ConsumerSessionId != "") @bind-Value="@viewModel.Topic" />
                 </div>
             </div>
         </ChildContent>
         <Footer>
             <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">
-                <span>@(viewModel.SessionId == "" ? "Open" : "Close") Session</span>
+                <span>@(viewModel.ConsumerSessionId == "" ? "Open" : "Close") Session</span>
 
                 <span role="status" class="ml-2 align-center @(!working ? "hidden" : "")">
                     <svg aria-hidden="true" class="inline w-4 h-4 text-gray-200 animate-spin dark:text-gray-600 fill-gray-600 dark:fill-gray-300" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -99,10 +100,10 @@
 
         using var context = await factory.CreateDbContext( new System.Security.Claims.ClaimsPrincipal() );
 
-        if (!string.IsNullOrEmpty(viewModel.SessionId))
-            await viewModel.CloseSession( channel, consumer, context, settings, ChannelName );
+        if (!string.IsNullOrEmpty(viewModel.ConsumerSessionId))
+            await viewModel.CloseSession( channel, consumer, provider, context, settings, ChannelName );
         else
-            await viewModel.OpenSession( channel, consumer, context, settings, ChannelName );
+            await viewModel.OpenSession( channel, consumer, provider, context, settings, ChannelName );
 
         navigation.NavigateTo(BackTo);
     }
