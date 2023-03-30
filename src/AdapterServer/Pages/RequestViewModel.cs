@@ -1,5 +1,6 @@
 ﻿using AdapterServer.Data;
 using Hangfire;
+using Hangfire.Server;
 using Hangfire.Storage;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
@@ -57,7 +58,7 @@ public class RequestViewModel
     {
         var requestFilter = new StructureAssetsFilter( FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector );
 
-        BackgroundJob.Enqueue<ConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic) );
+        BackgroundJob.Enqueue<ConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic, null) );
 
         //var storage = JobStorage.Current;
         //var api = storage.GetMonitoringApi();

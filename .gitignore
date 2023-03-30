@@ -454,3 +454,4 @@ $RECYCLE.BIN/
 !.vscode/extensions.json
 
 src/AdapterServer/Data/Settings
+src/AdapterServer/Data/adapter_shell.db*
