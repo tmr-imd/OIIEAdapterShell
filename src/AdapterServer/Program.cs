@@ -5,6 +5,7 @@ using AdapterServer.Data;
 using Hangfire;
 using Hangfire.SqlServer;
 using TaskQueueing.Persistence;
+using TaskQueueing.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,7 +58,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseHangfireDashboard();
-//RecurringJob.AddOrUpdate<ReadRequestsJob>("ReadRequests", x => x.CheckForRequest(), Cron.Daily);
+RecurringJob.AddOrUpdate<RequestProviderJob>("CheckForRequests", x => x.CheckForRequests(), Cron.Minutely);
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
