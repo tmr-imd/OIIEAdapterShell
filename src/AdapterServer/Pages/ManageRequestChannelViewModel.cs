@@ -65,7 +65,11 @@ namespace AdapterServer.Pages
 
             if ( storedSetting is null )
             {
-                storedSetting = new ChannelSetting { Name = channelName };
+                storedSetting = new ChannelSetting 
+                { 
+                    Name = channelName,
+                    SessionId = session.Id
+                };
 
                 await context.ChannelSettings.AddAsync( storedSetting );
 
