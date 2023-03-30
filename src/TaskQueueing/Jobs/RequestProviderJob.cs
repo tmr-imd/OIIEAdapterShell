@@ -4,6 +4,7 @@ using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using TaskQueueing.Data;
 using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
@@ -33,7 +34,9 @@ public class RequestProviderJob
 
                 if (requestMessage is not null)
                 {
-                    BackgroundJob.Enqueue<RequestProviderJob>(x => x.Respond(sessionId, requestMessage.Id, null));
+                    var requestFilter = requestMessage.MessageContent.Deserialise<StructureAssetsFilter>();
+
+                    BackgroundJob.Enqueue<RequestProviderJob>(x => x.PostResponse(sessionId, requestMessage.Id, requestFilter, null));
 
                     await provider.RemoveRequest(sessionId);
                 }
@@ -47,9 +50,14 @@ public class RequestProviderJob
 
         return "";
     }
-    public async Task<string> Respond(string sessionId, string requestId, PerformContext ctx)
+    public async Task<string> PostResponse<T>(string sessionId, string requestId, T requestFilter, PerformContext ctx)
     {
-        await Task.Yield();
+        if ( requestFilter is StructureAssetsFilter filter)
+        {
+            var structures = StructureAssetService.GetStructures(filter);
+
+            var response = await provider.PostResponse(sessionId, requestId, new RequestStructures(structures));
+        }
 
         return "";
     }

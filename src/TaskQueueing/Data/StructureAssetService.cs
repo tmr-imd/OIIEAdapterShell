@@ -1,13 +1,11 @@
 using CsvHelper;
-using Microsoft.AspNetCore.Mvc.Filters;
 using System.Globalization;
-using System.Reflection;
 
-namespace AdapterServer.Data;
+namespace TaskQueueing.Data;
 
 public class StructureAssetService
 {
-    public StructureAsset[] GetStructures( StructureAssetsFilter filter )
+    public static StructureAsset[] GetStructures( StructureAssetsFilter filter )
     {
         using var reader = new StreamReader( "./Data/Structure Assets.csv" );
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);

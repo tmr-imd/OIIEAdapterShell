@@ -1,5 +1,3 @@
-﻿using AdapterServer.Data;
-
-namespace AdapterServer.Pages;
+﻿namespace TaskQueueing.Data;
 
 public record RequestStructures( IEnumerable<StructureAsset> StructureAssets );
