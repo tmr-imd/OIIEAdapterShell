@@ -5,11 +5,7 @@ namespace TaskQueueing.ObjectModel
 {
     public interface IJobContext
     {
+        DbSet<ChannelSetting> ChannelSettings { get; set; }
         DbSet<Request> Requests { get; set; }
-
-        //DatabaseFacade Database { get; }
-
-        //void SetState( object entity, EntityState state );
-        //void SetValues( object entity, object values );
     }
 }

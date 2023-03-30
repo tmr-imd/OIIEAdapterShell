@@ -1,12 +1,9 @@
 ﻿using AdapterServer.Data;
 using Hangfire;
-using Hangfire.Server;
-using Hangfire.Storage;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
-using TaskQueueing;
+using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
-using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages;
 

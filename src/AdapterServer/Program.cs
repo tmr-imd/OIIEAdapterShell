@@ -57,7 +57,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseHangfireDashboard();
-// backgroundJobs.Enqueue(() => Console.WriteLine("Hello world from Hangfire!"));
+//RecurringJob.AddOrUpdate<ReadRequestsJob>("ReadRequests", x => x.CheckForRequest(), Cron.Daily);
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

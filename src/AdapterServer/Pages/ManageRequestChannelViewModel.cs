@@ -1,6 +1,9 @@
 ﻿using AdapterServer.Data;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using Microsoft.EntityFrameworkCore;
+using TaskQueueing.ObjectModel.Models;
+using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages
 {
@@ -40,13 +43,13 @@ namespace AdapterServer.Pages
             await settings.SaveSettings( channelSettings, channelName );
         }
 
-        public async Task OpenSession( IChannelManagement channel, IConsumerRequest consumer, SettingsService settings, string channelName )
+        public async Task OpenSession( IChannelManagement channel, IConsumerRequest consumer, JobContext context, SettingsService settings, string channelName )
         {
             try
             {
                 await channel.GetChannel( ChannelUri );
             }
-            catch( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.ChannelFault ) 
+            catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.ChannelFault ) 
             { 
                 await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
             }
@@ -56,9 +59,21 @@ namespace AdapterServer.Pages
             SessionId = session.Id;
 
             await Save( settings, channelName );
+
+            // Add settings to the list!
+            var storedSetting = await context.ChannelSettings.Where( x => x.Name == channelName).FirstOrDefaultAsync();
+
+            if ( storedSetting is null )
+            {
+                storedSetting = new ChannelSetting { Name = channelName };
+
+                await context.ChannelSettings.AddAsync( storedSetting );
+
+                await context.SaveChangesAsync();
+            }
         }
 
-        public async Task CloseSession( IChannelManagement channel, IConsumerRequest consumer, SettingsService settings, string channelName )
+        public async Task CloseSession( IChannelManagement channel, IConsumerRequest consumer, JobContext context, SettingsService settings, string channelName )
         {
             try
             {
@@ -74,6 +89,15 @@ namespace AdapterServer.Pages
             SessionId = "";
 
             await Save(settings, channelName);
+
+            var channelSetting = await context.ChannelSettings.Where( x => x.Name == channelName ).FirstOrDefaultAsync();
+
+            if ( channelSetting is not null  )
+            {
+                context.ChannelSettings.Remove( channelSetting );
+
+                await context.SaveChangesAsync();
+            }
         }
 
         public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
