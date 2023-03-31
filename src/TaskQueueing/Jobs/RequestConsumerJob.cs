@@ -30,7 +30,8 @@ public class RequestConsumerJob
         {
             JobId = ctx.BackgroundJob.Id,
             SessionId = sessionId,
-            RequestId = request.Id
+            RequestId = request.Id,
+            Filter = JsonSerializer.Serialize( value )
         };
 
         using var context = await factory.CreateDbContext(new System.Security.Claims.ClaimsPrincipal());

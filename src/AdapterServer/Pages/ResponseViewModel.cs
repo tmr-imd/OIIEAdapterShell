@@ -51,11 +51,23 @@ public class ResponseViewModel
 
     public async Task Load( IJobContext context, string RequestId )
     {
-        var payload = await context.Requests.Where( x => x.RequestId == RequestId ).Select( x => x.Content ).FirstOrDefaultAsync();
+        var request = await context.Requests.Where( x => x.RequestId == RequestId ).FirstOrDefaultAsync();
 
-        if ( !string.IsNullOrEmpty(payload) ) 
-        { 
-            var structures = JsonSerializer.Deserialize<RequestStructures>( payload );
+        if ( request is not null ) 
+        {
+            var filter = JsonSerializer.Deserialize<StructureAssetsFilter>( request.Filter );
+
+            if ( filter is not null )
+            {
+                FilterCode = filter.FilterCode;
+                FilterType = filter.FilterType;
+                FilterLocation = filter.FilterLocation;
+                FilterOwner = filter.FilterOwner;
+                FilterCondition = filter.FilterCondition;
+                FilterInspector = filter.FilterInspector;
+            }
+
+            var structures = JsonSerializer.Deserialize<RequestStructures>( request.Content );
 
             if ( structures is not null )
             {
