@@ -66,7 +66,7 @@ public class RequestViewModel
     {
         var requestFilter = new StructureAssetsFilter( FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector );
 
-        BackgroundJob.Enqueue<ConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic, null) );
+        BackgroundJob.Enqueue<RequestConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic, null) );
 
         //var storage = JobStorage.Current;
         //var api = storage.GetMonitoringApi();

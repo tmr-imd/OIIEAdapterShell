@@ -60,6 +60,7 @@ app.UseRouting();
 
 app.UseHangfireDashboard();
 RecurringJob.AddOrUpdate<RequestProviderJob>("CheckForRequests", x => x.CheckForRequests(), Cron.Minutely);
+RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(), Cron.Minutely);
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
