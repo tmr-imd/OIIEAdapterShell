@@ -41,6 +41,7 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<StructureAssetService>();
 builder.Services.AddScoped<RequestService>();
 builder.Services.AddScoped<RequestViewModel>();
+builder.Services.AddScoped<ResponseViewModel>();
 
 var app = builder.Build();
 
