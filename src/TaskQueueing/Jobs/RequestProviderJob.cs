@@ -4,7 +4,9 @@ using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 using TaskQueueing.Data;
+using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
@@ -57,6 +59,19 @@ public class RequestProviderJob
             var structures = StructureAssetService.GetStructures(filter);
 
             var response = await provider.PostResponse(sessionId, requestId, new RequestStructures(structures));
+
+            using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
+
+            var storedResponse = new Response()
+            {
+                JobId = ctx.BackgroundJob.Id,
+                RequestId = requestId,
+                Content = JsonSerializer.Serialize(response.MessageContent.Content)
+            };
+
+            await context.Responses.AddAsync( storedResponse );
+
+            await context.SaveChangesAsync();
         }
 
         return "";

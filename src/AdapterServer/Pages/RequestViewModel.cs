@@ -2,6 +2,7 @@
 using Hangfire;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
+using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
 

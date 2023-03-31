@@ -8,6 +8,7 @@ namespace TaskQueueing.Persistence
     {
         public DbSet<ChannelSetting> ChannelSettings { get; set; } = null!;
         public DbSet<Request> Requests { get; set; } = null!;
+        public DbSet<Response> Responses { get; set; } = null!;
 
         public JobContext(DbContextOptions options) : base(options)
         {

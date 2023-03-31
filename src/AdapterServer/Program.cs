@@ -6,6 +6,7 @@ using Hangfire;
 using Hangfire.SqlServer;
 using TaskQueueing.Persistence;
 using TaskQueueing.Jobs;
+using TaskQueueing.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
