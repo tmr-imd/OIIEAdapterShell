@@ -89,8 +89,10 @@
                     <span class="align-center">Request</span>
                 </div>
             </button>
-            <button class="btn" disabled="@(notReady || working)" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>
+            @*<button class="btn" disabled="@(notReady || working)" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>*@
         </div>
+
+        <div class="text-green-500 @(sent ? "" : "hidden")">Request sent!</div>
 
         @if ( !string.IsNullOrEmpty(error) )
         {
@@ -133,6 +135,7 @@
 
 @code {
     private bool working;
+    private bool sent;
     private bool notReady => viewModel.SessionId == "";
     private string error = "";
     private string channelName = "request-response";
@@ -159,6 +162,9 @@
 
         working = true;
         error = "";
+        sent = false;
+
+        StateHasChanged();
 
         try
         {
@@ -166,10 +172,16 @@
 
             // Process the form
             viewModel.Request();
+
+            sent = true;
         }
         catch( Exception ex )
         {
             error = ex.Message;
+        }
+        finally
+        {
+            working = false;
         }
     }
 

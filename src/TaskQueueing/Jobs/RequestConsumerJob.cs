@@ -1,11 +1,8 @@
-﻿using Hangfire;
-using Hangfire.Server;
+﻿using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
-using TaskQueueing.Data;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
@@ -34,7 +31,7 @@ public class RequestConsumerJob
             Filter = JsonSerializer.Serialize( value )
         };
 
-        using var context = await factory.CreateDbContext(new System.Security.Claims.ClaimsPrincipal());
+        using var context = await factory.CreateDbContext(new ClaimsPrincipal());
 
         context.Requests.Add(storedRequest);
 
@@ -47,7 +44,7 @@ public class RequestConsumerJob
     {
         using var context = await factory.CreateDbContext(new ClaimsPrincipal());
 
-        var openRequests = await context.Requests.Where( x => !x.Processed ).ToListAsync();
+        var openRequests = await RequestConsumerService.OpenRequests( context );
 
         foreach (var request in openRequests)
         {
@@ -62,6 +59,8 @@ public class RequestConsumerJob
 
                     await context.SaveChangesAsync();
                     await consumer.RemoveResponse(request.SessionId, request.RequestId);
+
+                    return requestMessage.Id;
                 }
             }
             catch (IsbmFault ex)

@@ -2,7 +2,6 @@
 using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 using TaskQueueing.Data;
@@ -26,7 +25,7 @@ public class RequestProviderJob
     {
         using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
 
-        var sessionIds = await context.ChannelSettings.Select(x => x.ProviderSessionId).ToListAsync();
+        var sessionIds = await RequestProviderService.GetSessionIds( context );
 
         foreach( var sessionId in sessionIds )
         {
@@ -41,6 +40,8 @@ public class RequestProviderJob
                     BackgroundJob.Enqueue<RequestProviderJob>(x => x.PostResponse(sessionId, requestMessage.Id, requestFilter, null));
 
                     await provider.RemoveRequest(sessionId);
+
+                    return requestMessage.Id;
                 }
 
             }
@@ -65,6 +66,7 @@ public class RequestProviderJob
             var storedResponse = new Response()
             {
                 JobId = ctx.BackgroundJob.Id,
+                ResponseId = response.Id,
                 RequestId = requestId,
                 Content = JsonSerializer.Serialize(response.MessageContent.Content)
             };
@@ -72,6 +74,8 @@ public class RequestProviderJob
             await context.Responses.AddAsync( storedResponse );
 
             await context.SaveChangesAsync();
+
+            return response.Id;
         }
 
         return "";
