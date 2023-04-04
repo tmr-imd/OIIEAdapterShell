@@ -12,11 +12,13 @@ public class RequestConsumerJob
 {
     private readonly IConsumerRequest consumer;
     private readonly JobContextFactory factory;
+    private readonly ClaimsPrincipal principal;
 
-    public RequestConsumerJob(IConsumerRequest consumer, JobContextFactory factory)
+    public RequestConsumerJob(IConsumerRequest consumer, JobContextFactory factory, ClaimsPrincipal principal)
     {
         this.consumer = consumer;
         this.factory = factory;
+        this.principal = principal;
     }
 
     public async Task<string> PostRequest<T>(string sessionId, T content, string topic, PerformContext ctx) where T : notnull
@@ -30,7 +32,7 @@ public class RequestConsumerJob
             Filter = JsonSerializer.SerializeToDocument(content)
         };
 
-        using var context = await factory.CreateDbContext(new ClaimsPrincipal());
+        using var context = await factory.CreateDbContext(principal);
 
         context.Requests.Add(storedRequest);
 
@@ -41,7 +43,7 @@ public class RequestConsumerJob
 
     public async Task<string> CheckForResponses( string sessionId )
     {
-        using var context = await factory.CreateDbContext(new ClaimsPrincipal());
+        using var context = await factory.CreateDbContext(principal);
 
         var openRequests = await RequestConsumerService.OpenRequests(context);
 

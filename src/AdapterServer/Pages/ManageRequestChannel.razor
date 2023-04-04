@@ -3,6 +3,7 @@
 @using Isbm2Client.Interface;
 @using Isbm2Client.Model;
 @using Microsoft.Extensions.Options;
+@using System.Security.Claims;
 @using TaskQueueing.Persistence;
 
 @inject ILogger<ManageRequestChannel> Logger
@@ -15,6 +16,7 @@
 
 @inject NavigationManager navigation
 @inject IJSRuntime JS
+@inject ClaimsPrincipal principal
 @inject JobContextFactory factory
 
 <PageTitle>Manage Request Channel - Adapter Shell</PageTitle>
@@ -98,7 +100,7 @@
 
         await InvokeAsync( StateHasChanged );
 
-        using var context = await factory.CreateDbContext( new System.Security.Claims.ClaimsPrincipal() );
+        using var context = await factory.CreateDbContext( principal );
 
         if (!string.IsNullOrEmpty(viewModel.ConsumerSessionId))
             await viewModel.CloseSession( channel, consumer, provider, context, settings, ChannelName );

@@ -11,11 +11,14 @@ namespace TaskQueueing.Persistence
 {
     public class JobContext : DbContext, IJobContext
     {
+        private readonly string who;
+
         public DbSet<Request> Requests { get; set; } = null!;
         public DbSet<Response> Responses { get; set; } = null!;
 
-        public JobContext(DbContextOptions options) : base(options)
+        public JobContext(DbContextOptions options, string who) : base(options)
         {
+            this.who = who;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -53,16 +56,7 @@ namespace TaskQueueing.Persistence
             var added = ChangeTracker.Entries().Where(x => x.State == EntityState.Added);
             var modified = ChangeTracker.Entries().Where(x => x.State == EntityState.Modified);
 
-            var who = "";
-            //if (User != null) 
-            //{
-            //    who = User.GetUserName();
-            //    if (string.IsNullOrEmpty(who) && User.Identity != null)
-            //    {
-            //        who = User.Identity.Name;
-            //    }                
-            //}
-            who = string.IsNullOrEmpty(who) ? "unknown" : who;
+            var who = string.IsNullOrEmpty(this.who) ? "unknown" : this.who;
 
             foreach (var item in added)
             {

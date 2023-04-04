@@ -12,24 +12,18 @@ namespace TaskQueueing.Persistence
             _config = config;
         }
 
-        public JobContext CreateDbContextNoDataKey(ClaimsPrincipal user)
+        public Task<JobContext> CreateDbContext(ClaimsPrincipal claimsPrincipal)
+        {
+            return CreateDbContext( claimsPrincipal.Identity?.Name ?? "" );
+        }
+
+        public async Task<JobContext> CreateDbContext( string who )
         {
             var builder = new DbContextOptionsBuilder<JobContext>();
             var defaultConnection = _config.GetConnectionString("DefaultConnection");
-            //builder.UseSqlServer(defaultConnection, x => { x.MigrationsAssembly("Holly"); });
             builder.UseSqlite($"Filename={defaultConnection}");
-            //var context = new JobContext(builder.Options, user);
-            var context = new JobContext(builder.Options);
+            var context = new JobContext(builder.Options, who);
 
-            // Do this outside of CreateDbContextWithNoDataKey
-            // await context.SetDataKey(user);
-
-            return context;
-        }
-
-        public async Task<JobContext> CreateDbContext( ClaimsPrincipal user )
-        {
-            var context = CreateDbContextNoDataKey(user);
             await context.Database.EnsureCreatedAsync();
             await context.Database.MigrateAsync();
 

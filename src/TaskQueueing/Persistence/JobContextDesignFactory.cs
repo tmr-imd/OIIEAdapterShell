@@ -21,9 +21,6 @@ public class JobContextDesignFactory : IDesignTimeDbContextFactory<JobContext>
         var optionsBuilder =
             new DbContextOptionsBuilder<JobContext>();
 
-        //optionsBuilder.UseSqlServer(connectionString, x => { x.MigrationsAssembly("TaskQueuing"); });
-
-        //return new JobContext(optionsBuilder.Options, new ClaimsPrincipal());  //, null);
-        return new JobContext(optionsBuilder.Options);
+        return new JobContext(optionsBuilder.Options, "migrations");
     }
 }

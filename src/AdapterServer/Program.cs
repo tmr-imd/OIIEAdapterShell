@@ -7,6 +7,7 @@ using Hangfire.SqlServer;
 using TaskQueueing.Persistence;
 using TaskQueueing.Jobs;
 using TaskQueueing.Data;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddHangfire(configuration => configuration
 // Add the processing server as IHostedService
 builder.Services.AddHangfireServer();
 
+builder.Services.AddScoped( x => JobContextHelper.PrincipalFromString("AdapterServer") );
 builder.Services.AddSingleton(new JobContextFactory(builder.Configuration));
 
 // Add services to the container.

@@ -13,11 +13,13 @@ public class RequestProviderJob<T> where T : notnull
 {
     private readonly IProviderRequest provider;
     private readonly JobContextFactory factory;
+    private readonly ClaimsPrincipal principal;
 
-    public RequestProviderJob(IProviderRequest provider, JobContextFactory factory)
+    public RequestProviderJob(IProviderRequest provider, JobContextFactory factory, ClaimsPrincipal principal)
     {
         this.provider = provider;
         this.factory = factory;
+        this.principal = principal;
     }
 
     public async Task<string> CheckForRequests( string sessionId )
@@ -55,7 +57,7 @@ public class RequestProviderJob<T> where T : notnull
 
             var response = await provider.PostResponse(sessionId, requestId, new RequestStructures(structures));
 
-            using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
+            using var context = await factory.CreateDbContext( principal );
 
             var storedResponse = new Response()
             {
