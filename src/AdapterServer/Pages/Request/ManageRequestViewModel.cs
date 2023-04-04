@@ -8,9 +8,9 @@ using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
-namespace AdapterServer.Pages
+namespace AdapterServer.Pages.Request
 {
-    public class ManageRequestChannelViewModel
+    public class ManageRequestViewModel
     {
         public string Endpoint { get; set; } = "";
 
@@ -19,24 +19,24 @@ namespace AdapterServer.Pages
         public string ConsumerSessionId { get; set; } = "";
         public string ProviderSessionId { get; set; } = "";
 
-        public async Task Load( SettingsService settings, string channelName )
+        public async Task Load(SettingsService settings, string channelName)
         {
             try
             {
-                var channelSettings = await settings.LoadSettings<ChannelSettings>( channelName );
+                var channelSettings = await settings.LoadSettings<ChannelSettings>(channelName);
 
                 ChannelUri = channelSettings.ChannelUri;
                 Topic = channelSettings.Topic;
                 ConsumerSessionId = channelSettings.ConsumerSessionId;
                 ProviderSessionId = channelSettings.ProviderSessionId;
             }
-            catch ( FileNotFoundException )
+            catch (FileNotFoundException)
             {
                 // Just leave things as they are
             }
         }
 
-        public async Task Save( SettingsService settings, string channelName )
+        public async Task Save(SettingsService settings, string channelName)
         {
             var channelSettings = new ChannelSettings
             {
@@ -46,17 +46,17 @@ namespace AdapterServer.Pages
                 ProviderSessionId = ProviderSessionId
             };
 
-            await settings.SaveSettings( channelSettings, channelName );
+            await settings.SaveSettings(channelSettings, channelName);
         }
 
-        public async Task OpenSession( IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName )
+        public async Task OpenSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName)
         {
             try
             {
-                await channel.GetChannel( ChannelUri );
+                await channel.GetChannel(ChannelUri);
             }
-            catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.ChannelFault ) 
-            { 
+            catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
+            {
                 await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
             }
 
@@ -67,14 +67,14 @@ namespace AdapterServer.Pages
             var providerSession = await provider.OpenSession(ChannelUri, Topic);
             ProviderSessionId = providerSession.Id;
 
-            await Save( settings, channelName );
+            await Save(settings, channelName);
 
             // Setup recurring tasks!
             RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
             RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
         }
 
-        public async Task CloseSession( IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName )
+        public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName)
         {
             try
             {

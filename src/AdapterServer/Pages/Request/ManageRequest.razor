@@ -6,7 +6,7 @@
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
 
-@inject ILogger<ManageRequestChannel> Logger
+@inject ILogger<ManageRequest> Logger
 @inject SettingsService settings
 @inject IOptions<ClientConfig> clientConfig
 
@@ -81,7 +81,7 @@
     [Parameter]
     public string BackTo { get; set; } = null!;
 
-    private ManageRequestChannelViewModel viewModel = new ManageRequestChannelViewModel();
+    private ManageRequestViewModel viewModel = new ManageRequestViewModel();
 
     protected override async Task OnInitializedAsync()
     {

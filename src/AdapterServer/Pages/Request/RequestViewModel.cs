@@ -6,7 +6,7 @@ using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
 
-namespace AdapterServer.Pages;
+namespace AdapterServer.Pages.Request;
 
 public class RequestViewModel
 {
@@ -34,7 +34,7 @@ public class RequestViewModel
         this.settings = settings;
     }
 
-    public async Task LoadSettings( string channelName )
+    public async Task LoadSettings(string channelName)
     {
         try
         {
@@ -50,7 +50,7 @@ public class RequestViewModel
         }
     }
 
-    public async Task Load( IJobContext context )
+    public async Task Load(IJobContext context)
     {
         Requests = await RequestService.ListRequests(context);
     }
@@ -62,10 +62,10 @@ public class RequestViewModel
 
     public void Request()
     {
-        var requestFilter = new StructureAssetsFilter( FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector );
+        var requestFilter = new StructureAssetsFilter(FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector);
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        BackgroundJob.Enqueue<RequestConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic, null) );
+        BackgroundJob.Enqueue<RequestConsumerJob>(x => x.PostRequest(SessionId, requestFilter, Topic, null));
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
         //var storage = JobStorage.Current;

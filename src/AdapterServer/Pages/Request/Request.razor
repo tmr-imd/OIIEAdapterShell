@@ -9,7 +9,7 @@
 
 @inject RequestViewModel viewModel
 @inject NavigationManager navigation
-@inject JobContextFactory factory;
+@inject JobContextFactory factory
 
 <PageTitle>Request/Response - Adapter Shell</PageTitle>
 
@@ -17,7 +17,7 @@
 
 @if ( Edit == "channel" )
 {
-    <ManageRequestChannel ChannelName="@channelName" BackTo="/request-response" />
+    <ManageRequest ChannelName="@channelName" BackTo="/request-response" />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
