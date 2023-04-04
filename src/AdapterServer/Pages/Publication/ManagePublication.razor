@@ -11,15 +11,15 @@
 @inject IOptions<ClientConfig> clientConfig
 
 @inject IChannelManagement channel
-@inject IConsumerRequest consumer
-@inject IProviderRequest provider
+@inject IConsumerPublication consumer
+@inject IProviderPublication provider
 
 @inject NavigationManager navigation
 @inject IJSRuntime JS
 @inject ClaimsPrincipal principal
 @inject JobContextFactory factory
 
-<PageTitle>Manage Request Channel - Adapter Shell</PageTitle>
+<PageTitle>Manage Publication Channel - Adapter Shell</PageTitle>
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
     <Modal Title="Manage Publication Channel">
@@ -100,12 +100,10 @@
 
         await InvokeAsync( StateHasChanged );
 
-        using var context = await factory.CreateDbContext( principal );
-
         if (!string.IsNullOrEmpty(viewModel.ConsumerSessionId))
-            await viewModel.CloseSession( channel, consumer, provider, context, settings, ChannelName );
+            await viewModel.CloseSession( channel, consumer, provider, settings, ChannelName );
         else
-            await viewModel.OpenSession( channel, consumer, provider, context, settings, ChannelName );
+            await viewModel.OpenSession( channel, consumer, provider, settings, ChannelName );
 
         navigation.NavigateTo(BackTo);
     }

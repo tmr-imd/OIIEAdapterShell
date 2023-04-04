@@ -49,7 +49,7 @@ public class ManageRequestViewModel
         await settings.SaveSettings(channelSettings, channelName);
     }
 
-    public async Task OpenSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName)
+    public async Task OpenSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
     {
         try
         {
@@ -74,7 +74,7 @@ public class ManageRequestViewModel
         RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
     }
 
-    public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName)
+    public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
     {
         try
         {
