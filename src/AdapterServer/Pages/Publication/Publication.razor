@@ -82,18 +82,20 @@
                     <span class="align-center">@(working ? (!viewModel.Ready ? "Preparing..." : "Working...") : "Post New Structure")</span>
                 </div>
             </button>
-            <button class="btn" disabled="@working" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>
+            @*<button class="btn" disabled="@working" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>*@
         </div>
 
-        @if ( !string.IsNullOrEmpty(error) )
+        <div class="text-green-500 @(posted ? "" : "hidden")">Request sent!</div>
+
+        @if (!string.IsNullOrEmpty(error))
         {
             <div class="col-span-full">
                 <span class="text-red-500">@error</span>
             </div>
         }
 
-        <h2 class="col-span-full mt-6 @(viewModel.StructureAssets.Count() == 0 ? "hidden" : "")">Posted Structures</h2>
-        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table @(viewModel.StructureAssets.Count() == 0 ? "hidden" : "")">
+        <h2 class="col-span-full mt-6 @(viewModel.NewStructureAssets.Count() == 0 ? "hidden" : "")">Posted Structures</h2>
+        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table @(viewModel.NewStructureAssets.Count() == 0 ? "hidden" : "")">
             <thead class="bg-gray-100">
                 <tr>
                     <th scope="col">Code</th>
@@ -105,16 +107,16 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                @foreach (var structureAsset in viewModel.StructureAssets)
+                @foreach (var structureAsset in viewModel.NewStructureAssets)
                 {
                     <tr>
-                        <td>@structureAsset.Code</td>
+@*                        <td>@structureAsset.Code</td>
                         <td>@structureAsset.Type</td>
                         <td>@structureAsset.Location</td>
                         <td>@structureAsset.Owner</td>
                         <td>@structureAsset.Condition</td>
                         <td>@structureAsset.Inspector</td>
-                    </tr>
+*@                    </tr>
                 }
             </tbody>
         </table>
@@ -123,6 +125,7 @@
 
 @code {
     bool working;
+    private bool posted;
     private bool notReady => viewModel.SessionId == "";
     string error = "";
     private string channelName = "pub-sub";
@@ -143,24 +146,24 @@
         await base.OnParametersSetAsync();
     }
 
-    private async Task HandleSubmit()
+    private void HandleSubmit()
     {
         Logger.LogInformation("HandleSubmit called");
 
         working = true;
+        posted = false;
         StateHasChanged();
         error = "";
 
         try
         {
             // Process the form (read is performed asynchronously)
-            //await viewModel.Post();
-            error = "Message sent";
+            viewModel.Post();
+            posted = true;
         }
         catch( Exception ex )
         {
             error = ex.Message;
-            //viewModel.CancelTokenSource.Cancel();
             working = false;
         }
         finally
@@ -209,11 +212,4 @@
     //        };            
     //    }
     //}
-
-    private void Clear()
-    {
-        viewModel.Clear();
-
-        StateHasChanged();
-    }
 }

@@ -1,6 +1,8 @@
 ﻿using AdapterServer.Data;
+using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using TaskQueueing.Jobs;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -64,8 +66,9 @@ public class ManagePublicationViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        //RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-        //RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+        RecurringJob.AddOrUpdate<PubSubConsumerJob<NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null), Cron.Minutely);
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)
@@ -87,8 +90,7 @@ public class ManagePublicationViewModel
 
         await Save(settings, channelName);
 
-        //RecurringJob.RemoveIfExists("CheckForRequests");
-        //RecurringJob.RemoveIfExists("CheckForResponses");
+        RecurringJob.RemoveIfExists("PollNewStructureAssets");
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
@@ -109,7 +111,6 @@ public class ManagePublicationViewModel
 
         await Save(settings, channelName);
 
-        //RecurringJob.RemoveIfExists("CheckForRequests");
-        //RecurringJob.RemoveIfExists("CheckForResponses");
+        RecurringJob.RemoveIfExists("PollNewStructureAssets");
     }
 }

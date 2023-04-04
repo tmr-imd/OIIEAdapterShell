@@ -84,7 +84,6 @@
                     <span class="align-center">Request</span>
                 </div>
             </button>
-            @*<button class="btn" disabled="@(notReady || working)" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>*@
         </div>
 
         <div class="text-green-500 @(sent ? "" : "hidden")">Request sent!</div>
@@ -163,8 +162,6 @@
 
         try
         {
-            Clear();
-
             // Process the form
             viewModel.Request();
 
@@ -177,13 +174,7 @@
         finally
         {
             working = false;
+            StateHasChanged();
         }
-    }
-
-    private void Clear()
-    {
-        viewModel.Clear();
-
-        StateHasChanged();
     }
 }

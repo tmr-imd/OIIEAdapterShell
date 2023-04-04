@@ -1,8 +1,11 @@
 ﻿using AdapterServer.Data;
+using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
 using TaskQueueing.Data;
+using TaskQueueing.Jobs;
+using TaskQueueing.ObjectModel;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -22,7 +25,7 @@ public class PublicationViewModel
 
     public bool Ready { get; set; }
 
-    public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
+    public IEnumerable<NewStructureAsset> NewStructureAssets { get; set; } = Enumerable.Empty<NewStructureAsset>();
 
     private readonly SettingsService settings;
 
@@ -40,7 +43,7 @@ public class PublicationViewModel
 
             ChannelUri = channelSettings.ChannelUri;
             Topic = channelSettings.Topic;
-            SessionId = channelSettings.ConsumerSessionId;
+            SessionId = channelSettings.ProviderSessionId;
         }
         catch (FileNotFoundException)
         {
@@ -48,14 +51,19 @@ public class PublicationViewModel
         }
     }
 
-    public void Clear()
+    public async Task Load(IJobContext context)
     {
-        //StructureAssets = Enumerable.Empty<StructureAsset>();
+        await Task.Yield();
+        //NewStructureAssets = await service.ListRequests(context);
     }
 
     public void Post()
     {
-        //var newStructure = new NewStructureAsset("Sync", new StructureAsset(Code, Type, Location, Owner, Condition, Inspector));
+        var newStructure = new NewStructureAsset("Sync", new StructureAsset(Code, Type, Location, Owner, Condition, Inspector));
+
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+        BackgroundJob.Enqueue<PubSubProviderJob<NewStructureAsset>>(x => x.PostPublication(SessionId, newStructure, Topic, null));
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
         //var message = await provider.PostPublication(providerSession.Id, newStructure, Topic);
 
@@ -73,7 +81,4 @@ public class PublicationViewModel
 
     //    return newStructure;
     //}
-
-    public record class NewStructureAsset(string Verb, StructureAsset Data);
-
 }

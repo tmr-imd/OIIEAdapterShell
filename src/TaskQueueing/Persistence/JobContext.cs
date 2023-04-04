@@ -15,6 +15,7 @@ namespace TaskQueueing.Persistence
 
         public DbSet<Request> Requests { get; set; } = null!;
         public DbSet<Response> Responses { get; set; } = null!;
+        public DbSet<Publication> Publications { get; set; } = null!;
 
         public JobContext(DbContextOptions options, string who) : base(options)
         {
@@ -46,6 +47,10 @@ namespace TaskQueueing.Persistence
                 .HasConversion<JsonDocumentConverter>();
 
             modelBuilder.Entity<Response>()
+                .Property(x => x.Content)
+                .HasConversion<JsonDocumentConverter>();
+
+            modelBuilder.Entity<Publication>()
                 .Property(x => x.Content)
                 .HasConversion<JsonDocumentConverter>();
         }
