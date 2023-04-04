@@ -9,29 +9,26 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Isbm2RestClient", "Isbm2Res
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{52C531B3-DFC1-4A35-B609-EFF8311604AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Isbm2Client", "Lib\Isbm2RestClient\src\Isbm2Client\Isbm2Client.csproj", "{097FE834-9ECA-4C26-AF12-167B4AF36618}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Isbm2Client", "Lib\Isbm2RestClient\src\Isbm2Client\Isbm2Client.csproj", "{097FE834-9ECA-4C26-AF12-167B4AF36618}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCOM.net", "Lib\CCOM.Net\CCOM.net.csproj", "{F0FAECA5-B363-4C3A-8BC1-25BDDA862907}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CCOM.net", "Lib\CCOM.Net\CCOM.net.csproj", "{F0FAECA5-B363-4C3A-8BC1-25BDDA862907}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E315CC81-1F19-4BFC-8620-985988E85838}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdapterServer", "src\AdapterServer\AdapterServer.csproj", "{32DE7338-297E-4B7F-B7D4-A5148C96452F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdapterServer", "src\AdapterServer\AdapterServer.csproj", "{32DE7338-297E-4B7F-B7D4-A5148C96452F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IsbmNotification", "src\IsbmNotification\IsbmNotification.csproj", "{EDEC8C60-5D2B-4944-9905-E00AC654BFC6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IsbmNotification", "src\IsbmNotification\IsbmNotification.csproj", "{EDEC8C60-5D2B-4944-9905-E00AC654BFC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OiieAdminUi", "src\OiieAdminUi\OiieAdminUi.csproj", "{CEDB6C43-5B67-4B68-A9A5-2CCC074F58C5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OiieAdminUi", "src\OiieAdminUi\OiieAdminUi.csproj", "{CEDB6C43-5B67-4B68-A9A5-2CCC074F58C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskQueueing", "src\TaskQueueing\TaskQueueing.csproj", "{69AB5323-FA8B-42FB-9AB1-35D9EBB1BB28}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskQueueing", "src\TaskQueueing\TaskQueueing.csproj", "{69AB5323-FA8B-42FB-9AB1-35D9EBB1BB28}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Isbm2RestClient", "Lib\Isbm2RestClient\src\Isbm2RestClient\Isbm2RestClient.csproj", "{A20E2274-E6B8-4A91-8CC3-A693FC38EE0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Isbm2RestClient", "Lib\Isbm2RestClient\src\Isbm2RestClient\Isbm2RestClient.csproj", "{A20E2274-E6B8-4A91-8CC3-A693FC38EE0A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{097FE834-9ECA-4C26-AF12-167B4AF36618}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -63,6 +60,9 @@ Global
 		{A20E2274-E6B8-4A91-8CC3-A693FC38EE0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A20E2274-E6B8-4A91-8CC3-A693FC38EE0A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{34CB2120-193B-4656-AA9A-D8F8872F243F} = {CE07EAEF-F402-4B7C-91C5-BB5FA5CBAACE}
 		{52C531B3-DFC1-4A35-B609-EFF8311604AF} = {34CB2120-193B-4656-AA9A-D8F8872F243F}
@@ -73,5 +73,8 @@ Global
 		{CEDB6C43-5B67-4B68-A9A5-2CCC074F58C5} = {E315CC81-1F19-4BFC-8620-985988E85838}
 		{69AB5323-FA8B-42FB-9AB1-35D9EBB1BB28} = {E315CC81-1F19-4BFC-8620-985988E85838}
 		{A20E2274-E6B8-4A91-8CC3-A693FC38EE0A} = {52C531B3-DFC1-4A35-B609-EFF8311604AF}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F5A6E8E2-8254-42CF-9FB4-BDFB9B2CB3FD}
 	EndGlobalSection
 EndGlobal

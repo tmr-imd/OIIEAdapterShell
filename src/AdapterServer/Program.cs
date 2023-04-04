@@ -1,13 +1,49 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using Isbm2Client.Model;
+using AdapterServer.Extensions;
+using AdapterServer.Pages;
 using AdapterServer.Data;
+using Hangfire;
+using Hangfire.SqlServer;
+using TaskQueueing.Persistence;
+using TaskQueueing.Jobs;
+using TaskQueueing.Data;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Hangfire services.
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection"), new SqlServerStorageOptions
+    {
+        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+        QueuePollInterval = TimeSpan.Zero,
+        UseRecommendedIsolationLevel = true,
+        DisableGlobalLocks = true
+    }));
+
+// Add the processing server as IHostedService
+builder.Services.AddHangfireServer();
+
+builder.Services.AddScoped( x => JobContextHelper.PrincipalFromString("AdapterServer") );
+builder.Services.AddSingleton(new JobContextFactory(builder.Configuration));
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
+
+var isbmSection = builder.Configuration.GetSection("Isbm");
+builder.Services.Configure<ClientConfig>(isbmSection);
+builder.Services.AddIsbmRestClient(isbmSection);
+
+builder.Services.AddScoped<SettingsService>();
+builder.Services.AddScoped<StructureAssetService>();
+builder.Services.AddScoped<RequestService>();
+builder.Services.AddScoped<RequestViewModel>();
+builder.Services.AddScoped<ResponseViewModel>();
 
 var app = builder.Build();
 
@@ -24,6 +60,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseHangfireDashboard();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

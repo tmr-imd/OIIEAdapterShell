@@ -1,0 +1,99 @@
+﻿@page "/response/{requestId}"
+@using AdapterServer.Data;
+@using System.Security.Claims;
+@using TaskQueueing.Persistence;
+@using AdapterServer.Components
+
+@inject ILogger<Request> Logger
+
+@inject ResponseViewModel viewModel
+@inject NavigationManager navigation
+@inject JobContextFactory factory
+
+<PageTitle>Response - Adapter Shell</PageTitle>
+
+<h1>Response</h1>
+
+<div class="grid grid-cols-4 gap-2">
+    <h2 class="col-span-full mt-6">Message Settings</h2>
+
+    <h3>Code</h3>
+    <h3>Type</h3>
+    <h3>Location</h3>
+    <h3>Owner</h3>
+
+    <div>@viewModel.FilterCode</div>
+    <div>@viewModel.FilterType</div>
+    <div>@viewModel.FilterLocation</div>
+    <div>@viewModel.FilterOwner</div>
+
+    <h3>Condition</h3>
+    <h3>Inspector</h3>
+    <div />
+    <div />
+
+    <div>@viewModel.FilterCondition</div>
+    <div>@viewModel.FilterInspector</div>
+    <div />
+    <div />
+
+    @if ( !string.IsNullOrEmpty(error) )
+    {
+        <div class="col-span-full">
+            <span class="text-red-500">@error</span>
+        </div>
+    }
+
+    <h2 class="col-span-full mt-6">Response</h2>
+    <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+        <thead class="bg-gray-100">
+            <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Type</th>
+                <th scope="col">Location</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Condition</th>
+                <th scope="col">Inspector</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            @foreach (var structureAsset in viewModel.StructureAssets)
+            {
+                <tr>
+                    <td>@structureAsset.Code</td>
+                    <td>@structureAsset.Type</td>
+                    <td>@structureAsset.Location</td>
+                    <td>@structureAsset.Owner</td>
+                    <td>@structureAsset.Condition</td>
+                    <td>@structureAsset.Inspector</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    //private bool working;
+    private bool notReady => viewModel.SessionId == "";
+    private string error = "";
+    private string channelName = "request-response";
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Edit { get; set; }
+
+    [Parameter]
+    public string RequestId { get; set; } = null!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await viewModel.LoadSettings(channelName);
+
+        await InvokeAsync(StateHasChanged);
+
+        using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
+        await viewModel.Load( context, RequestId );
+
+        await base.OnParametersSetAsync();
+    }
+}
