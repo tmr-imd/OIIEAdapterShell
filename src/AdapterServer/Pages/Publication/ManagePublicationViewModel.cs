@@ -12,7 +12,7 @@ public class ManagePublicationViewModel
 {
     public string Endpoint { get; set; } = "";
 
-    public string ChannelUri { get; set; } = "/asset-institute/demo/pub-sub";
+    public string ChannelUri { get; set; } = "/asset-institute/server/pub-sub";
     public string Topic { get; set; } = "Test Topic";
     public string ConsumerSessionId { get; set; } = "";
     public string ProviderSessionId { get; set; } = "";
@@ -47,7 +47,7 @@ public class ManagePublicationViewModel
         await settings.SaveSettings(channelSettings, channelName);
     }
 
-    public async Task OpenSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName)
+    public async Task OpenSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, JobContext context, SettingsService settings, string channelName)
     {
         try
         {
@@ -58,18 +58,18 @@ public class ManagePublicationViewModel
             await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
         }
 
-        var consumerSession = await consumer.OpenSession(ChannelUri);
+        var consumerSession = await consumer.OpenSession(ChannelUri, Topic);
         ConsumerSessionId = consumerSession.Id;
 
         // We're cheating for the demo
-        var providerSession = await provider.OpenSession(ChannelUri, Topic);
+        var providerSession = await provider.OpenSession(ChannelUri);
         ProviderSessionId = providerSession.Id;
 
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-        RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+        //RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+        //RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName)
@@ -91,8 +91,8 @@ public class ManagePublicationViewModel
 
         await Save(settings, channelName);
 
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
+        //RecurringJob.RemoveIfExists("CheckForRequests");
+        //RecurringJob.RemoveIfExists("CheckForResponses");
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
@@ -109,10 +109,11 @@ public class ManagePublicationViewModel
         }
 
         ConsumerSessionId = "";
+        ProviderSessionId = "";
 
         await Save(settings, channelName);
 
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
+        //RecurringJob.RemoveIfExists("CheckForRequests");
+        //RecurringJob.RemoveIfExists("CheckForResponses");
     }
 }

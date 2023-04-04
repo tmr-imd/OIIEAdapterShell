@@ -8,8 +8,9 @@ namespace AdapterServer.Pages.Publication;
 public class PublicationViewModel : IAsyncDisposable
 {
     public string Endpoint { get; set; } = "";
-    public string ChannelUri { get; set; } = "/asset-institute/demo/publication";
+    public string ChannelUri { get; set; } = "/asset-institute/server/pub-sub";
     public string Topic { get; set; } = "Test Topic";
+    public string SessionId { get; set; } = "";
 
     public string Code { get; set; } = "";
     public string Type { get; set; } = "";

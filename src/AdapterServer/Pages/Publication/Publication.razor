@@ -1,17 +1,38 @@
-﻿@page "/publish-subscribe"
+﻿@page "/pub-sub"
 @using AdapterServer.Data;
 
 @inject ILogger<Publication> Logger
 
 @inject PublicationViewModel viewModel
 
-<PageTitle>Adapter Shell - Publish/Subscribe</PageTitle>
+<PageTitle>Publish/Subscribe - Adapter Shell</PageTitle>
 
-<h1>Adapter Shell - Publish/Subscribe</h1>
+<h1>Publish/Subscribe</h1>
+
+@if ( Edit == "channel" )
+{
+    <ManagePublication ChannelName="@channelName" BackTo="/pub-sub" />
+}
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
     <div class="grid grid-cols-4 gap-2">
-        <h2 class="col-span-full mt-6">ISBM Settings</h2>
+        <div class="col-span-full flex justify-between items-center mt-6">
+            <h2>ISBM Settings</h2>
+            <div class="flex gap-2">
+                <div class="flex col-span-full rounded bg-yellow-100 text-yellow-800 px-4 py-1 items-center @(notReady ? "" : "hidden")">
+                    @* exclamation-triangle *@
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    @*<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>*@
+
+                    <span>No open session</span>
+                </div>
+                <a class="btn" href="/pub-sub?edit=channel">Manage Channel</a>
+            </div>
+        </div>
 
         <h3 class="col-span-2">ISBM Endpoint</h3>
         <h3>ISBM Channel</h3>
@@ -107,7 +128,13 @@
 
 @code {
     bool working;
+    private bool notReady => viewModel.SessionId == "";
     string error = "";
+    private string channelName = "pub-sub";
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Edit { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

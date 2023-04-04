@@ -23,7 +23,7 @@ public class ManageRequestViewModel
     {
         try
         {
-            var channelSettings = await settings.LoadSettings<ChannelSettings>(channelName);
+            var channelSettings = await settings.LoadSettings<RequestChannelSettings>(channelName);
 
             ChannelUri = channelSettings.ChannelUri;
             Topic = channelSettings.Topic;
@@ -38,7 +38,7 @@ public class ManageRequestViewModel
 
     public async Task Save(SettingsService settings, string channelName)
     {
-        var channelSettings = new ChannelSettings
+        var channelSettings = new RequestChannelSettings
         {
             ChannelUri = ChannelUri,
             Topic = Topic,
@@ -108,6 +108,7 @@ public class ManageRequestViewModel
         }
 
         ConsumerSessionId = "";
+        ProviderSessionId = "";
 
         await Save(settings, channelName);
 

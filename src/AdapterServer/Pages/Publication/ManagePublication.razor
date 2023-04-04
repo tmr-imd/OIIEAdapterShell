@@ -22,7 +22,7 @@
 <PageTitle>Manage Request Channel - Adapter Shell</PageTitle>
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
-    <Modal Title="Manage Request Channel">
+    <Modal Title="Manage Publication Channel">
         <HeaderAction>
             <button class="btn-danger" @onclick="Destroy" @onclick:preventDefault disabled="@(viewModel.ConsumerSessionId == "")">
                 <span>Destroy Channel</span>
