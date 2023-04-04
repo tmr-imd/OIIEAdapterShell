@@ -26,14 +26,12 @@ public class RequestViewModel
     public IEnumerable<TaskQueueing.ObjectModel.Models.Request> Requests { get; set; } = Enumerable.Empty<TaskQueueing.ObjectModel.Models.Request>();
 
     private readonly SettingsService settings;
-    private readonly RequestService service;
 
-    public RequestViewModel( IOptions<ClientConfig> config, SettingsService settings, RequestService service )
+    public RequestViewModel( IOptions<ClientConfig> config, SettingsService settings )
     {
         Endpoint = config.Value?.EndPoint ?? "";
 
         this.settings = settings;
-        this.service = service;
     }
 
     public async Task LoadSettings( string channelName )
@@ -54,7 +52,7 @@ public class RequestViewModel
 
     public async Task Load( IJobContext context )
     {
-        Requests = await service.ListRequests(context);
+        Requests = await RequestService.ListRequests(context);
     }
 
     public void Clear()

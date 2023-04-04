@@ -51,7 +51,7 @@ public class ResponseViewModel
 
     public async Task Load( IJobContext context, string RequestId )
     {
-        var request = await context.Requests.Where( x => x.RequestId == RequestId ).FirstOrDefaultAsync();
+        var request = await RequestService.GetRequest( context, RequestId );
 
         if ( request is not null ) 
         {
