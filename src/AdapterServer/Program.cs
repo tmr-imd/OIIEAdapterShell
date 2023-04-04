@@ -5,9 +5,7 @@ using AdapterServer.Data;
 using Hangfire;
 using Hangfire.SqlServer;
 using TaskQueueing.Persistence;
-using TaskQueueing.Jobs;
 using TaskQueueing.Data;
-using System.Security.Claims;
 using AdapterServer.Pages.Request;
 using AdapterServer.Pages.Publication;
 
@@ -45,6 +43,7 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<StructureAssetService>();
 builder.Services.AddScoped<RequestViewModel>();
 builder.Services.AddScoped<ResponseViewModel>();
+builder.Services.AddScoped<PublicationService>();
 builder.Services.AddScoped<PublicationViewModel>();
 
 var app = builder.Build();

@@ -1,11 +1,13 @@
 ﻿using AdapterServer.Data;
+using AdapterServer.Pages.Request;
 using Hangfire;
-using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
+using TaskModels = TaskQueueing.ObjectModel.Models;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -25,14 +27,16 @@ public class PublicationViewModel
 
     public bool Ready { get; set; }
 
-    public IEnumerable<NewStructureAsset> NewStructureAssets { get; set; } = Enumerable.Empty<NewStructureAsset>();
+    public IEnumerable<NewStructureAsset> PostedAssets { get; set; } = Enumerable.Empty<NewStructureAsset>();
 
     private readonly SettingsService settings;
+    private readonly PublicationService service;
 
-    public PublicationViewModel(IOptions<ClientConfig> config, SettingsService settings)
+    public PublicationViewModel(IOptions<ClientConfig> config, SettingsService settings, PublicationService service)
     {
         Endpoint = config.Value?.EndPoint ?? "";
         this.settings = settings;
+        this.service = service;
     }
 
     public async Task LoadSettings(string channelName)
@@ -53,8 +57,12 @@ public class PublicationViewModel
 
     public async Task Load(IJobContext context)
     {
-        await Task.Yield();
-        //NewStructureAssets = await service.ListRequests(context);
+        IEnumerable<TaskModels.Publication> publications = await service.ListPublications(context);
+
+        PostedAssets = publications
+            .Select( x => x.Content.Deserialize<NewStructureAsset>() )
+            .Where( x => x != null )
+            .Cast<NewStructureAsset>();
     }
 
     public void Post()
@@ -64,21 +72,5 @@ public class PublicationViewModel
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         BackgroundJob.Enqueue<PubSubProviderJob<NewStructureAsset>>(x => x.PostPublication(SessionId, newStructure, Topic, null));
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-
-        //var message = await provider.PostPublication(providerSession.Id, newStructure, Topic);
-
-        //return message.Id;
     }
-
-    //public async Task<NewStructureAsset> Read()
-    //{
-    //    var message = await consumer.ReadPublication(consumerSession.Id);
-    //    if (message == null) throw new Exception("No message");
-    //    await consumer.RemovePublication(consumerSession.Id);
-
-    //    var newStructure = message.MessageContent.Deserialise<NewStructureAsset>();
-    //    StructureAssets = StructureAssets.Append(newStructure.Data);
-
-    //    return newStructure;
-    //}
 }

@@ -82,7 +82,6 @@
                     <span class="align-center">@(working ? (!viewModel.Ready ? "Preparing..." : "Working...") : "Post New Structure")</span>
                 </div>
             </button>
-            @*<button class="btn" disabled="@working" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>*@
         </div>
 
         <div class="text-green-500 @(posted ? "" : "hidden")">Request sent!</div>
@@ -94,10 +93,11 @@
             </div>
         }
 
-        <h2 class="col-span-full mt-6 @(viewModel.NewStructureAssets.Count() == 0 ? "hidden" : "")">Posted Structures</h2>
-        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table @(viewModel.NewStructureAssets.Count() == 0 ? "hidden" : "")">
+        <h2 class="col-span-full mt-6 @(viewModel.PostedAssets.Count() == 0 ? "hidden" : "")">Posted Structures</h2>
+        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table @(viewModel.PostedAssets.Count() == 0 ? "hidden" : "")">
             <thead class="bg-gray-100">
                 <tr>
+                    <th scope="col">Verb</th>
                     <th scope="col">Code</th>
                     <th scope="col">Type</th>
                     <th scope="col">Location</th>
@@ -107,16 +107,17 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                @foreach (var structureAsset in viewModel.NewStructureAssets)
+                @foreach (var postedAsset in viewModel.PostedAssets)
                 {
                     <tr>
-@*                        <td>@structureAsset.Code</td>
-                        <td>@structureAsset.Type</td>
-                        <td>@structureAsset.Location</td>
-                        <td>@structureAsset.Owner</td>
-                        <td>@structureAsset.Condition</td>
-                        <td>@structureAsset.Inspector</td>
-*@                    </tr>
+                        <td>@postedAsset.Verb</td>
+                        <td>@postedAsset.Data.Code</td>
+                        <td>@postedAsset.Data.Type</td>
+                        <td>@postedAsset.Data.Location</td>
+                        <td>@postedAsset.Data.Owner</td>
+                        <td>@postedAsset.Data.Condition</td>
+                        <td>@postedAsset.Data.Inspector</td>
+                    </tr>
                 }
             </tbody>
         </table>
@@ -140,8 +141,8 @@
 
         await InvokeAsync(StateHasChanged);
 
-        //using var context = await factory.CreateDbContext(principal);
-        //await viewModel.Load(context);
+        using var context = await factory.CreateDbContext(principal);
+        await viewModel.Load(context);
 
         await base.OnParametersSetAsync();
     }
@@ -172,44 +173,4 @@
             StateHasChanged();
         }
     }
-
-    //public void StartPollRead()
-    //{
-    //    PollRead(viewModel.CancelTokenSource.Token).ContinueWith((Task t) =>  
-    //    {
-    //        _ = InvokeAsync(() => 
-    //        {
-    //            if (error.Equals("Message sent")) error = "";
-    //            working = false;
-    //            StateHasChanged();
-    //        });
-    //        if (t.IsCompletedSuccessfully && !viewModel.CancelTokenSource.Token.IsCancellationRequested)
-    //        {
-    //            StartPollRead();
-    //        }
-    //    }, viewModel.CancelTokenSource.Token);
-    //}
-
-    //private async Task PollRead(CancellationToken cancel)
-    //{
-    //    // Could move this to ViewModel, but using the logger here and does not make any real difference
-    //    for ( var read = viewModel.Read(); !read.IsCompletedSuccessfully; )
-    //    {
-    //        if (cancel.IsCancellationRequested)
-    //        {
-    //            Logger.LogInformation("Cancel received");
-    //            throw new TaskCanceledException("Read poll Cancel received");
-    //        }
-    //        read = viewModel.Read(); // If we put this in the for increment slot the condition checks the new object.
-    //        Logger.LogInformation($"Polling for posted messages to read ({viewModel.GetHashCode()})");
-    //        try {
-    //            await read;
-    //            Logger.LogInformation("Message read");
-    //        }
-    //        catch (Exception) {
-    //            Logger.LogInformation("No messages");
-    //            await Task.Delay(2500);
-    //        };            
-    //    }
-    //}
 }
