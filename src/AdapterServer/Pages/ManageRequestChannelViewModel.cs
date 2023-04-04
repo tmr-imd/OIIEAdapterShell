@@ -101,10 +101,7 @@ namespace AdapterServer.Pages
         {
             try
             {
-                await channel.GetChannel(ChannelUri);
-
                 await channel.DeleteChannel(ChannelUri);
-
             }
             catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
             {
