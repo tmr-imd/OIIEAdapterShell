@@ -121,7 +121,7 @@
                         <td>@request.RequestId</td>
                         <td><TrueIndicator Value="@request.Processed" /></td>
                         <td>
-                            @if ( !string.IsNullOrEmpty(request.Content) )
+                            @if ( request.Content is not null )
                             { 
                                 <a href="response/@request.RequestId" class="btn">View</a>
                             }

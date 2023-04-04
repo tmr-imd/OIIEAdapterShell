@@ -1,7 +1,10 @@
 ﻿using AdapterServer.Data;
+using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.EntityFrameworkCore;
+using TaskQueueing.Data;
+using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
@@ -66,22 +69,9 @@ namespace AdapterServer.Pages
 
             await Save( settings, channelName );
 
-            // Add settings to the list!
-            var storedSetting = await context.ChannelSettings.Where( x => x.Name == channelName).FirstOrDefaultAsync();
-
-            if ( storedSetting is null )
-            {
-                storedSetting = new ChannelSetting 
-                { 
-                    Name = channelName,
-                    ConsumerSessionId = consumerSession.Id,
-                    ProviderSessionId = providerSession.Id
-                };
-
-                await context.ChannelSettings.AddAsync( storedSetting );
-
-                await context.SaveChangesAsync();
-            }
+            // Setup recurring tasks!
+            RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+            RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
         }
 
         public async Task CloseSession( IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, JobContext context, SettingsService settings, string channelName )
@@ -103,14 +93,8 @@ namespace AdapterServer.Pages
 
             await Save(settings, channelName);
 
-            var channelSetting = await context.ChannelSettings.Where( x => x.Name == channelName ).FirstOrDefaultAsync();
-
-            if ( channelSetting is not null  )
-            {
-                context.ChannelSettings.Remove( channelSetting );
-
-                await context.SaveChangesAsync();
-            }
+            RecurringJob.RemoveIfExists("CheckForRequests");
+            RecurringJob.RemoveIfExists("CheckForResponses");
         }
 
         public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
@@ -129,6 +113,9 @@ namespace AdapterServer.Pages
             ConsumerSessionId = "";
 
             await Save(settings, channelName);
+
+            RecurringJob.RemoveIfExists("CheckForRequests");
+            RecurringJob.RemoveIfExists("CheckForResponses");
         }
     }
 }

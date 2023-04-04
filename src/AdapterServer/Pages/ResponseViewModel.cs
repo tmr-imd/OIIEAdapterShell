@@ -67,11 +67,14 @@ public class ResponseViewModel
                 FilterInspector = filter.FilterInspector;
             }
 
-            var structures = JsonSerializer.Deserialize<RequestStructures>( request.Content );
-
-            if ( structures is not null )
+            if ( request.Content is not null )
             {
-                StructureAssets = structures.StructureAssets;
+                var structures = request.Content.Deserialize<RequestStructures>();
+
+                if ( structures is not null )
+                {
+                    StructureAssets = structures.StructureAssets;
+                }
             }
         }
     }

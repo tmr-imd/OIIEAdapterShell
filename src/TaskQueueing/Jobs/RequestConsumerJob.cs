@@ -19,16 +19,15 @@ public class RequestConsumerJob
         this.factory = factory;
     }
 
-    public async Task<string> PostRequest<T>(string sessionId, T value, string topic, PerformContext ctx) where T : notnull
+    public async Task<string> PostRequest<T>(string sessionId, T content, string topic, PerformContext ctx) where T : notnull
     {
-        var request = await consumer.PostRequest(sessionId, value, topic);
+        var request = await consumer.PostRequest(sessionId, content, topic);
 
         var storedRequest = new Request()
         {
             JobId = ctx.BackgroundJob.Id,
-            SessionId = sessionId,
             RequestId = request.Id,
-            Filter = JsonSerializer.Serialize( value )
+            Filter = JsonSerializer.SerializeToDocument(content)
         };
 
         using var context = await factory.CreateDbContext(new ClaimsPrincipal());
@@ -40,37 +39,35 @@ public class RequestConsumerJob
         return request.Id;
     }
 
-    public async Task<string> CheckForResponses()
+    public async Task<string> CheckForResponses( string sessionId )
     {
         using var context = await factory.CreateDbContext(new ClaimsPrincipal());
 
-        var openRequests = await RequestConsumerService.OpenRequests( context );
+        var openRequests = await RequestConsumerService.OpenRequests(context);
 
-        foreach (var request in openRequests)
+        if (!openRequests.Any())
+            return "";
+
+        var openRequest = openRequests.First();
+
+        try
         {
-            try
-            {
-                var requestMessage = await consumer.ReadResponse(request.SessionId, request.RequestId);
+            var requestMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId);
 
-                if (requestMessage is not null)
-                {
-                    request.Content = JsonSerializer.Serialize( requestMessage.MessageContent.Content );
-                    request.Processed = true;
-
-                    await context.SaveChangesAsync();
-                    await consumer.RemoveResponse(request.SessionId, request.RequestId);
-
-                    return requestMessage.Id;
-                }
-            }
-            catch (IsbmFault ex)
+            if (requestMessage is not null)
             {
-                // Do nothing
+                openRequest.Content = requestMessage.MessageContent.Content;
+                openRequest.Processed = true;
+
+                await context.SaveChangesAsync();
+                await consumer.RemoveResponse(sessionId, openRequest.RequestId);
+
+                return requestMessage.Id;
             }
-            catch ( Exception ex)
-            {
-                Console.WriteLine( ex.Message ); 
-            }
+        }
+        catch (IsbmFault)
+        {
+            // Do nothing
         }
 
         return "";

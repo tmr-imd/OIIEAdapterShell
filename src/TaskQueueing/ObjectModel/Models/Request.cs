@@ -1,11 +1,12 @@
-﻿namespace TaskQueueing.ObjectModel.Models;
+﻿using System.Text.Json;
+
+namespace TaskQueueing.ObjectModel.Models;
 
 public record class Request : ModelObject
 {
     public string JobId { get; set; } = "";
-    public string SessionId { get; set; } = "";
     public string RequestId { get; set; } = "";
-    public string Filter { get; set; } = "";
-    public string Content { get; set; } = "";
+    public JsonDocument Filter { get; set; } = null!;
+    public JsonDocument? Content { get; set; }
     public bool Processed { get; set; }
 }

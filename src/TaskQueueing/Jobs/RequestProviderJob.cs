@@ -10,7 +10,7 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public class RequestProviderJob
+public class RequestProviderJob<T> where T : notnull
 {
     private readonly IProviderRequest provider;
     private readonly JobContextFactory factory;
@@ -21,41 +21,36 @@ public class RequestProviderJob
         this.factory = factory;
     }
 
-    public async Task<string> CheckForRequests()
+    public async Task<string> CheckForRequests( string sessionId )
     {
-        using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
-
-        var sessionIds = await RequestProviderService.GetSessionIds( context );
-
-        foreach( var sessionId in sessionIds )
+        try
         {
-            try
+            var requestMessage = await provider.ReadRequest(sessionId);
+
+            if (requestMessage is not null)
             {
-                var requestMessage = await provider.ReadRequest(sessionId);
+                var content = requestMessage.MessageContent.Deserialise<T>();
 
-                if (requestMessage is not null)
-                {
-                    var requestFilter = requestMessage.MessageContent.Deserialise<StructureAssetsFilter>();
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                BackgroundJob.Enqueue<RequestProviderJob<T>>(x => x.PostResponse(sessionId, requestMessage.Id, content, null));
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
-                    BackgroundJob.Enqueue<RequestProviderJob>(x => x.PostResponse(sessionId, requestMessage.Id, requestFilter, null));
+                await provider.RemoveRequest(sessionId);
 
-                    await provider.RemoveRequest(sessionId);
-
-                    return requestMessage.Id;
-                }
-
+                return requestMessage.Id;
             }
-            catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.SessionFault )
-            {
-                // Do nothing
-            }
+
+        }
+        catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.SessionFault )
+        {
+            // Do nothing
         }
 
         return "";
     }
-    public async Task<string> PostResponse<T>(string sessionId, string requestId, T requestFilter, PerformContext ctx)
+    public async Task<string> PostResponse(string sessionId, string requestId, T content, PerformContext ctx)
     {
-        if ( requestFilter is StructureAssetsFilter filter)
+        if ( content is StructureAssetsFilter filter)
         {
             var structures = StructureAssetService.GetStructures(filter);
 
@@ -68,7 +63,7 @@ public class RequestProviderJob
                 JobId = ctx.BackgroundJob.Id,
                 ResponseId = response.Id,
                 RequestId = requestId,
-                Content = JsonSerializer.Serialize(response.MessageContent.Content)
+                Content = response.MessageContent.Content
             };
 
             await context.Responses.AddAsync( storedResponse );

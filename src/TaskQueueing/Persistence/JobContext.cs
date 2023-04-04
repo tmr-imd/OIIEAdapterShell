@@ -1,6 +1,11 @@
 ﻿using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.ObjectModel;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text.Json;
+using AdapterQueue.Persistence.Configuration;
 
 namespace TaskQueueing.Persistence
 {
@@ -24,6 +29,23 @@ namespace TaskQueueing.Persistence
             #if DEBUG
                 optionsBuilder.EnableSensitiveDataLogging(true);
             #endif
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Request>()
+                .Property(x => x.Content)
+                .HasConversion<JsonDocumentConverter>();
+
+            modelBuilder.Entity<Request>()
+                .Property(x => x.Filter)
+                .HasConversion<JsonDocumentConverter>();
+
+            modelBuilder.Entity<Response>()
+                .Property(x => x.Content)
+                .HasConversion<JsonDocumentConverter>();
         }
 
         private void SetAuditFields()

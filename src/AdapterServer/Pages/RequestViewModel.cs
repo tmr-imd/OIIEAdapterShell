@@ -66,7 +66,9 @@ public class RequestViewModel
     {
         var requestFilter = new StructureAssetsFilter( FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector );
 
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         BackgroundJob.Enqueue<RequestConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic, null) );
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
         //var storage = JobStorage.Current;
         //var api = storage.GetMonitoringApi();
