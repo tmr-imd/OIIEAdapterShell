@@ -38,7 +38,7 @@ public class RequestViewModel
     {
         try
         {
-            var channelSettings = await settings.LoadSettings<RequestChannelSettings>(channelName);
+            var channelSettings = await settings.LoadSettings<ChannelSettings>(channelName);
 
             ChannelUri = channelSettings.ChannelUri;
             Topic = channelSettings.Topic;
