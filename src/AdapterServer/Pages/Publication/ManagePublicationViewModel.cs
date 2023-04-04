@@ -1,10 +1,6 @@
 ﻿using AdapterServer.Data;
-using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
-using TaskQueueing.Data;
-using TaskQueueing.Jobs;
-using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -55,7 +51,7 @@ public class ManagePublicationViewModel
         }
         catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
         {
-            await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
+            await channel.CreateChannel<PublicationChannel>(ChannelUri, "Test");
         }
 
         var consumerSession = await consumer.OpenSession(ChannelUri, Topic);
