@@ -2,19 +2,17 @@
 using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
-using Microsoft.EntityFrameworkCore;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
-using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
-namespace AdapterServer.Pages.Request;
+namespace AdapterServer.Pages.Publication;
 
-public class ManageRequestViewModel
+public class ManagePublicationViewModel
 {
     public string Endpoint { get; set; } = "";
 
-    public string ChannelUri { get; set; } = "/asset-institute/demo/request-response";
+    public string ChannelUri { get; set; } = "/asset-institute/demo/pub-sub";
     public string Topic { get; set; } = "Test Topic";
     public string ConsumerSessionId { get; set; } = "";
     public string ProviderSessionId { get; set; } = "";
@@ -101,7 +99,10 @@ public class ManageRequestViewModel
     {
         try
         {
+            await channel.GetChannel(ChannelUri);
+
             await channel.DeleteChannel(ChannelUri);
+
         }
         catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
         {
