@@ -6,7 +6,7 @@ using System.Text.Json;
 using TaskQueueing.Data;
 using TaskQueueing.ObjectModel;
 
-namespace AdapterServer.Pages;
+namespace AdapterServer.Pages.Request;
 
 public class ResponseViewModel
 {
@@ -26,14 +26,14 @@ public class ResponseViewModel
 
     private readonly SettingsService settings;
 
-    public ResponseViewModel( IOptions<ClientConfig> config, SettingsService settings )
+    public ResponseViewModel(IOptions<ClientConfig> config, SettingsService settings)
     {
         Endpoint = config.Value?.EndPoint ?? "";
 
         this.settings = settings;
     }
 
-    public async Task LoadSettings( string channelName )
+    public async Task LoadSettings(string channelName)
     {
         try
         {
@@ -49,15 +49,15 @@ public class ResponseViewModel
         }
     }
 
-    public async Task Load( IJobContext context, string RequestId )
+    public async Task Load(IJobContext context, string RequestId)
     {
         var request = await RequestService.GetRequest( context, RequestId );
 
-        if ( request is not null ) 
+        if (request is not null)
         {
-            var filter = JsonSerializer.Deserialize<StructureAssetsFilter>( request.Filter );
+            var filter = request.Filter.Deserialize<StructureAssetsFilter>();
 
-            if ( filter is not null )
+            if (filter is not null)
             {
                 FilterCode = filter.FilterCode;
                 FilterType = filter.FilterType;
@@ -67,11 +67,11 @@ public class ResponseViewModel
                 FilterInspector = filter.FilterInspector;
             }
 
-            if ( request.Content is not null )
+            if (request.Content is not null)
             {
                 var structures = request.Content.Deserialize<RequestStructures>();
 
-                if ( structures is not null )
+                if (structures is not null)
                 {
                     StructureAssets = structures.StructureAssets;
                 }

@@ -5,8 +5,9 @@ using Microsoft.Extensions.Options;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
+using TaskModels = TaskQueueing.ObjectModel.Models;
 
-namespace AdapterServer.Pages;
+namespace AdapterServer.Pages.Request;
 
 public class RequestViewModel
 {
@@ -23,7 +24,7 @@ public class RequestViewModel
     public string FilterInspector { get; set; } = "";
 
     public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
-    public IEnumerable<TaskQueueing.ObjectModel.Models.Request> Requests { get; set; } = Enumerable.Empty<TaskQueueing.ObjectModel.Models.Request>();
+    public IEnumerable<TaskModels.Request> Requests { get; set; } = Enumerable.Empty<TaskModels.Request>();
 
     private readonly SettingsService settings;
 
@@ -34,7 +35,7 @@ public class RequestViewModel
         this.settings = settings;
     }
 
-    public async Task LoadSettings( string channelName )
+    public async Task LoadSettings(string channelName)
     {
         try
         {
@@ -50,7 +51,7 @@ public class RequestViewModel
         }
     }
 
-    public async Task Load( IJobContext context )
+    public async Task Load(IJobContext context)
     {
         Requests = await RequestService.ListRequests(context);
     }
@@ -62,33 +63,10 @@ public class RequestViewModel
 
     public void Request()
     {
-        var requestFilter = new StructureAssetsFilter( FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector );
+        var requestFilter = new StructureAssetsFilter(FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector);
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        BackgroundJob.Enqueue<RequestConsumerJob>( x => x.PostRequest(SessionId, requestFilter, Topic, null) );
+        BackgroundJob.Enqueue<RequestConsumerJob>(x => x.PostRequest(SessionId, requestFilter, Topic, null));
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-
-        //var storage = JobStorage.Current;
-        //var api = storage.GetMonitoringApi();
-        //var queues = api.Queues();
-        //foreach (var queue in queues)
-        //{
-        //    var jobs = api.FetchedJobs(queue.Name, 0, 100);
-        //    Console.WriteLine(jobs.Count().ToString());
-        //}
-        //var jobs = conn.GetRecurringJobs();
-
     }
-
-    //public async Task<IEnumerable<StructureAsset>> ReadResponse( string requestId )
-    //{
-    //    var message = await consumer.ReadResponse(SessionId, requestId );
-    //    if (message is null) throw new Exception("There was no Response to read");
-
-    //    await consumer.RemoveResponse(SessionId, requestId );
-
-    //    var payload = message.MessageContent.Deserialise<RequestStructures>();
-
-    //    return payload.StructureAssets;
-    //}
 }

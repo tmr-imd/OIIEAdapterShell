@@ -7,5 +7,6 @@ namespace TaskQueueing.ObjectModel
     {
         DbSet<Request> Requests { get; set; }
         DbSet<Response> Responses { get; set; }
+        DbSet<Publication> Publications { get; set; }
     }
 }

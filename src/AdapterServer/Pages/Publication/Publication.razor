@@ -1,23 +1,20 @@
-﻿@page "/request-response"
-@page "/request-response/edit/channel"
+﻿@page "/pub-sub"
 @using AdapterServer.Data;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
-@using AdapterServer.Components
 
-@inject ILogger<Request> Logger
+@inject ILogger<Publication> Logger
+@inject PublicationViewModel viewModel
+@inject JobContextFactory factory
+@inject ClaimsPrincipal principal
 
-@inject RequestViewModel viewModel
-@inject NavigationManager navigation
-@inject JobContextFactory factory;
+<PageTitle>Publish/Subscribe - Adapter Shell</PageTitle>
 
-<PageTitle>Request/Response - Adapter Shell</PageTitle>
-
-<h1>Request/Response</h1>
+<h1>Publish/Subscribe</h1>
 
 @if ( Edit == "channel" )
 {
-    <ManageRequestChannel ChannelName="@channelName" BackTo="/request-response" />
+    <ManagePublication ChannelName="@channelName" BackTo="/pub-sub" />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
@@ -30,13 +27,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline mr-2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
-                    @*<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline mr-2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>*@
 
                     <span>No open session</span>
                 </div>
-                <a class="btn" href="/request-response?edit=channel">Manage Channel</a>
+                <a class="btn" href="/pub-sub?edit=channel">Manage Channel</a>
             </div>
         </div>
 
@@ -53,7 +47,6 @@
             <InputText type="text" class="form-input w-full" disabled @bind-Value="@viewModel.Topic" />
         </div>
 
-
         <h2 class="col-span-full mt-6">Message Settings</h2>
 
         <h3>Code</h3>
@@ -61,23 +54,23 @@
         <h3>Location</h3>
         <h3>Owner</h3>
 
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterCode" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterType" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterLocation" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterOwner" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Code" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Type" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Location" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Owner" /></div>
 
         <h3>Condition</h3>
         <h3>Inspector</h3>
         <div />
         <div />
 
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterCondition" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterInspector" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Condition" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.Inspector" /></div>
         <div />
         <div />
 
         <div class="col-span-full flex justify-between w-full">
-            <button type="submit" class="btn-primary" disabled="@(notReady || working)">
+            <button type="submit" class="btn-primary" disabled="@working">
                 <div class="flex items-center">
                     <span role="status" class="mr-2 align-center @(!working ? "hidden" : "")">
                         <svg aria-hidden="true" class="inline w-4 h-4 text-gray-200 animate-spin dark:text-gray-600 fill-gray-600 dark:fill-gray-300" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -86,46 +79,44 @@
                         </svg>
                         <span class="sr-only">Loading...</span>
                     </span>
-                    <span class="align-center">Request</span>
+                    <span class="align-center">@(working ? (!viewModel.Ready ? "Preparing..." : "Working...") : "Post New Structure")</span>
                 </div>
             </button>
-            @*<button class="btn" disabled="@(notReady || working)" @onclick="() => Clear()" @onclick:preventDefault="true">Clear</button>*@
         </div>
 
-        <div class="text-green-500 @(sent ? "" : "hidden")">Request sent!</div>
+        <div class="text-green-500 @(posted ? "" : "hidden")">Request sent!</div>
 
-        @if ( !string.IsNullOrEmpty(error) )
+        @if (!string.IsNullOrEmpty(error))
         {
             <div class="col-span-full">
                 <span class="text-red-500">@error</span>
             </div>
         }
 
-        <h2 class="col-span-full mt-6 @(viewModel.Requests.Count() == 0 ? "hidden" : "")">Response</h2>
-        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table @(viewModel.Requests.Count() == 0 ? "hidden" : "")">
+        <h2 class="col-span-full mt-6 @(viewModel.PostedAssets.Count() == 0 ? "hidden" : "")">Posted Structures</h2>
+        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table @(viewModel.PostedAssets.Count() == 0 ? "hidden" : "")">
             <thead class="bg-gray-100">
                 <tr>
-                    <th scope="col">Job #</th>
-                    <th scope="col">Created</th>
-                    <th scope="col">RequestId</th>
-                    <th scope="col">Processed</th>
-                    <th scope="col">Action</th>
+                    <th scope="col">Verb</th>
+                    <th scope="col">Code</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Location</th>
+                    <th scope="col">Owner</th>
+                    <th scope="col">Condition</th>
+                    <th scope="col">Inspector</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                @foreach (var request in viewModel.Requests)
+                @foreach (var postedAsset in viewModel.PostedAssets)
                 {
                     <tr>
-                        <td>@request.JobId</td>
-                        <td>@request.DateCreated.ToString("G")</td>
-                        <td>@request.RequestId</td>
-                        <td><TrueIndicator Value="@request.Processed" /></td>
-                        <td>
-                            @if ( request.Content is not null )
-                            { 
-                                <a href="response/@request.RequestId" class="btn">View</a>
-                            }
-                        </td>
+                        <td>@postedAsset.Verb</td>
+                        <td>@postedAsset.Data.Code</td>
+                        <td>@postedAsset.Data.Type</td>
+                        <td>@postedAsset.Data.Location</td>
+                        <td>@postedAsset.Data.Owner</td>
+                        <td>@postedAsset.Data.Condition</td>
+                        <td>@postedAsset.Data.Inspector</td>
                     </tr>
                 }
             </tbody>
@@ -134,11 +125,11 @@
 </EditForm>
 
 @code {
-    private bool working;
-    private bool sent;
+    bool working;
+    private bool posted;
     private bool notReady => viewModel.SessionId == "";
-    private string error = "";
-    private string channelName = "request-response";
+    string error = "";
+    private string channelName = "pub-sub";
 
     [Parameter]
     [SupplyParameterFromQuery]
@@ -150,8 +141,8 @@
 
         await InvokeAsync(StateHasChanged);
 
-        using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
-        await viewModel.Load( context );
+        using var context = await factory.CreateDbContext(principal);
+        await viewModel.Load(context);
 
         await base.OnParametersSetAsync();
     }
@@ -161,34 +152,25 @@
         Logger.LogInformation("HandleSubmit called");
 
         working = true;
-        error = "";
-        sent = false;
-
+        posted = false;
         StateHasChanged();
+        error = "";
 
         try
         {
-            Clear();
-
-            // Process the form
-            viewModel.Request();
-
-            sent = true;
+            // Process the form (read is performed asynchronously)
+            viewModel.Post();
+            posted = true;
         }
         catch( Exception ex )
         {
             error = ex.Message;
+            working = false;
         }
         finally
         {
             working = false;
+            StateHasChanged();
         }
-    }
-
-    private void Clear()
-    {
-        viewModel.Clear();
-
-        StateHasChanged();
     }
 }
