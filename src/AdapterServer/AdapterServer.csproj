@@ -21,6 +21,7 @@
     <PackageReference Include="Hangfire.AspNetCore" Version="1.7.33" />
     <PackageReference Include="Hangfire.Core" Version="1.7.33" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.7.33" />
+    <PackageReference Include="Hangfire.Storage.SQLite" Version="0.3.3" />
   </ItemGroup>
 
   <ItemGroup>
