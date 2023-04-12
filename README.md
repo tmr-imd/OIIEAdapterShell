@@ -16,6 +16,6 @@ Need to add the following to this README:
 
 # License
 
-Copyright (c) 2023 Asset Institute, pitt&sherry, Synengco, University of South Australia
+Copyright (c) 2023 Asset Institute, Assetricity, pitt&sherry, Synengco, University of South Australia
 
 This software is released under the MIT License. See [LICENSE](./LICENSE.txt) for details.
