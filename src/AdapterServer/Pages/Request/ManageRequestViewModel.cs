@@ -10,6 +10,9 @@ using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Request;
 
+using RequestJob = RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using ResponseJob = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+
 public class ManageRequestViewModel
 {
     public string Endpoint { get; set; } = "";
@@ -70,8 +73,8 @@ public class ManageRequestViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter, RequestStructures, ProcessStructuresJob>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-        RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+        RecurringJob.AddOrUpdate<RequestJob>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+        RecurringJob.AddOrUpdate<ResponseJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)

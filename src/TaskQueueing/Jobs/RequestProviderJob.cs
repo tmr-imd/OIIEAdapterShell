@@ -9,7 +9,7 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public class RequestProviderJob<TRequest, TResponse, TProcessJob>
+public class RequestProviderJob<TProcessJob, TRequest, TResponse>
     where TRequest : notnull
     where TResponse : notnull
     where TProcessJob : ProcessMessageJob<TRequest, TResponse>
@@ -35,9 +35,7 @@ public class RequestProviderJob<TRequest, TResponse, TProcessJob>
             {
                 var content = requestMessage.MessageContent.Deserialise<TRequest>();
 
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-                BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null));
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+                BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
 
                 await provider.RemoveRequest(sessionId);
 

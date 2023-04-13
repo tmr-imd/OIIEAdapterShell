@@ -34,7 +34,7 @@ public abstract class ProcessMessageJob<TRequest, TResponse>
         }
 
         var response = await process(content, context);
-        BackgroundJob.Enqueue<RequestProviderJob<TResponse, TResponse, ProcessMessageJob<TResponse, TResponse>>>(x => x.PostResponse(sessionId, requestId, response, null!));
+        BackgroundJob.Enqueue<RequestProviderJob<ProcessMessageJob<TResponse, TResponse>, TResponse, TResponse>>(x => x.PostResponse(sessionId, requestId, response, null!));
     }
 
     public async Task ProcessResponse(string requestId, string responseId, PerformContext ctx)
@@ -42,7 +42,21 @@ public abstract class ProcessMessageJob<TRequest, TResponse>
         using var context = await factory.CreateDbContext(principal);
 
         var request = await RequestConsumerService.GetOpenRequest(requestId, context);
-        if (request is null) return; // does not exist or already processed
+        if (request is null || request.Content is null) return; // does not exist or already processed
+
+        // We need to preserve the full MessageContent
+        TResponse content = new MessageContent(request.Content, "").Deserialise<TResponse>();
+
+        if (!await validate(content, context))
+        {
+            // request.Failed = true;
+            // await context.SaveChangesAsync();
+            await onValidationFailure(context);
+            return;            
+        }
+
+        request.Processed = await process(content, context);
+        await context.SaveChangesAsync();
     }
 
     public async Task ProcessPublication(string publicationId, PerformContext ctx)
@@ -52,6 +66,8 @@ public abstract class ProcessMessageJob<TRequest, TResponse>
     }
 
     protected abstract Task<bool> validate(TRequest content, IJobContext context);
+    protected abstract Task<bool> validate(TResponse content, IJobContext context);
     protected abstract Task onValidationFailure(IJobContext context);
     protected abstract Task<TResponse> process(TRequest content, IJobContext context);
+    protected abstract Task<bool> process(TResponse content, IJobContext context);
 }

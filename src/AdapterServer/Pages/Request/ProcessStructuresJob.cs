@@ -24,7 +24,20 @@ public class ProcessStructuresJob : ProcessMessageJob<StructureAssetsFilter, Req
         return new RequestStructures(structures);
     }
 
+    protected override async Task<bool> process(RequestStructures content, IJobContext context)
+    {
+        await Task.Yield();
+        // This example does not do any special processing of the response
+        return true;
+    }
+
     protected override async Task<bool> validate(StructureAssetsFilter content, IJobContext context)
+    {
+        await Task.Yield();
+        return true;
+    }
+
+    protected override async Task<bool> validate(RequestStructures content, IJobContext context)
     {
         await Task.Yield();
         return true;

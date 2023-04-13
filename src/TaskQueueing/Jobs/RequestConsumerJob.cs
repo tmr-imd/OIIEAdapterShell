@@ -1,4 +1,5 @@
-﻿using Hangfire.Server;
+﻿using Hangfire;
+using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using System.Security.Claims;
@@ -8,7 +9,10 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public class RequestConsumerJob
+public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
+    where TRequest : notnull
+    where TResponse : notnull
+    where TProcessJob : ProcessMessageJob<TRequest, TResponse>
 {
     private readonly IConsumerRequest consumer;
     private readonly JobContextFactory factory;
@@ -54,17 +58,17 @@ public class RequestConsumerJob
 
         try
         {
-            var requestMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId);
+            var responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId);
 
-            if (requestMessage is not null)
+            if (responseMessage is not null)
             {
-                openRequest.Content = requestMessage.MessageContent.Content;
-                openRequest.Processed = true;
-
+                openRequest.Content = responseMessage.MessageContent.Content;
                 await context.SaveChangesAsync();
+
+                BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
                 await consumer.RemoveResponse(sessionId, openRequest.RequestId);
 
-                return requestMessage.Id;
+                return responseMessage.Id;
             }
         }
         catch (IsbmFault)

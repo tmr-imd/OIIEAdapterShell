@@ -9,6 +9,8 @@ using TaskModels = TaskQueueing.ObjectModel.Models;
 
 namespace AdapterServer.Pages.Request;
 
+using RequestJob = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+
 public class RequestViewModel
 {
     public string Endpoint { get; set; } = "";
@@ -65,8 +67,6 @@ public class RequestViewModel
     {
         var requestFilter = new StructureAssetsFilter(FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector);
 
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        BackgroundJob.Enqueue<RequestConsumerJob>(x => x.PostRequest(SessionId, requestFilter, Topic, null));
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+        BackgroundJob.Enqueue<RequestJob>(x => x.PostRequest(SessionId, requestFilter, Topic, null!));
     }
 }
