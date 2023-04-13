@@ -8,14 +8,14 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public abstract class ProcessMessageJob<TRequest, TResponse>
+public abstract class ProcessRequestResponseJob<TRequest, TResponse>
     where TRequest : notnull
     where TResponse : notnull
 {
     private readonly JobContextFactory factory;
     private readonly ClaimsPrincipal principal;
 
-    public ProcessMessageJob(JobContextFactory factory, ClaimsPrincipal principal)
+    public ProcessRequestResponseJob(JobContextFactory factory, ClaimsPrincipal principal)
     {
         this.factory = factory;
         this.principal = principal;
@@ -34,7 +34,7 @@ public abstract class ProcessMessageJob<TRequest, TResponse>
         }
 
         var response = await process(content, context);
-        BackgroundJob.Enqueue<RequestProviderJob<ProcessMessageJob<TResponse, TResponse>, TResponse, TResponse>>(x => x.PostResponse(sessionId, requestId, response, null!));
+        BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<TResponse, TResponse>, TResponse, TResponse>>(x => x.PostResponse(sessionId, requestId, response, null!));
     }
 
     public async Task ProcessResponse(string requestId, string responseId, PerformContext ctx)
@@ -52,17 +52,11 @@ public abstract class ProcessMessageJob<TRequest, TResponse>
             // request.Failed = true;
             // await context.SaveChangesAsync();
             await onValidationFailure(context);
-            return;            
+            return;
         }
 
         request.Processed = await process(content, context);
         await context.SaveChangesAsync();
-    }
-
-    public async Task ProcessPublication(string publicationId, PerformContext ctx)
-    {
-        using var context = await factory.CreateDbContext(principal);
-
     }
 
     protected abstract Task<bool> validate(TRequest content, IJobContext context);

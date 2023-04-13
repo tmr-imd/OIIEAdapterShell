@@ -12,7 +12,7 @@ namespace TaskQueueing.Jobs;
 public class RequestProviderJob<TProcessJob, TRequest, TResponse>
     where TRequest : notnull
     where TResponse : notnull
-    where TProcessJob : ProcessMessageJob<TRequest, TResponse>
+    where TProcessJob : ProcessRequestResponseJob<TRequest, TResponse>
 {
     private readonly IProviderRequest provider;
     private readonly JobContextFactory factory;

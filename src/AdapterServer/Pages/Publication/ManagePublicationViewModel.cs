@@ -66,9 +66,7 @@ public class ManagePublicationViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        RecurringJob.AddOrUpdate<PubSubConsumerJob<NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null), Cron.Minutely);
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+        RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessNewStructuresJob, NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)

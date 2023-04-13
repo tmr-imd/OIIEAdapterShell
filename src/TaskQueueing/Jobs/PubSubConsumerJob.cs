@@ -1,4 +1,5 @@
-﻿using Hangfire.Server;
+﻿using Hangfire;
+using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using System.Security.Claims;
@@ -7,7 +8,9 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public class PubSubConsumerJob<T> where T : notnull
+public class PubSubConsumerJob<TProcessJob, TContent>
+    where TContent : notnull
+    where TProcessJob : ProcessPublicationJob<TContent>
 {
     private readonly IConsumerPublication consumer;
     private readonly JobContextFactory factory;
@@ -48,12 +51,15 @@ public class PubSubConsumerJob<T> where T : notnull
             var storedPublication = new Publication()
             {
                 JobId = ctx.BackgroundJob.Id,
+                MessageId = publication.Id,
                 Content = publication.MessageContent.Content
             };
 
             await context.Publications.AddAsync(storedPublication);
 
             await context.SaveChangesAsync();
+
+            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessPublication(storedPublication.MessageId, null!));
 
             await consumer.RemovePublication(sessionId);
 

@@ -69,8 +69,6 @@ public class PublicationViewModel
     {
         var newStructure = new NewStructureAsset("Sync", new StructureAsset(Code, Type, Location, Owner, Condition, Inspector));
 
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        BackgroundJob.Enqueue<PubSubProviderJob<NewStructureAsset>>(x => x.PostPublication(SessionId, newStructure, Topic, null));
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+        BackgroundJob.Enqueue<PubSubProviderJob<NewStructureAsset>>(x => x.PostPublication(SessionId, newStructure, Topic, null!));
     }
 }

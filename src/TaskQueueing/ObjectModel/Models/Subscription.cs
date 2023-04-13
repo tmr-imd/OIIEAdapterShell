@@ -5,6 +5,8 @@ namespace TaskQueueing.ObjectModel.Models;
 public record class Publication : ModelObject
 {
     public string JobId { get; set; } = "";
+    public string MessageId { get; set; } = "";
     public JsonDocument Content { get; set; } = null!;
     public string Topic { get; set; } = "";
+    public bool Processed { get; set; } = false;
 }

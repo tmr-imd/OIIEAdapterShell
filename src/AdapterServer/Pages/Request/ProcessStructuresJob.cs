@@ -6,7 +6,7 @@ using TaskQueueing.ObjectModel;
 
 namespace AdapterServer.Pages.Request;
 
-public class ProcessStructuresJob : ProcessMessageJob<StructureAssetsFilter, RequestStructures>
+public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFilter, RequestStructures>
 {
     public ProcessStructuresJob(JobContextFactory factory, ClaimsPrincipal principal) : base(factory, principal)
     {
