@@ -10,4 +10,9 @@ public class RequestConsumerService
     {
         return await context.Requests.Where(x => !x.Processed).ToListAsync();
     }
+
+    public static async Task<Request?> GetOpenRequest(string requestId, IJobContext context)
+    {
+        return await context.Requests.Where(x => x.RequestId == requestId && !x.Processed).FirstOrDefaultAsync();
+    }
 }

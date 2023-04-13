@@ -9,7 +9,10 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public class RequestProviderJob<T> where T : notnull
+public class RequestProviderJob<TRequest, TResponse, TProcessJob>
+    where TRequest : notnull
+    where TResponse : notnull
+    where TProcessJob : ProcessMessageJob<TRequest, TResponse>
 {
     private readonly IProviderRequest provider;
     private readonly JobContextFactory factory;
@@ -30,10 +33,10 @@ public class RequestProviderJob<T> where T : notnull
 
             if (requestMessage is not null)
             {
-                var content = requestMessage.MessageContent.Deserialise<T>();
+                var content = requestMessage.MessageContent.Deserialise<TRequest>();
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-                BackgroundJob.Enqueue<RequestProviderJob<T>>(x => x.PostResponse(sessionId, requestMessage.Id, content, null));
+                BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null));
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
                 await provider.RemoveRequest(sessionId);
@@ -49,31 +52,24 @@ public class RequestProviderJob<T> where T : notnull
 
         return "";
     }
-    public async Task<string> PostResponse(string sessionId, string requestId, T content, PerformContext ctx)
+    public async Task<string> PostResponse(string sessionId, string requestId, TResponse content, PerformContext ctx)
     {
-        if ( content is StructureAssetsFilter filter)
+        var response = await provider.PostResponse(sessionId, requestId, content);
+
+        using var context = await factory.CreateDbContext( principal );
+
+        var storedResponse = new Response()
         {
-            var structures = StructureAssetService.GetStructures(filter);
+            JobId = ctx.BackgroundJob.Id,
+            ResponseId = response.Id,
+            RequestId = requestId,
+            Content = response.MessageContent.Content
+        };
 
-            var response = await provider.PostResponse(sessionId, requestId, new RequestStructures(structures));
+        await context.Responses.AddAsync( storedResponse );
 
-            using var context = await factory.CreateDbContext( principal );
+        await context.SaveChangesAsync();
 
-            var storedResponse = new Response()
-            {
-                JobId = ctx.BackgroundJob.Id,
-                ResponseId = response.Id,
-                RequestId = requestId,
-                Content = response.MessageContent.Content
-            };
-
-            await context.Responses.AddAsync( storedResponse );
-
-            await context.SaveChangesAsync();
-
-            return response.Id;
-        }
-
-        return "";
+        return response.Id;
     }
 }

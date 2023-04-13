@@ -70,7 +70,7 @@ public class ManageRequestViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+        RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter, RequestStructures, ProcessStructuresJob>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
         RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
     }
 
