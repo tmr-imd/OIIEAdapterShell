@@ -50,32 +50,41 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         using var context = await factory.CreateDbContext(principal);
 
         var openRequests = await RequestConsumerService.OpenRequests(context);
+        var lastResponseRead = "";
 
-        if (!openRequests.Any())
-            return "";
-
-        var openRequest = openRequests.First();
-
-        try
+        foreach (var openRequest in openRequests)
         {
-            var responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId);
-
-            if (responseMessage is not null)
+            try
             {
-                openRequest.Content = responseMessage.MessageContent.Content;
-                await context.SaveChangesAsync();
-
-                BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
-                await consumer.RemoveResponse(sessionId, openRequest.RequestId);
-
-                return responseMessage.Id;
+                lastResponseRead = await readRemoveAll(sessionId, openRequest, context);
+            }
+            catch (IsbmFault)
+            {
+                // TODO: appropriate error handling, e.g., may need to close the request
+                // Some needs to be inside this loop, others outside the loop, such as session failure.
             }
         }
-        catch (IsbmFault)
+
+        return lastResponseRead;
+    }
+
+    private async Task<string> readRemoveAll(string sessionId, Request openRequest, JobContext context)
+    {
+        var lastResponseRead = "";
+
+        for (var responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId); 
+            responseMessage is not null; 
+            responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId))
         {
-            // Do nothing
+            openRequest.Content = responseMessage.MessageContent.Content;
+            await context.SaveChangesAsync();
+
+            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
+            await consumer.RemoveResponse(sessionId, openRequest.RequestId);
+
+            lastResponseRead = responseMessage.Id;
         }
 
-        return "";
+        return lastResponseRead;
     }
 }

@@ -27,29 +27,19 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
 
     public async Task<string> CheckForRequests( string sessionId )
     {
+        var lastReadRequest = "";
         try
         {
-            var requestMessage = await provider.ReadRequest(sessionId);
-
-            if (requestMessage is not null)
-            {
-                var content = requestMessage.MessageContent.Deserialise<TRequest>();
-
-                BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
-
-                await provider.RemoveRequest(sessionId);
-
-                return requestMessage.Id;
-            }
-
+            lastReadRequest = await readRemoveAll(sessionId);
         }
         catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.SessionFault )
         {
             // Do nothing
         }
 
-        return "";
+        return lastReadRequest;
     }
+
     public async Task<string> PostResponse(string sessionId, string requestId, TResponse content, PerformContext ctx)
     {
         var response = await provider.PostResponse(sessionId, requestId, content);
@@ -69,5 +59,23 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         await context.SaveChangesAsync();
 
         return response.Id;
+    }
+    
+    private async Task<string> readRemoveAll(string sessionId)
+    {
+        var lastReadRequest = "";
+        
+        for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
+        {
+            var content = requestMessage.MessageContent.Deserialise<TRequest>();
+
+            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
+
+            await provider.RemoveRequest(sessionId);
+
+            lastReadRequest = requestMessage.Id;
+        }
+
+        return lastReadRequest;
     }
 }

@@ -22,34 +22,44 @@ public class PubSubConsumerJob<T> where T : notnull
 
     public async Task<string> PollSubscription(string sessionId, PerformContext ctx)
     {
+        var lastReadMessage = "";
         try
         {
-            var publication = await consumer.ReadPublication(sessionId);
-
-            if (publication is not null)
-            {
-                using var context = await factory.CreateDbContext(principal);
-
-                var storedPublication = new Publication()
-                {
-                    JobId = ctx.BackgroundJob.Id,
-                    Content = publication.MessageContent.Content
-                };
-
-                await context.Publications.AddAsync(storedPublication);
-
-                await context.SaveChangesAsync();
-
-                await consumer.RemovePublication(sessionId);
-
-                return publication.Id;
-            }
+            lastReadMessage = await readRemoveAll(sessionId, ctx);
         }
         catch (IsbmFault)
         {
             // Do nothing
         }
 
-        return "";
+        return lastReadMessage;
+    }
+
+    private async Task<string> readRemoveAll(string sessionId, PerformContext ctx)
+    {
+        var lastReadMessage = "";
+
+        for (var publication = await consumer.ReadPublication(sessionId);
+                    publication is not null;
+                    publication = await consumer.ReadPublication(sessionId))
+        {
+            using var context = await factory.CreateDbContext(principal);
+
+            var storedPublication = new Publication()
+            {
+                JobId = ctx.BackgroundJob.Id,
+                Content = publication.MessageContent.Content
+            };
+
+            await context.Publications.AddAsync(storedPublication);
+
+            await context.SaveChangesAsync();
+
+            await consumer.RemovePublication(sessionId);
+
+            lastReadMessage = publication.Id;
+        }
+
+        return lastReadMessage;
     }
 }
