@@ -51,7 +51,11 @@ public class PubSubConsumerJob<TProcessJob, TContent>
             var storedPublication = new Publication()
             {
                 JobId = ctx.BackgroundJob.Id,
+                State = MessageState.Received,
                 MessageId = publication.Id,
+                Topics = publication.Topics,
+                MediaType = publication.MessageContent.MediaType,
+                ContentEncoding = publication.MessageContent.ContentEncoding,
                 Content = publication.MessageContent.Content
             };
 

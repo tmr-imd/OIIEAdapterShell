@@ -55,7 +55,7 @@ public class ResponseViewModel
 
         if (request is not null)
         {
-            var filter = request.Filter.Deserialize<StructureAssetsFilter>();
+            var filter = request.Content.Deserialize<StructureAssetsFilter>();
 
             if (filter is not null)
             {
@@ -67,9 +67,9 @@ public class ResponseViewModel
                 FilterInspector = filter.FilterInspector;
             }
 
-            if (request.Content is not null)
+            if (request.ResponseContent is not null)
             {
-                var structures = request.Content.Deserialize<RequestStructures>();
+                var structures = request.ResponseContent.Deserialize<RequestStructures>();
 
                 if (structures is not null)
                 {

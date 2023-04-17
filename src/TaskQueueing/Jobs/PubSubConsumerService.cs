@@ -8,11 +8,14 @@ public class PubSubConsumerService
 {
     public static async Task<IEnumerable<Publication>> UnprocessedPublications(IJobContext context)
     {
-        return await context.Publications.Where(x => !x.Processed).ToListAsync();
+        return await context.Publications.WhereReceived().WhereUnprocessed().ToListAsync();
     }
 
     public static async Task<Publication?> GetUnprocessedPublication(string messageId, IJobContext context)
     {
-        return await context.Publications.Where(x => x.MessageId == messageId && !x.Processed).FirstOrDefaultAsync();
+        return await context.Publications.Where(x => x.MessageId == messageId)
+            .WhereReceived()
+            .WhereUnprocessed()
+            .FirstOrDefaultAsync();
     }
 }

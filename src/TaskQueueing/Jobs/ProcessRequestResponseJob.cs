@@ -42,10 +42,10 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         using var context = await factory.CreateDbContext(principal);
 
         var request = await RequestConsumerService.GetOpenRequest(requestId, context);
-        if (request is null || request.Content is null) return; // does not exist or already processed
+        if (request is null || request.ResponseContent is null) return; // does not exist or already processed
 
         // We need to preserve the full MessageContent
-        TResponse content = new MessageContent(request.Content, "").Deserialise<TResponse>();
+        TResponse content = new MessageContent(request.ResponseContent, "").Deserialise<TResponse>();
 
         if (!await validate(content, context))
         {

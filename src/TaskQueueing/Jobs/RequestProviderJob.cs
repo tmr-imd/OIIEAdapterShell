@@ -49,8 +49,11 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         var storedResponse = new Response()
         {
             JobId = ctx.BackgroundJob.Id,
+            State = MessageState.Posted,
             ResponseId = response.Id,
             RequestId = requestId,
+            MediaType = response.MessageContent.MediaType,
+            ContentEncoding = response.MessageContent.ContentEncoding,
             Content = response.MessageContent.Content
         };
 

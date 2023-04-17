@@ -32,8 +32,12 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         var storedRequest = new Request()
         {
             JobId = ctx.BackgroundJob.Id,
+            State = MessageState.Posted,
             RequestId = request.Id,
-            Filter = JsonSerializer.SerializeToDocument(content)
+            Topic = topic,
+            MediaType = request.MessageContent.MediaType,
+            ContentEncoding = request.MessageContent.ContentEncoding,
+            Content = JsonSerializer.SerializeToDocument(content)
         };
 
         using var context = await factory.CreateDbContext(principal);
@@ -76,7 +80,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
             responseMessage is not null; 
             responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId))
         {
-            openRequest.Content = responseMessage.MessageContent.Content;
+            openRequest.ResponseContent = responseMessage.MessageContent.Content;
             await context.SaveChangesAsync();
 
             BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
