@@ -59,7 +59,7 @@ public class PubSubConsumerJob<TProcessJob, TContent>
                 Content = publication.MessageContent.Content
             };
 
-            await context.Publications.AddAsync(storedPublication);
+            context.Publications.Add(storedPublication);
 
             await context.SaveChangesAsync();
 

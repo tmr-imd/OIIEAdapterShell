@@ -80,10 +80,24 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
             responseMessage is not null; 
             responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId))
         {
-            openRequest.ResponseContent = responseMessage.MessageContent.Content;
+            var response = new Response
+            {
+                State = MessageState.Received,
+                ResponseId = responseMessage.Id,
+                RequestId = openRequest.RequestId,
+                Request = openRequest,
+                MediaType = responseMessage.MessageContent.MediaType,
+                ContentEncoding = responseMessage.MessageContent.ContentEncoding,
+                Content = responseMessage.MessageContent.Content
+            };
+            
+            context.Responses.Add(response);
             await context.SaveChangesAsync();
 
-            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
+            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
+            response.JobId = jobId;
+            await context.SaveChangesAsync();
+
             await consumer.RemoveResponse(sessionId, openRequest.RequestId);
 
             lastResponseRead = responseMessage.Id;

@@ -46,18 +46,22 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
 
         using var context = await factory.CreateDbContext( principal );
 
+        var request = await RequestProviderService.GetOpenRequest(requestId, context);
+        if (request is null) return ""; // does not exist or already processed
+
         var storedResponse = new Response()
         {
             JobId = ctx.BackgroundJob.Id,
             State = MessageState.Posted,
             ResponseId = response.Id,
             RequestId = requestId,
+            Request = request,
             MediaType = response.MessageContent.MediaType,
             ContentEncoding = response.MessageContent.ContentEncoding,
             Content = response.MessageContent.Content
         };
 
-        await context.Responses.AddAsync( storedResponse );
+        context.Responses.Add( storedResponse );
 
         await context.SaveChangesAsync();
 
@@ -66,13 +70,28 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
     
     private async Task<string> readRemoveAll(string sessionId)
     {
+        var context = await factory.CreateDbContext(principal);
         var lastReadRequest = "";
         
         for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
         {
             var content = requestMessage.MessageContent.Deserialise<TRequest>();
 
-            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
+            var request = new Request
+            {
+                State = MessageState.Received,
+                RequestId = requestMessage.Id,
+                MediaType = requestMessage.MessageContent.MediaType,
+                ContentEncoding = requestMessage.MessageContent.ContentEncoding,
+                Content = requestMessage.MessageContent.Content
+            };
+            
+            context.Requests.Add(request);
+            await context.SaveChangesAsync();
+
+            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
+            request.JobId = jobId;
+            await context.SaveChangesAsync();
 
             await provider.RemoveRequest(sessionId);
 

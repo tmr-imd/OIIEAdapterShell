@@ -26,6 +26,21 @@ public class PubSubProviderJob<T> where T : notnull
     {
         var publication = await provider.PostPublication(sessionId, content, topic);
 
+        var storedPublication = new Publication
+        {
+            JobId = ctx.BackgroundJob.Id,
+            State = MessageState.Posted,
+            MessageId = publication.Id,
+            Topics = new[] { topic },
+            MediaType = publication.MessageContent.MediaType,
+            ContentEncoding = publication.MessageContent.ContentEncoding,
+            Content = publication.MessageContent.Content
+        };
+
+        var context = await factory.CreateDbContext(principal);
+        context.Publications.Add(storedPublication);
+        await context.SaveChangesAsync();
+
         return publication.Id;
     }
 }

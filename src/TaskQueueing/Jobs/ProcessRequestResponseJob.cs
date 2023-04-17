@@ -24,6 +24,8 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
     public async Task ProcessRequest(string sessionId, string requestId, TRequest content, PerformContext ctx)
     {
         using var context = await factory.CreateDbContext(principal);
+        var request = await RequestProviderService.GetOpenRequest(requestId, context);
+        if (request is null) return; // does not exist or is already processed
 
         if (!await validate(content, context))
         {
@@ -35,17 +37,20 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
 
         var response = await process(content, context);
         BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<TResponse, TResponse>, TResponse, TResponse>>(x => x.PostResponse(sessionId, requestId, response, null!));
+        
+        request.Processed = true;
+        await context.SaveChangesAsync();
     }
 
     public async Task ProcessResponse(string requestId, string responseId, PerformContext ctx)
     {
         using var context = await factory.CreateDbContext(principal);
 
-        var request = await RequestConsumerService.GetOpenRequest(requestId, context);
-        if (request is null || request.ResponseContent is null) return; // does not exist or already processed
+        var response = await RequestConsumerService.GetOpenResponse(requestId, responseId, context);
+        if (response is null || response.Content is null) return; // does not exist or already processed
 
         // We need to preserve the full MessageContent
-        TResponse content = new MessageContent(request.ResponseContent, "").Deserialise<TResponse>();
+        TResponse content = new MessageContent(response.Content, "").Deserialise<TResponse>();
 
         if (!await validate(content, context))
         {
@@ -55,7 +60,8 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
             return;
         }
 
-        request.Processed = await process(content, context);
+        response.Processed = await process(content, context);
+        response.Request.Processed = response.Processed;
         await context.SaveChangesAsync();
     }
 

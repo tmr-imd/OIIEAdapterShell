@@ -39,10 +39,6 @@ namespace TaskQueueing.Persistence
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Request>()
-                .Property(x => x.ResponseContent)
-                .HasConversion<JsonDocumentConverter>();
-
-            modelBuilder.Entity<Request>()
                 .Property(x => x.Content)
                 .HasConversion<JsonDocumentConverter>();
 

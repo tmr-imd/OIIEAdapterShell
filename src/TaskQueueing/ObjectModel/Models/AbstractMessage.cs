@@ -14,7 +14,7 @@ namespace TaskQueueing.ObjectModel.Models;
 /// <item> Request: Posted -> (if confirmation requested and reponse indicates error) -> Error </item>
 /// <item> Request: Received -> Processing -> Processed / Error </item>
 /// <item> Response: Posted </item>
-/// <item> Reponse: Received -> Processing -> Processed / Error </item>
+/// <item> Response: Received -> Processing -> Processed / Error </item>
 /// </list>
 /// </remarks>
 /// <remarks>

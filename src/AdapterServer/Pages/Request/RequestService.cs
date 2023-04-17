@@ -10,6 +10,7 @@ public class RequestService
     {
         return await context.Requests
             .OrderByDescending(x => x.DateCreated)
+            .Include(x => x.Responses)
             .ToListAsync();
     }
 
@@ -17,6 +18,7 @@ public class RequestService
     {
         return await context.Requests
             .Where(x => x.RequestId == requestId)
+            .Include(x => x.Responses)
             .FirstOrDefaultAsync();
     }
 }
