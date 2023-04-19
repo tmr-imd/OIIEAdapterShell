@@ -113,7 +113,7 @@
                         <td>@request.JobId</td>
                         <td>@request.DateCreated.ToString("G")</td>
                         <td>@request.RequestId</td>
-                        <td><TrueIndicator Value="@request.Processed" /></td>
+                        <td><ProcessingIndicator State="@(request.State)" /></td>
                         <td>
                             @if ( request.ResponseContent is not null )
                             { 

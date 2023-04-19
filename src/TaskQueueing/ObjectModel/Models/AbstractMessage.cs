@@ -55,6 +55,14 @@ public enum MessageState
     Error = 16
 }
 
+public enum ErrorSeverity
+{
+    Warning = 5, 
+    Error = 10
+}
+
+public record class MessageError(ErrorSeverity Severity, string Message = "", int LineNumber = 0, int LinePosition = 0);
+
 public abstract record AbstractMessage : ModelObject
 {
     public string JobId { get; set; } = "";
@@ -62,6 +70,20 @@ public abstract record AbstractMessage : ModelObject
     public string MediaType { get; set; } = System.Net.Mime.MediaTypeNames.Application.Json;
     public string? ContentEncoding { get; set; } = null;
     public JsonDocument Content { get; set; } = null!;
+    public IEnumerable<MessageError>? MessageErrors { get; set; } = null;
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool Failed
+    {
+        get
+        {
+            return (State & MessageState.Error) == MessageState.Error;
+        }
+        set
+        {
+            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Error : MessageState.Undefined);
+        }
+    }
 
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public bool Processed

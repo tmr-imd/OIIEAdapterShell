@@ -4,9 +4,12 @@ using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using System.Security.Claims;
 using TaskQueueing.ObjectModel;
+using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
+
+public delegate void ValidationDelegate<T>(MessageError error, T message, IJobContext context) where T : AbstractMessage;
 
 public abstract class ProcessRequestResponseJob<TRequest, TResponse>
     where TRequest : notnull
@@ -27,15 +30,14 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         var request = await RequestProviderService.GetOpenRequest(requestId, context);
         if (request is null) return; // does not exist or is already processed
 
-        if (!await validate(content, context))
+        if (!await validate(content, request, context, onError))
         {
-            // TODO: we currently do not track received requests other than through the job itself
-            // but we need to ensure we track failures correctly.
-            await onValidationFailure(context);
+            request.Failed = true;
+            await context.SaveChangesAsync();
             return;
         }
 
-        var response = await process(content, context);
+        var response = await process(content, request, context, onError);
         BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<TResponse, TResponse>, TResponse, TResponse>>(x => x.PostResponse(sessionId, requestId, response, null!));
         
         request.Processed = true;
@@ -47,27 +49,52 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         using var context = await factory.CreateDbContext(principal);
 
         var response = await RequestConsumerService.GetOpenResponse(requestId, responseId, context);
-        if (response is null || response.Content is null) return; // does not exist or already processed
+        if (response is null || response.Content is null) return; // does not exist or nothing to process
 
-        // We need to preserve the full MessageContent
-        TResponse content = new MessageContent(response.Content, "").Deserialise<TResponse>();
+        TResponse content = new MessageContent(response.Content, response.MediaType, response.ContentEncoding).Deserialise<TResponse>();
 
-        if (!await validate(content, context))
+        if (!await validate(content, response, context, onError))
         {
-            // request.Failed = true;
-            // await context.SaveChangesAsync();
-            await onValidationFailure(context);
+            response.Failed = true;
+            await context.SaveChangesAsync();
             return;
         }
 
-        response.Processed = await process(content, context);
+        response.Processed = await process(content, response, context, onError);
         response.Request.Processed = response.Processed;
         await context.SaveChangesAsync();
     }
 
-    protected abstract Task<bool> validate(TRequest content, IJobContext context);
-    protected abstract Task<bool> validate(TResponse content, IJobContext context);
-    protected abstract Task onValidationFailure(IJobContext context);
-    protected abstract Task<TResponse> process(TRequest content, IJobContext context);
-    protected abstract Task<bool> process(TResponse content, IJobContext context);
+    /// <summary>
+    /// Default validation handler adds the error to the request message.
+    /// </summary>
+    /// <remarks>
+    /// May be overridden by subclasses.
+    /// </remarks>
+    /// <param name="error">The error that was encountered</param>
+    /// <param name="request">The request message being validated/processed</param>
+    /// <param name="context">The database context</param>
+    protected virtual void onError(MessageError error, Request request, IJobContext context)
+    {
+        request.MessageErrors = request.MessageErrors?.Append(error) ?? new[] { error };
+    }
+
+    /// <summary>
+    /// Default validation handler adds the error to the response message.
+    /// </summary>
+    /// <remarks>
+    /// May be overridden by subclasses.
+    /// </remarks>
+    /// <param name="error">The error that was encountered</param>
+    /// <param name="response">The response message being validated/processed</param>
+    /// <param name="context">The database context</param>
+    protected virtual void onError(MessageError error, Response response, IJobContext context)
+    {
+        response.MessageErrors = response.MessageErrors?.Append(error) ?? new[] { error };
+    }
+
+    protected abstract Task<bool> validate(TRequest content, Request request, IJobContext context, ValidationDelegate<Request> errorCallback);
+    protected abstract Task<bool> validate(TResponse content, Response response, IJobContext context, ValidationDelegate<Response> errorCallback);
+    protected abstract Task<TResponse> process(TRequest content, Request request, IJobContext context, ValidationDelegate<Request> errorCallback);
+    protected abstract Task<bool> process(TResponse content, Response response, IJobContext context, ValidationDelegate<Request> errorCallback);
 }
