@@ -1,4 +1,4 @@
-@page "/request-response"
+﻿@page "/request-response"
 @using AdapterServer.Data;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
@@ -111,13 +111,13 @@
                 {
                     <tr>
                         <td>@request.JobId</td>
-                        <td>@request.DateCreated.ToString("G")</td>
-                        <td>@request.RequestId</td>
-                        <td><ProcessingIndicator State="@(request.State)" /></td>
+                        <td>@request.DateCreated.ToLocalTime().ToString("G")</td>
+                        <td>@request.RequestId <DirectionIndicator State="@request.State" /> @(request.Responses.Any())</td>
+                        <td><ProcessingIndicator State="@(request.Posted && request.Responses.Any() ? request.Responses.Last().State : request.State)" /></td>
                         <td>
                             @if ( request.ResponseContent is not null )
                             { 
-                                <a href="response/@request.RequestId" class="btn">View</a>
+                                <a href="response/@request.Id" class="btn">View</a>
                             }
                         </td>
                     </tr>

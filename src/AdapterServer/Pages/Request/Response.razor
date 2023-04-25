@@ -1,7 +1,8 @@
-﻿@page "/response/{requestId}"
+﻿@page "/response/{RequestId:guid}"
 @using AdapterServer.Data;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
+@using TaskQueueing.ObjectModel.Models;
 @using AdapterServer.Components
 
 @inject ILogger<Request> Logger
@@ -44,6 +45,24 @@
         </div>
     }
 
+    @if (@RequestErrors.Any() || @ResponseErrors.Any())
+    {
+        <div class="col-span-full">
+
+            <h2 class="mt-6">Request Detail</h2>
+            <ErrorsDisplay Errors="@RequestErrors" />
+
+            <h3 class="mt-3">Raw Request</h3>
+            <RawMessage Content="@RequestContent" />
+
+            <h2 class="mt-6">Response Detail</h2>
+            <ErrorsDisplay Errors="@ResponseErrors" />
+            
+            <h3 class="mt-3">Raw Response</h3>
+            <RawMessage Content="@ResponseContent" />
+        </div>
+    }
+
     <h2 class="col-span-full mt-6">Response</h2>
     <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
         <thead class="bg-gray-100">
@@ -83,7 +102,7 @@
     public string? Edit { get; set; }
 
     [Parameter]
-    public string RequestId { get; set; } = null!;
+    public Guid RequestId { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -95,5 +114,43 @@
         await viewModel.Load( context, RequestId );
 
         await base.OnParametersSetAsync();
+    }
+
+    private IEnumerable<MessageError> RequestErrors
+    {
+        get
+        {
+            return viewModel.Request?.MessageErrors ?? Enumerable.Empty<MessageError>();
+        }
+    }
+
+    private string RequestContent
+    {
+        get
+        {
+            var doc = viewModel.Request?.Content;
+            var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
+            options.WriteIndented = true;
+            return System.Text.Json.JsonSerializer.Serialize(doc, options);
+        }
+    }
+
+    private IEnumerable<MessageError> ResponseErrors
+    {
+        get
+        {
+            return viewModel.Request?.Responses?.LastOrDefault()?.MessageErrors ?? Enumerable.Empty<MessageError>();
+        }
+    }
+
+    private string ResponseContent
+    {
+        get
+        {
+            var doc = viewModel.Request?.ResponseContent;
+            var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
+            options.WriteIndented = true;
+            return System.Text.Json.JsonSerializer.Serialize(doc, options);
+        }
     }
 }

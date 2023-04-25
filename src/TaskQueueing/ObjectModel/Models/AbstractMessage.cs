@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskQueueing.ObjectModel.Models;
 
@@ -72,7 +73,25 @@ public abstract record AbstractMessage : ModelObject
     public JsonDocument Content { get; set; } = null!;
     public IEnumerable<MessageError>? MessageErrors { get; set; } = null;
 
-    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    [NotMapped]
+    public bool Posted
+    {
+        get
+        {
+            return (State & MessageState.Posted) == MessageState.Posted;
+        }
+    }
+
+    [NotMapped]
+    public bool Received
+    {
+        get
+        {
+            return (State & MessageState.Received) == MessageState.Received;
+        }
+    }
+
+    [NotMapped]
     public bool Failed
     {
         get
@@ -85,7 +104,20 @@ public abstract record AbstractMessage : ModelObject
         }
     }
 
-    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    [NotMapped]
+    public bool Processing
+    {
+        get
+        {
+            return (State & MessageState.Processing) == MessageState.Processing;
+        }
+        set
+        {
+            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Processing : MessageState.Undefined);
+        }
+    }
+
+    [NotMapped]
     public bool Processed
     {
         get
@@ -94,7 +126,7 @@ public abstract record AbstractMessage : ModelObject
         }
         set
         {
-            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Processed : MessageState.Error);
+            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Processed : MessageState.Undefined);
         }
     }
 }

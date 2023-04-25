@@ -8,7 +8,7 @@ public class RequestConsumerService
 {
     public static async Task<IEnumerable<Request>> OpenRequests(IJobContext context)
     {
-        return await context.Requests.WherePosted().WhereUnprocessed().ToListAsync();
+        return await context.Requests.WherePosted().WhereUnprocessed().Include(x => x.Responses).ToListAsync();
     }
 
     public static async Task<Request?> GetOpenRequest(string requestId, IJobContext context)
@@ -16,6 +16,7 @@ public class RequestConsumerService
         return await context.Requests.Where(x => x.RequestId == requestId)
             .WherePosted()
             .WhereUnprocessed()
+            .Include(x => x.Responses)
             .FirstOrDefaultAsync();
     }
 

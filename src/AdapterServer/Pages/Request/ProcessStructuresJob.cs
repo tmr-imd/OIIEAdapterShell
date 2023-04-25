@@ -57,7 +57,6 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
 
             // Is there a better way to also fail the Request?
             response.Request.Failed = true;
-            response.Request.MessageErrors = response.Request.MessageErrors?.Append(error) ?? new[] { error };
         }
 
         await Task.Yield();

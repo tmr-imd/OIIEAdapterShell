@@ -18,6 +18,6 @@ public static class IQueryableExtensions
 
     public static IQueryable<T> WhereUnprocessed<T>(this IQueryable<T> query) where T : AbstractMessage
     {
-        return query.Where(x => (x.State & MessageState.Processed) != MessageState.Processed);
+        return query.Where(x => (x.State & MessageState.Processed) == MessageState.Undefined);
     }
 }

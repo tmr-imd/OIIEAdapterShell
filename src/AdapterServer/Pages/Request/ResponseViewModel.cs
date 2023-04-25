@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using System.Text.Json;
 using TaskQueueing.Data;
 using TaskQueueing.ObjectModel;
+using RequestMessage = TaskQueueing.ObjectModel.Models.Request;
 
 namespace AdapterServer.Pages.Request;
 
@@ -21,6 +22,8 @@ public class ResponseViewModel
     public string FilterOwner { get; set; } = "";
     public string FilterCondition { get; set; } = "";
     public string FilterInspector { get; set; } = "";
+
+    public RequestMessage? Request { get; set; } = null;
 
     public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
 
@@ -49,13 +52,13 @@ public class ResponseViewModel
         }
     }
 
-    public async Task Load(IJobContext context, string RequestId)
+    public async Task Load(IJobContext context, Guid RequestId)
     {
-        var request = await RequestService.GetRequest( context, RequestId );
+        Request = await RequestService.GetRequest( context, RequestId );
 
-        if (request is not null)
+        if (Request is not null)
         {
-            var filter = request.Content.Deserialize<StructureAssetsFilter>();
+            var filter = Request.Content.Deserialize<StructureAssetsFilter>();
 
             if (filter is not null)
             {
@@ -67,9 +70,9 @@ public class ResponseViewModel
                 FilterInspector = filter.FilterInspector;
             }
 
-            if (request.ResponseContent is not null)
+            if (Request.ResponseContent is not null)
             {
-                var structures = request.ResponseContent.Deserialize<RequestStructures>();
+                var structures = Request.ResponseContent.Deserialize<RequestStructures>();
 
                 if (structures is not null)
                 {

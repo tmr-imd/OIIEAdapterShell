@@ -62,6 +62,7 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         };
 
         context.Responses.Add( storedResponse );
+        request.Processed = true;
 
         await context.SaveChangesAsync();
 
@@ -81,6 +82,7 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
             {
                 State = MessageState.Received,
                 RequestId = requestMessage.Id,
+                Topic = requestMessage.Topics.FirstOrDefault() ?? "",
                 MediaType = requestMessage.MessageContent.MediaType,
                 ContentEncoding = requestMessage.MessageContent.ContentEncoding,
                 Content = requestMessage.MessageContent.Content

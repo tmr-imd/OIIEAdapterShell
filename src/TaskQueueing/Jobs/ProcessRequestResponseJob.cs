@@ -40,7 +40,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         var response = await process(content, request, context, onError);
         BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<TResponse, TResponse>, TResponse, TResponse>>(x => x.PostResponse(sessionId, requestId, response, null!));
         
-        request.Processed = true;
+        request.Processing = true;
         await context.SaveChangesAsync();
     }
 
@@ -62,6 +62,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
 
         response.Processed = await process(content, response, context, onError);
         response.Request.Processed = response.Processed;
+        response.Request.Failed = !response.Processed;
         await context.SaveChangesAsync();
     }
 

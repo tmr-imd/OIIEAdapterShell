@@ -14,10 +14,10 @@ public class RequestService
             .ToListAsync();
     }
 
-    public static async Task<TaskModels.Request?> GetRequest(IJobContext context, string requestId)
+    public static async Task<TaskModels.Request?> GetRequest(IJobContext context, Guid requestId)
     {
         return await context.Requests
-            .Where(x => x.RequestId == requestId)
+            .Where(x => x.Id == requestId)
             .Include(x => x.Responses)
             .FirstOrDefaultAsync();
     }
