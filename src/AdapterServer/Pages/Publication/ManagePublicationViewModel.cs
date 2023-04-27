@@ -14,6 +14,7 @@ public class ManagePublicationViewModel
     public string Topic { get; set; } = "Test Topic";
     public string ConsumerSessionId { get; set; } = "";
     public string ProviderSessionId { get; set; } = "";
+    public string ConfirmationSessionId { get; set; } = "";
 
     public async Task Load(SettingsService settings, string channelName)
     {
@@ -43,6 +44,17 @@ public class ManagePublicationViewModel
         };
 
         await settings.SaveSettings(channelSettings, channelName);
+
+        // Settings for the ConfirmBOD queue
+        var confirmationSettings = new ChannelSettings
+        {
+            ChannelUri = ChannelUri,
+            Topic = "ConfirmBOD",
+            ConsumerSessionId = ConfirmationSessionId,
+            ProviderSessionId = ProviderSessionId
+        };
+
+        await settings.SaveSettings(channelSettings, channelName + "-confirm");
     }
 
     public async Task OpenSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)
@@ -63,10 +75,14 @@ public class ManagePublicationViewModel
         var providerSession = await provider.OpenSession(ChannelUri);
         ProviderSessionId = providerSession.Id;
 
+        var confirmationSession = await consumer.OpenSession(ChannelUri, "ConfirmBOD");
+        ConfirmationSessionId = confirmationSession.Id;
+
         await Save(settings, channelName);
 
         // Setup recurring tasks!
         RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessNewStructuresJob, NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
+        RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessConfirmBODJob, string>>("PollConfirmBOD", x => x.PollSubscription(confirmationSession.Id, null!), Cron.Minutely);
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)

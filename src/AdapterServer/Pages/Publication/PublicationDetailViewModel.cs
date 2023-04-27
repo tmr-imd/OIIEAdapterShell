@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using System.Text.Json;
 using TaskQueueing.Data;
 using TaskQueueing.ObjectModel;
+using AbstractMessage = TaskQueueing.ObjectModel.Models.AbstractMessage;
 using PublishedMessage = TaskQueueing.ObjectModel.Models.Publication;
 
 namespace AdapterServer.Pages.Publication;
@@ -24,6 +25,8 @@ public class PublicationDetailViewModel
     public string Inspector { get; set; } = "";
 
     public PublishedMessage? Message { get; set; } = null;
+
+    public string? RawContent { get; set; } = null;
 
     // public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
 
@@ -55,19 +58,17 @@ public class PublicationDetailViewModel
     public async Task Load(IJobContext context, Guid MessageId)
     {
         Message = await PublicationService.GetPublication( context, MessageId );
+        RawContent = null;
 
         if (Message is not null)
         {
-            var filter = Message.Content.Deserialize<NewStructureAsset>();
-
-            if (filter is not null)
+            if (Message.MediaType == "application/json")
             {
-                Code = filter.Data.Code;
-                Type = filter.Data.Type;
-                Location = filter.Data.Location;
-                Owner = filter.Data.Owner;
-                Condition = filter.Data.Condition;
-                Inspector = filter.Data.Inspector;
+                DeserializeStructure(Message);
+            }
+            else
+            {
+                RawContent = DeserializeConfirmBOD(Message);
             }
 
             // if (Message.ResponseContent is not null)
@@ -75,5 +76,27 @@ public class PublicationDetailViewModel
             //     // TODO: COnfirmBOD.
             // }
         }
+    }
+
+    private void DeserializeStructure(PublishedMessage message)
+    {
+        var structure = message.Content.Deserialize<NewStructureAsset>();
+
+        if (structure is not null)
+        {
+            Code = structure.Data.Code;
+            Type = structure.Data.Type;
+            Location = structure.Data.Location;
+            Owner = structure.Data.Owner;
+            Condition = structure.Data.Condition;
+            Inspector = structure.Data.Inspector;
+        }
+    }
+
+    private string? DeserializeConfirmBOD(AbstractMessage message)
+    {
+        var bod = message.Content.Deserialize<string>();
+
+        return bod;
     }
 }

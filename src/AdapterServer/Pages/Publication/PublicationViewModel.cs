@@ -60,6 +60,9 @@ public class PublicationViewModel
         IEnumerable<TaskModels.Publication> publications = await service.ListPublications(context);
 
         PostedAssets = publications
+            .Where( x => (x.State & TaskModels.MessageState.Received) == TaskModels.MessageState.Received )
+            .Where( x => (x.State & TaskModels.MessageState.Processed) == TaskModels.MessageState.Processed )
+            .Where( x => x.Topics.Contains(Topic) )
             .Select( x => x.Content.Deserialize<NewStructureAsset>() )
             .Where( x => x != null )
             .Cast<NewStructureAsset>();

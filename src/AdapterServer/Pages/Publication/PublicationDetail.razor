@@ -45,7 +45,7 @@
         </div>
     }
 
-    @if (MessageErrors.Any())
+    @if (MessageErrors.Any() || viewModel.RawContent is not null)
     {
         <div class="col-span-full">
 
@@ -107,6 +107,8 @@
     {
         get
         {
+            if (viewModel.RawContent is not null) return viewModel.RawContent;
+            
             var doc = viewModel.Message?.Content;
             var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
             options.WriteIndented = true;
