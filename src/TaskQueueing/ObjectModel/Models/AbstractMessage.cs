@@ -100,7 +100,7 @@ public abstract record AbstractMessage : ModelObject
         }
         set
         {
-            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Error : MessageState.Undefined);
+            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Error : State & ~MessageState.Error);
         }
     }
 
@@ -113,7 +113,7 @@ public abstract record AbstractMessage : ModelObject
         }
         set
         {
-            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Processing : MessageState.Undefined);
+            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Processing : State & ~MessageState.Processing);
         }
     }
 
@@ -126,7 +126,7 @@ public abstract record AbstractMessage : ModelObject
         }
         set
         {
-            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Processed : MessageState.Undefined);
+            State = (State & (MessageState.Posted | MessageState.Received)) | (value ? MessageState.Processed : State & ~MessageState.Processed);
         }
     }
 }
