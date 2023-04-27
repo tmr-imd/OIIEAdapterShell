@@ -17,17 +17,15 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
 
     protected override async Task<RequestStructures> process(StructureAssetsFilter filter, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
     {
-        await Task.Yield();
         var structures = StructureAssetService.GetStructures(filter);
-        return new RequestStructures(structures);
+        return await Task.FromResult(new RequestStructures(structures));
     }
 
     protected override async Task<bool> process(RequestStructures content, ResponseMessage response, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
     {
-        await Task.Yield();
         // This example does not do any special processing of the response
         // Will maybe update the data file or store entity "mappings" once the entity mapping tables are in place.
-        return true;
+        return await Task.FromResult(true);
     }
 
     protected override async Task<bool> validate(StructureAssetsFilter content, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
@@ -40,8 +38,7 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
             errorCallback(warning, request, context);
         }
 
-        await Task.Yield();
-        return true;
+        return await Task.FromResult(true);
     }
 
     protected override async Task<bool> validate(RequestStructures content, ResponseMessage response, IJobContext context, ValidationDelegate<ResponseMessage> errorCallback)
@@ -59,8 +56,7 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
             response.Request.Failed = true;
         }
 
-        await Task.Yield();
-        return success;
+        return await Task.FromResult(success);
     }
 
     // Simple example of overriding the error handler. Preserves default behaviour and writes to console.

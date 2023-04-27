@@ -71,6 +71,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
     /// </summary>
     /// <remarks>
     /// May be overridden by subclasses.
+    /// Default behaviour appends the error to the message's errors list.
     /// </remarks>
     /// <param name="error">The error that was encountered</param>
     /// <param name="request">The request message being validated/processed</param>
@@ -85,6 +86,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
     /// </summary>
     /// <remarks>
     /// May be overridden by subclasses.
+    /// Default behaviour appends the error to the message's errors list.
     /// </remarks>
     /// <param name="error">The error that was encountered</param>
     /// <param name="response">The response message being validated/processed</param>

@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using System.Text.Json;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.Persistence;
 using TaskQueueing.ObjectModel;
+using TaskQueueing.ObjectModel.Models;
+using PubMessage = TaskQueueing.ObjectModel.Models.Publication;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -12,21 +15,30 @@ public class ProcessNewStructuresJob : ProcessPublicationJob<NewStructureAsset>
     {
     }
 
-    protected override Task onValidationFailure(IJobContext context)
+    protected override Task<bool> process(NewStructureAsset content, PubMessage publication, IJobContext context, ValidationDelegate<TaskQueueing.ObjectModel.Models.Publication> errorCallback)
     {
-        return Console.Error.WriteLineAsync("NewStructuresAsset was invalid");
-    }
-
-    protected override async Task<bool> process(NewStructureAsset content, IJobContext context)
-    {
-        await Task.Yield();
         // TODO
-        return true;
+        return Task.FromResult(true);
     }
 
-    protected override async Task<bool> validate(NewStructureAsset content, IJobContext context)
+    protected override async Task<bool> validate(NewStructureAsset content, PubMessage publication, IJobContext context, ValidationDelegate<TaskQueueing.ObjectModel.Models.Publication> errorCallback)
     {
+        bool success = true;
+
+        if (String.IsNullOrWhiteSpace(content.Data.Code))
+        {
+            success = false;
+            var error = new MessageError(ErrorSeverity.Error, "New Structures must have a 'Code' field");
+            onError(error, publication, context);
+        }
+
         await Task.Yield();
-        return !String.IsNullOrWhiteSpace(content.Data.Code);
+        return success;
+    }
+
+    protected override void onError(MessageError error, PubMessage publication, IJobContext context)
+    {
+        base.onError(error, publication, context);
+        Console.WriteLine("Encountered an error processing publication {0}: {1}", publication.MessageId, error);
     }
 }

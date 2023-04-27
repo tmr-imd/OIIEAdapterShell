@@ -29,7 +29,7 @@ public class PubSubProviderJob<T> where T : notnull
         var storedPublication = new Publication
         {
             JobId = ctx.BackgroundJob.Id,
-            State = MessageState.Posted,
+            State = MessageState.Posted | MessageState.Processed,
             MessageId = publication.Id,
             Topics = new[] { topic },
             MediaType = publication.MessageContent.MediaType,
