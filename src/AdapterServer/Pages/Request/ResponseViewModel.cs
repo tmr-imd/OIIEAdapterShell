@@ -1,4 +1,4 @@
-﻿using AdapterServer.Data;
+using AdapterServer.Data;
 using Isbm2Client.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -70,7 +70,7 @@ public class ResponseViewModel
                 FilterInspector = filter.FilterInspector;
             }
 
-            if (Request.ResponseContent is not null)
+            if (Request.ResponseContent is not null && Request.Responses.Last().MediaType == "application/json")
             {
                 var structures = Request.ResponseContent.Deserialize<RequestStructures>();
 

@@ -3,6 +3,7 @@ using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using System.Security.Claims;
+using System.Text.Json;
 using TaskQueueing.ObjectModel;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
@@ -51,7 +52,17 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         var response = await RequestConsumerService.GetOpenResponse(requestId, responseId, context);
         if (response is null || response.Content is null) return; // does not exist or nothing to process
 
-        TResponse content = new MessageContent(response.Content, response.MediaType, response.ContentEncoding).Deserialise<TResponse>();
+        TResponse content;
+        try
+        {
+            content = new MessageContent(response.Content, response.MediaType, response.ContentEncoding).Deserialise<TResponse>();
+        }
+        catch (JsonException)
+        {
+            onDeserializationFailure(response.Content, response, context, onError);
+            await context.SaveChangesAsync();
+            return;
+        }
 
         if (!await validate(content, response, context, onError))
         {
@@ -94,6 +105,16 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
     protected virtual void onError(MessageError error, Response response, IJobContext context)
     {
         response.MessageErrors = response.MessageErrors?.Append(error) ?? new[] { error };
+    }
+
+    protected virtual void onDeserializationFailure(JsonDocument content, Request request, IJobContext context, ValidationDelegate<Request> errorCallback)
+    {
+        errorCallback(new MessageError(ErrorSeverity.Error, $"Unable to deserialize the request content as {typeof(TRequest).Name}"), request, context);
+    }
+
+    protected virtual void onDeserializationFailure(JsonDocument content, Response response, IJobContext context, ValidationDelegate<Response> errorCallback)
+    {
+        errorCallback(new MessageError(ErrorSeverity.Error, $"Unable to deserialize the response content as {typeof(TResponse).Name}"), response, context);
     }
 
     protected abstract Task<bool> validate(TRequest content, Request request, IJobContext context, ValidationDelegate<Request> errorCallback);

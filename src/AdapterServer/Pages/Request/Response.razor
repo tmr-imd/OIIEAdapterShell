@@ -4,6 +4,7 @@
 @using TaskQueueing.Persistence;
 @using TaskQueueing.ObjectModel.Models;
 @using AdapterServer.Components
+@using System.Text.Json;
 
 @inject ILogger<Request> Logger
 
@@ -45,7 +46,7 @@
         </div>
     }
 
-    @if (@RequestErrors.Any() || @ResponseErrors.Any())
+    @if (@RequestErrors.Any() || @ResponseErrors.Any() || true)
     {
         <div class="col-span-full">
 
@@ -147,6 +148,11 @@
     {
         get
         {
+            if (viewModel.Request?.ResponseContent?.RootElement.ValueKind == JsonValueKind.String)
+            {
+                return viewModel.Request?.ResponseContent?.Deserialize<string>() ?? "No content unexpectedly";
+            }
+
             var doc = viewModel.Request?.ResponseContent;
             var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
             options.WriteIndented = true;

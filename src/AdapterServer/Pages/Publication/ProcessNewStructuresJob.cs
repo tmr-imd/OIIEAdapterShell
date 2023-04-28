@@ -40,7 +40,6 @@ public class ProcessNewStructuresJob : ProcessPublicationJob<NewStructureAsset>
 
             // Generate a ConfirmBOD with the errors if the validation failed
             var contentString = createConfirmBOD(publication);
-            Console.Out.WriteLine(contentString);
             var settings = await loadSettingsAsync();
             if (settings is null) return await Task.FromResult(success);
             BackgroundJob.Enqueue<PubSubProviderJob<string>>(x => x.PostPublication(settings.ProviderSessionId, contentString, "ConfirmBOD", null!));

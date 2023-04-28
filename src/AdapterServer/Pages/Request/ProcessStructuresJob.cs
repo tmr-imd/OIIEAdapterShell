@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Hangfire;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.Persistence;
@@ -6,6 +7,13 @@ using TaskQueueing.ObjectModel;
 using TaskQueueing.ObjectModel.Models;
 using RequestMessage = TaskQueueing.ObjectModel.Models.Request;
 using ResponseMessage = TaskQueueing.ObjectModel.Models.Response;
+
+using CommonBOD;
+using Oagis;
+using System.Xml;
+using System.Xml.Serialization;
+using AdapterServer.Data;
+using System.Text.Json;
 
 namespace AdapterServer.Pages.Request;
 
@@ -36,6 +44,12 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
         {
             var warning = new MessageError(ErrorSeverity.Warning, "No filters were provided, this may return a very large number of results.");
             errorCallback(warning, request, context);
+
+            // Send a confirm BOD with the warnings
+            var confirmBOD = createConfirmBOD(request);
+            var settings = await loadSettingsAsync();
+            if (settings is null) return await Task.FromResult(true);
+            BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<string, string>, string, string>>(x => x.PostResponse(settings.ProviderSessionId, request.RequestId, confirmBOD, null!));
         }
 
         return await Task.FromResult(true);
@@ -71,5 +85,187 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
     {
         base.onError(error, response, context);
         Console.WriteLine("Encountered an error processing response {0}: {1}", response.ResponseId, error);
+    }
+
+    private BODReader? _bodReader = null;
+
+    protected override void onDeserializationFailure(JsonDocument doc, ResponseMessage response, IJobContext context, ValidationDelegate<ResponseMessage> errorCallback)
+    {
+        bool success = true;
+        // string content = doc.Deserialize<string>() ?? "";
+        string content = response.Content.Deserialize<string>() ?? "";
+        _bodReader = new BODReader(new StringReader(content), "", new BODReaderSettings() { SchemaPath = "../../Lib/CCOM.Net/XSD" });
+
+        if (!_bodReader.IsValid)
+        {
+            success = false;
+
+            var error = new MessageError(ErrorSeverity.Error, "Invalid ConfirmBOD: failed to parse.");
+            errorCallback(error, response, context);
+
+            foreach (var validationError in _bodReader.ValidationErrors)
+            {
+                var severity = validationError.Severity switch
+                {
+                    System.Xml.Schema.XmlSeverityType.Error => ErrorSeverity.Error,
+                    System.Xml.Schema.XmlSeverityType.Warning => ErrorSeverity.Warning,
+                     _ => ErrorSeverity.Error
+                };
+                error = new MessageError(severity, validationError.Message, validationError.LineNumber, validationError.LinePosition);
+                errorCallback(error, response, context);
+            }
+        }
+
+        if (_bodReader.Verb is not ConfirmType)
+        {
+            success = false;
+            var error = new MessageError(ErrorSeverity.Error, $"Invalid ConfirmBOD: got {_bodReader.Verb.GetType().Name} instead.");
+            errorCallback(error, response, context);
+        }
+
+        if (!success) return;
+
+        Console.Out.WriteLine(content);
+
+        var serializer = new XmlSerializer(typeof(BODType));
+        var bodNouns = _bodReader?.Nouns.Select(x => serializer.Deserialize(x.CreateReader())).Cast<BODType>() ?? Enumerable.Empty<BODType>();
+        var errors = bodNouns?.SelectMany(
+            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => toMessageError(m, ErrorSeverity.Error)) ?? Enumerable.Empty<MessageError>()
+        ) ?? Enumerable.Empty<MessageError>();
+        var warnings = bodNouns?.SelectMany(
+            x => x?.BODFailureMessage?.WarningProcessMessage?.Select(m => toMessageError(m, ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>()
+        ) ?? Enumerable.Empty<MessageError>();
+        warnings = warnings.Concat(
+            bodNouns?.SelectMany(
+                x => x?.BODSuccessMessage?.WarningProcessMessage?.Select((m) => { Console.Out.WriteLine(m); return toMessageError(m, ErrorSeverity.Warning);}) ?? Enumerable.Empty<MessageError>()
+            ) ?? Enumerable.Empty<MessageError>()
+        );
+
+        Console.Out.WriteLine("ConfirmBOD Response Processed");
+
+        response.Request.MessageErrors = response.Request.MessageErrors is null ? errors.Concat(warnings).ToList() : response.Request.MessageErrors.Concat(errors).Concat(warnings).ToList();
+
+        Console.Out.WriteLine(response.Request.MessageErrors.FirstOrDefault());
+        if (errors.Any())
+        {
+            response.Request.Failed = true;
+        }
+    }
+
+    private string createConfirmBOD(RequestMessage message)
+    {
+        var confirmBOD = new ConfirmBODType()
+        {
+            languageCode = "en-US",
+            releaseID = "9.0",
+            systemEnvironmentCode = Oagis.CodeLists.SystemEnvironmentCodeEnumerationType.Production.ToString(),
+            ApplicationArea = new ApplicationAreaType()
+            {
+                BODID = new IdentifierType()
+                {
+                    Value = Guid.NewGuid().ToString()
+                },
+                CreationDateTime = DateTime.UtcNow.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                Sender = new SenderType()
+                {
+                    LogicalID = new IdentifierType()
+                    {
+                        Value = Guid.NewGuid().ToString() // TODO
+                    }
+                }
+            },
+            DataArea = new ConfirmBODDataAreaType()
+            {
+                Confirm = new ConfirmType()
+                {
+                    OriginalApplicationArea = new ApplicationAreaType
+                    {
+                        BODID = new IdentifierType { Value = message.RequestId },
+                        CreationDateTime = message.DateCreated.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                        Sender = new SenderType
+                        {
+                            LogicalID = new IdentifierType { Value = Guid.NewGuid().ToString() } // TODO
+                        }
+                    }
+                },
+                BOD = new BODType[] { new BODType() }
+            },
+        };
+
+        
+        if (message.MessageErrors?.All(x => x.Severity <= ErrorSeverity.Warning) ?? true)
+        {
+            confirmBOD.DataArea.BOD[0].BODSuccessMessage = new BODSuccessMessageType();
+            if (message.MessageErrors?.Any() ?? false)
+            {
+                confirmBOD.DataArea.BOD[0].BODSuccessMessage.WarningProcessMessage = message.MessageErrors.Select(r => toOagisMessage(r)).ToArray();
+            }
+        }
+        else
+        {
+            confirmBOD.DataArea.BOD[0].BODFailureMessage = new BODFailureMessageType()
+            {
+                ErrorProcessMessage = (from error in message.MessageErrors
+                                       where error.Severity > ErrorSeverity.Warning
+                                       select toOagisMessage(error)).ToArray(),
+                WarningProcessMessage = (from warning in message.MessageErrors
+                                         where warning.Severity <= ErrorSeverity.Warning
+                                         select toOagisMessage(warning)).ToArray()
+            };
+        }
+
+        var stream = new System.IO.StringWriter();
+        var writerSettings = new XmlWriterSettings()
+        {
+            ConformanceLevel = ConformanceLevel.Document,
+            Encoding = System.Text.Encoding.UTF8,
+            Indent = true,
+            OmitXmlDeclaration = true,
+        };
+        var writer = XmlWriter.Create(stream, writerSettings);
+        new XmlSerializer(typeof(ConfirmBODType)).Serialize(writer, confirmBOD);
+        return stream.ToString();
+    }
+
+    private Oagis.MessageType toOagisMessage(MessageError error)
+    {
+        return new MessageType
+        {
+            Description = new DescriptionType[]
+            {
+                new DescriptionType()
+                {
+                    languageID = "en-US",
+                    Value = $"{error.Message} at Line: {error.LineNumber} Position: {error.LinePosition}"
+                }
+            }
+        };
+    }
+
+    private MessageError toMessageError(MessageType oagisError, ErrorSeverity severity)
+    {
+        return new MessageError(severity, oagisError.Description.First().Value);
+    }
+
+    private SettingsService Settings = new SettingsService();
+
+    private async Task<ChannelSettings?> loadSettingsAsync()
+    {
+        if (Settings is null)
+        {
+            Console.Out.WriteLine("Settings not loaded, no SettingsService");
+            return null;
+        }
+
+        try
+        {
+            return await Settings.LoadSettings<ChannelSettings>("request-response");
+        }
+        catch (FileNotFoundException)
+        {
+            // Just leave things as they are
+            Console.Out.WriteLine("Error: Settings not loaded");
+            return null;
+        }
     }
 }
