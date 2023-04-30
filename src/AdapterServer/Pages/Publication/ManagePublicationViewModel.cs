@@ -6,6 +6,8 @@ using TaskQueueing.Jobs;
 
 namespace AdapterServer.Pages.Publication;
 
+using MessageTypes = PublicationViewModel.MessageTypes;
+
 public class ManagePublicationViewModel
 {
     public string Endpoint { get; set; } = "";
@@ -16,7 +18,7 @@ public class ManagePublicationViewModel
     public string ProviderSessionId { get; set; } = "";
     public string ConfirmationSessionId { get; set; } = "";
 
-    public bool AsBOD { get; set; } = true;
+    public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
     public async Task Load(SettingsService settings, string channelName)
     {
@@ -28,6 +30,12 @@ public class ManagePublicationViewModel
             Topic = channelSettings.Topic;
             ConsumerSessionId = channelSettings.ConsumerSessionId;
             ProviderSessionId = channelSettings.ProviderSessionId;
+            MessageType = channelSettings.MessageType switch
+            {
+                var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
+                var m when m == MessageTypes.CCOM.ToString() => MessageTypes.CCOM,
+                _ => MessageTypes.JSON
+            };
         }
         catch (FileNotFoundException)
         {
@@ -42,7 +50,8 @@ public class ManagePublicationViewModel
             ChannelUri = ChannelUri,
             Topic = Topic,
             ConsumerSessionId = ConsumerSessionId,
-            ProviderSessionId = ProviderSessionId
+            ProviderSessionId = ProviderSessionId,
+            MessageType = MessageType.ToString()
         };
 
         await settings.SaveSettings(channelSettings, channelName);
@@ -83,13 +92,16 @@ public class ManagePublicationViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        if (AsBOD)
+        switch (MessageType)
         {
-            RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessSyncStructureAssetsJob, System.Xml.Linq.XDocument>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
-        }
-        else
-        {
-            RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessNewStructuresJob, NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
+            case MessageTypes.JSON:
+                RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessNewStructuresJob, NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
+                break;
+            case MessageTypes.ExampleBOD:
+                RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessSyncStructureAssetsJob, System.Xml.Linq.XDocument>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
+                break;
+            case MessageTypes.CCOM:
+                throw new Exception("Not yet implemented");
         }
         RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessConfirmBODJob, string>>("PollConfirmBOD", x => x.PollSubscription(confirmationSession.Id, null!), Cron.Minutely);
     }

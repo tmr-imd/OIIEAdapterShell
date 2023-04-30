@@ -12,6 +12,7 @@ namespace AdapterServer.Pages.Request;
 
 using RequestJob = RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
 using ResponseJob = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using MessageTypes = RequestViewModel.MessageTypes;
 
 public class ManageRequestViewModel
 {
@@ -21,6 +22,8 @@ public class ManageRequestViewModel
     public string Topic { get; set; } = "Test Topic";
     public string ConsumerSessionId { get; set; } = "";
     public string ProviderSessionId { get; set; } = "";
+
+    public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
     public async Task Load(SettingsService settings, string channelName)
     {
@@ -32,6 +35,12 @@ public class ManageRequestViewModel
             Topic = channelSettings.Topic;
             ConsumerSessionId = channelSettings.ConsumerSessionId;
             ProviderSessionId = channelSettings.ProviderSessionId;
+            MessageType = channelSettings.MessageType switch
+            {
+                var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
+                var m when m == MessageTypes.CCOM.ToString() => MessageTypes.CCOM,
+                _ => MessageTypes.JSON
+            };
         }
         catch (FileNotFoundException)
         {
@@ -46,7 +55,8 @@ public class ManageRequestViewModel
             ChannelUri = ChannelUri,
             Topic = Topic,
             ConsumerSessionId = ConsumerSessionId,
-            ProviderSessionId = ProviderSessionId
+            ProviderSessionId = ProviderSessionId,
+            MessageType = MessageType.ToString()
         };
 
         await settings.SaveSettings(channelSettings, channelName);

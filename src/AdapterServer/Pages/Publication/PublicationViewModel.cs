@@ -19,7 +19,12 @@ public class PublicationViewModel
     public string Topic { get; set; } = "Test Topic";
     public string SessionId { get; set; } = "";
 
-    public bool AsBOD { get; set; } = true;
+    public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
+
+    public enum MessageTypes
+    {
+        JSON, ExampleBOD, CCOM
+    }
 
     public string Code { get; set; } = "";
     public string Type { get; set; } = "";
@@ -51,6 +56,12 @@ public class PublicationViewModel
             ChannelUri = channelSettings.ChannelUri;
             Topic = channelSettings.Topic;
             SessionId = channelSettings.ProviderSessionId;
+            MessageType = channelSettings.MessageType switch
+            {
+                var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
+                var m when m == MessageTypes.CCOM.ToString() => MessageTypes.CCOM,
+                _ => MessageTypes.JSON
+            };
         }
         catch (FileNotFoundException)
         {
@@ -73,13 +84,16 @@ public class PublicationViewModel
 
     public void Post()
     {
-        if (AsBOD)
+        switch (MessageType)
         {
-            PostExampleBOD();
-        }
-        else
-        {
-            PostJSON();
+            case MessageTypes.JSON:
+                PostJSON();
+                break;
+            case MessageTypes.ExampleBOD:
+                PostExampleBOD();
+                break;
+            case MessageTypes.CCOM:
+                throw new Exception("Not yet implemented");
         }
     }
 

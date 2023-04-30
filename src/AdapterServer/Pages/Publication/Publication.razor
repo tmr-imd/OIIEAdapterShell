@@ -48,6 +48,22 @@
             <InputText type="text" class="form-input w-full" disabled @bind-Value="@viewModel.Topic" />
         </div>
 
+        <h3>Message Type</h3>
+        <div />
+        <div />
+        <div />
+
+        <div>
+            <InputSelect class="form-input" disabled @bind-Value="@viewModel.MessageType">
+                <option value="@PublicationViewModel.MessageTypes.JSON">Simple JSON</option>
+                <option value="@PublicationViewModel.MessageTypes.ExampleBOD">Example BOD</option>
+                @* <option value="@PublicationViewModel.MessageTypes.CCOM">CCOM BOD</option> *@
+            </InputSelect>
+        </div>
+        <div />
+        <div />
+        <div />
+
         <h2 class="col-span-full mt-6">Message Settings</h2>
 
         <h3>Code</h3>
