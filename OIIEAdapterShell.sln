@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCOM.net", "Lib\CCOM.Net\sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskQueueing.Test", "test\unit\TaskQueueing.Test\TaskQueueing.Test.csproj", "{87D8C9BA-E295-49AD-87DE-D6344FCF890A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StructureExample.Test", "test\unit\StructureExample.Test\StructureExample.Test.csproj", "{FF33C5B6-EEB7-40B8-8E5C-853139C72610}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,10 @@ Global
 		{87D8C9BA-E295-49AD-87DE-D6344FCF890A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87D8C9BA-E295-49AD-87DE-D6344FCF890A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87D8C9BA-E295-49AD-87DE-D6344FCF890A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF33C5B6-EEB7-40B8-8E5C-853139C72610}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF33C5B6-EEB7-40B8-8E5C-853139C72610}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF33C5B6-EEB7-40B8-8E5C-853139C72610}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF33C5B6-EEB7-40B8-8E5C-853139C72610}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -98,6 +104,7 @@ Global
 		{85043B2A-3A57-4F9E-8E60-3EEBA3B9BEB9} = {89DFCBA9-5D88-4DB0-9826-CB59E24A453D}
 		{E760A084-2FE1-47BB-B6B3-422DE6A7B507} = {85043B2A-3A57-4F9E-8E60-3EEBA3B9BEB9}
 		{87D8C9BA-E295-49AD-87DE-D6344FCF890A} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
+		{FF33C5B6-EEB7-40B8-8E5C-853139C72610} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F5A6E8E2-8254-42CF-9FB4-BDFB9B2CB3FD}

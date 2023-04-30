@@ -66,9 +66,9 @@ public class PublicationDetailViewModel
             {
                 DeserializeStructure(Message);
             }
-            else
+            else if (Message.Content.RootElement.ValueKind == JsonValueKind.String)
             {
-                RawContent = DeserializeConfirmBOD(Message);
+                DeserializeBOD(Message);
             }
 
             // if (Message.ResponseContent is not null)
@@ -93,10 +93,24 @@ public class PublicationDetailViewModel
         }
     }
 
-    private string? DeserializeConfirmBOD(AbstractMessage message)
+    private void DeserializeBOD(AbstractMessage message)
     {
-        var bod = message.Content.Deserialize<string>();
+        RawContent = message.Content.Deserialize<string>();
+        if (RawContent is null || RawContent.Contains("ConfirmBOD")) return;
 
-        return bod;
+        var bod = new CommonBOD.GenericBodType<Oagis.SyncType, List<StructureAssets>>("SyncStructureAssets", Ccom.Namespace.URI);
+        using (var input = new StringReader(RawContent))
+        {
+            bod = bod.CreateSerializer().Deserialize(input) as CommonBOD.GenericBodType<Oagis.SyncType, List<StructureAssets>>;
+        }
+        if (bod is null) return;
+        
+        var structure = bod.DataArea.Noun.First().StructureAsset.First();
+        Code = structure.Code;
+        Type = structure.Type;
+        Location = structure.Location;
+        Owner = structure.Owner;
+        Condition = structure.Condition;
+        Inspector = structure.Inspector;
     }
 }

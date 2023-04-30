@@ -16,6 +16,8 @@ public class ManagePublicationViewModel
     public string ProviderSessionId { get; set; } = "";
     public string ConfirmationSessionId { get; set; } = "";
 
+    public bool AsBOD { get; set; } = true;
+
     public async Task Load(SettingsService settings, string channelName)
     {
         try
@@ -81,12 +83,22 @@ public class ManagePublicationViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessNewStructuresJob, NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
+        if (AsBOD)
+        {
+            RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessSyncStructureAssetsJob, System.Xml.Linq.XDocument>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
+        }
+        else
+        {
+            RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessNewStructuresJob, NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Minutely);
+        }
         RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessConfirmBODJob, string>>("PollConfirmBOD", x => x.PollSubscription(confirmationSession.Id, null!), Cron.Minutely);
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)
     {
+        RecurringJob.RemoveIfExists("PollNewStructureAssets");
+        RecurringJob.RemoveIfExists("PollConfirmBOD");
+
         try
         {
             await channel.GetChannel(ChannelUri);
@@ -103,18 +115,16 @@ public class ManagePublicationViewModel
         ProviderSessionId = "";
 
         await Save(settings, channelName);
-
-        RecurringJob.RemoveIfExists("PollNewStructureAssets");
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
+        RecurringJob.RemoveIfExists("PollNewStructureAssets");
+        RecurringJob.RemoveIfExists("PollConfirmBOD");
+
         try
         {
-            await channel.GetChannel(ChannelUri);
-
             await channel.DeleteChannel(ChannelUri);
-
         }
         catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
         {
@@ -124,7 +134,5 @@ public class ManagePublicationViewModel
         ProviderSessionId = "";
 
         await Save(settings, channelName);
-
-        RecurringJob.RemoveIfExists("PollNewStructureAssets");
     }
 }
