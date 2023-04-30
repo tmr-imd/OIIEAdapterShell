@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:oa="http://www.openapplications.org/oagis/9"
+	xmlns="http://www.mimosa.org/ccom4"
+	targetNamespace="http://www.mimosa.org/ccom4"
+	elementFormDefault="qualified"
+	attributeFormDefault="unqualified">
+
+	<xs:import schemaLocation="../../../../Lib/CCOM.Net/XSD/BOD/OAGIS/Meta.xsd" namespace="http://www.openapplications.org/oagis/9"/>
+	<xs:include schemaLocation="../../../../Lib/CCOM.Net/XSD/BOD/Messages/CCOMQuery.xsd"/>
+
+	<xs:element name="GetStructureAssets">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+Returns StructureAssets Example Data using a ShowStructureAssets response (non-CCOM). This is the BODification of the original JSON exmaple.
+
+Allows optional criteria-based filtering, otherwise all structure assets examples will be returned.
+Usually for these types of query BOD, criteria in the same StructureAssetsFilter noun are combined with a logical AND while criteria across different StructureAssetsFilter are combined with a logical OR.
+
+If countOnly = true, then the response only contains the number of assets, not the data. No value is interpreted as countOnly = false.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="oa:BusinessObjectDocumentType">
+					<xs:sequence>
+						<xs:element name="DataArea">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element ref="oa:Get"/>
+									<xs:element name="StructureAssetsFilter" minOccurs="0" maxOccurs="unbounded">
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="FilterCode" type="TextFilter" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="FilterType" type="TextFilter" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="FilterLocation" type="TextFilter" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="FilterOwner" type="TextFilter" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="FilterCondition" type="TextFilter" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="FilterInspector" type="TextFilter" minOccurs="0" maxOccurs="1"/>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

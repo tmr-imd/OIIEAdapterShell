@@ -54,7 +54,7 @@ public class ProcessConfirmBODJob : ProcessPublicationJob<string>
     {
         var success = true;
 
-        _bodReader = new BODReader(new StringReader(content), "", new BODReaderSettings() { SchemaPath = "../../Lib/CCOM.Net/XSD" });
+        _bodReader = new BODReader(new StringReader(content), "", new BODReaderSettings() { SchemaPath = BODReaderSettings.DefaultSchemaPath });
 
         if (!_bodReader.IsValid)
         {
