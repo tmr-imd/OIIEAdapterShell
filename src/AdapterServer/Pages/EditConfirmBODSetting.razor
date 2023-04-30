@@ -1,0 +1,86 @@
+@using AdapterServer.Components
+@using AdapterServer.Data;
+
+@inject ILogger<ConfirmBODConfig> Logger
+@inject SettingsService settings
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adapter Shell - Edit Confirmation Configuration</PageTitle>
+
+<EditForm Model="@viewModel" OnValidSubmit="@HandleValidSubmit">
+    <Modal Title="Request Confirmation Rule">
+        <HeaderAction>
+            <a class="btn-danger @(ID == "new" ? "hidden" : "")" href="#" @onclick="Destroy" @onclick:preventDefault>Delete Rule</a>
+        </HeaderAction>
+        <ChildContent>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="grid gap-2">
+                <div>
+                    <label>
+                        <h3 class="col-span-2">Channel URI</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.ChannelUri" />
+                    </label>
+                    <small>An asterisk '*' indicates it applies to all channels</small>
+                </div>
+
+                <div>
+                    <label>
+                        <h3>Topic</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.Topic" />
+                    </label>
+                    <small>An asterisk '*' indicates it applies to all topics</small>
+                </div>
+
+                <div>
+                    <label>
+                        <h3>Requires Confirmation</h3>
+                        <InputSelect class="form-input" @bind-Value="@viewModel.RequiresConfirmation">
+                            <option value="@ConfirmationOptions.Never">Never</option>
+                            <option value="@ConfirmationOptions.OnError">On Error</option>
+                            <option value="@ConfirmationOptions.Always">Always</option>
+                        </InputSelect>
+                    </label>
+                </div>
+            </div>
+        </ChildContent>
+        <Footer>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(ID == "new" ? "Add Rule" : "Update")</button>
+            <a href="/configure-confirm-bods" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
+        </Footer>
+    </Modal>
+</EditForm>
+
+@code {
+    [Parameter]
+    public string ID { get; set; } = "";
+
+    private EditConfirmBODSettingViewModel viewModel = new EditConfirmBODSettingViewModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Editing Rule ID {}", ID);
+        
+        await viewModel.Load(settings, ID);
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await viewModel.Save(settings, ID);
+
+        Logger.LogInformation("Confirmation Rule Saved ID {}", ID);
+        
+        NavigationManager.NavigateTo("/configure-confirm-bods");
+    }
+
+    private async Task Destroy()
+    {
+        await viewModel.Remove(settings, ID);
+
+        Logger.LogInformation("Removed Confirmation Rule ID {}", ID);
+
+        NavigationManager.NavigateTo("/configure-confirm-bods");
+    }
+}

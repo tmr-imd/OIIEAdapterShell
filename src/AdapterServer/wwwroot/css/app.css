@@ -895,6 +895,10 @@ a.menu.active:hover {
   margin-right: auto;
 }
 
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
 .ml-2 {
   margin-left: 0.5rem;
 }
@@ -913,6 +917,10 @@ a.menu.active:hover {
 
 .mt-6 {
   margin-top: 1.5rem;
+}
+
+.mt-auto {
+  margin-top: auto;
 }
 
 .inline-block {
@@ -975,6 +983,14 @@ a.menu.active:hover {
   min-width: 100%;
 }
 
+.flex-auto {
+  flex: 1 1 auto;
+}
+
+.flex-none {
+  flex: none;
+}
+
 .transform {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
@@ -1001,6 +1017,14 @@ a.menu.active:hover {
   flex-direction: row-reverse;
 }
 
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .items-end {
   align-items: flex-end;
 }
@@ -1019,6 +1043,10 @@ a.menu.active:hover {
 
 .gap-2 {
   gap: 0.5rem;
+}
+
+.gap-4 {
+  gap: 1rem;
 }
 
 .divide-y > :not([hidden]) ~ :not([hidden]) {
@@ -1168,6 +1196,10 @@ a.menu.active:hover {
   line-height: 1.25rem;
 }
 
+.font-bold {
+  font-weight: 700;
+}
+
 .font-medium {
   font-weight: 500;
 }
@@ -1272,6 +1304,11 @@ a.menu.active:hover {
   content: "An error has occurred."
 }
 
+.invalid\:border-rose-500:invalid {
+  --tw-border-opacity: 1;
+  border-color: rgb(244 63 94 / var(--tw-border-opacity));
+}
+
 @media (prefers-color-scheme: dark) {
   .dark\:fill-gray-300 {
     fill: #d1d5db;
@@ -1350,6 +1387,10 @@ a.menu.active:hover {
 @media (min-width: 768px) {
   .md\:max-w-2xl {
     max-width: 42rem;
+  }
+
+  .md\:flex-row {
+    flex-direction: row;
   }
 }
 

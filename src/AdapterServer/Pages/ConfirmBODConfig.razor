@@ -1,0 +1,96 @@
+@page "/configure-confirm-bods"
+@using AdapterServer.Data;
+
+@inject ILogger<ConfirmBODConfig> Logger
+@inject SettingsService settings
+
+@inject ConfirmBODConfigViewModel viewModel
+@inject NavigationManager navigation
+
+<PageTitle>Adapter Shell - Configure ConfirmBOD Requirements</PageTitle>
+
+<h1>Adapter Shell - Configure ConfirmBOD Requirements</h1>
+
+<p>
+    Specify whether auto-respond confirmations are desired when making
+    specific requests on some or all channels and/or topics.
+    An asterisk '*' indicates that it applies to all channels/topics.
+    More specific rules override more general rules.
+</p>
+
+@if ( !String.IsNullOrWhiteSpace(Edit) )
+{
+    <EditConfirmBODSetting ID=@Edit />
+}
+
+<div class="col-span-full flex flex-wrap justify-between items-center mt-6 mb-6">
+    <a class="btn-primary mt-auto" href="/configure-confirm-bods?edit=new">Add Rule</a>
+    <EditForm Model="@viewModel" OnValidSubmit="@HandleCheckConfirmationRequired" class="flex flex-col gap-2">
+        <DataAnnotationsValidator />
+        <div class="flex flex-col">
+            <ValidationSummary class="inline" />
+            <span class="font-bold">@viewModel.CheckResult</span>
+        </div>
+        <div class="flex flex-col md:flex-row flex-wrap items-center gap-4">
+            <label class="flex-auto">
+                <span class="hidden">Channel URI</span>
+                <InputText type="text" class="form-input invalid:border-rose-500 flex-auto" @bind-Value="viewModel.ChannelUriToCheck" placeholder="Channel URI"/>
+            </label>
+            <label class="flex-auto">
+                <span class="hidden">Topic</span>
+                <InputText type="text" class="form-input" @bind-Value="viewModel.TopicToCheck" placeholder="Topic" />
+            </label>
+            <div class="flex-none">
+                <button type="submit" class="btn-primary">Check</button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+    <thead class="bg-gray-100">
+        <tr>
+            <th scope="col">Channel</th>
+            <th scope="col">Topic</th>
+            <th scope="col">Requires Confirmation?</th>
+            <th scope="col">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        @foreach (var setting in viewModel.Config.Settings)
+        {
+            <tr>
+                <td>@setting.ChannelUri</td>
+                <td>@setting.Topic</td>
+                <td>@(setting.RequiresConfirmation.ToString())</td>
+                <td><a class="btn-primary" href="/configure-confirm-bods?edit=@(setting.GetId())">Edit</a></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Edit { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await viewModel.Setup(settings);
+
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await viewModel.Setup(settings);
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task HandleCheckConfirmationRequired() {
+        await viewModel.CheckConfirmationRequired(settings);
+    }
+}
+
