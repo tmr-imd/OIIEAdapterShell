@@ -59,7 +59,7 @@ public class ConfirmationSettingsTest
     public void ConfirmationRuleTest(string channelUri, string topic, ConfirmationOptions expected)
     {
         // Start the rules off unsorted to ensure the check method is working correctly.
-        var rules = new ConfirmationSettings( new ConfirmBODSetting[]
+        var unsortedRules = new ConfirmationSettings( new ConfirmBODSetting[]
         {
             new ConfirmBODSetting( "*", "*", ConfirmationOptions.Never ),
             new ConfirmBODSetting( "*", "A Topic", ConfirmationOptions.OnError ),
@@ -69,7 +69,7 @@ public class ConfirmationSettingsTest
             new ConfirmBODSetting( "/some/channel", "Different Topic", ConfirmationOptions.Never )
         }.OrderBy( s => s.GetId() ));
 
-        var result = rules.ConfirmationOptionFor(channelUri, topic);
+        var result = unsortedRules .ConfirmationOptionFor(channelUri, topic);
 
         Assert.Equal(expected, result);
     }
