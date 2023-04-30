@@ -8,4 +8,8 @@ public record class StructureAssetsFilter
     string FilterOwner,
     string FilterCondition,
     string FilterInspector
-);
+)
+{
+    // For serialization support
+    public StructureAssetsFilter() : this("", "", "", "", "", "") { }
+}

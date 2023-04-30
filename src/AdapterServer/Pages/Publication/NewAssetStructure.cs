@@ -58,15 +58,6 @@ public record class NewStructureAsset(string Verb, StructureAsset Data)
         };
 
         var serializer = bod.CreateSerializer();
-        var stream = new StringWriter();
-        var settings = new XmlWriterSettings
-        {
-            ConformanceLevel = ConformanceLevel.Document,
-            Encoding = System.Text.Encoding.UTF8,
-            Indent = true,
-            NewLineOnAttributes = true,
-            OmitXmlDeclaration = true
-        };
         var doc = new XDocument();
         using (var writer = doc.CreateWriter())
         {
