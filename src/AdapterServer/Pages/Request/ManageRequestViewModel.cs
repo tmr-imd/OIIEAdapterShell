@@ -2,16 +2,16 @@
 using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
-using Microsoft.EntityFrameworkCore;
+using System.Xml.Linq;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
-using TaskQueueing.ObjectModel.Models;
-using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Request;
 
-using RequestJob = RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
-using ResponseJob = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using RequestJobJSON = RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using ResponseJobJSON = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using RequestJobBOD = RequestProviderJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
+using ResponseJobBOD = RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
 using MessageTypes = RequestViewModel.MessageTypes;
 
 public class ManageRequestViewModel
@@ -83,12 +83,26 @@ public class ManageRequestViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        RecurringJob.AddOrUpdate<RequestJob>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-        RecurringJob.AddOrUpdate<ResponseJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+        switch (MessageType)
+        {
+            case MessageTypes.JSON:
+                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+                break;
+            case MessageTypes.ExampleBOD:
+                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+                break;
+            case MessageTypes.CCOM:
+                throw new Exception("Not yet implemented");
+        }
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
     {
+        RecurringJob.RemoveIfExists("CheckForRequests");
+        RecurringJob.RemoveIfExists("CheckForResponses");
+
         try
         {
             await channel.GetChannel(ChannelUri);
@@ -105,13 +119,13 @@ public class ManageRequestViewModel
         ProviderSessionId = "";
 
         await Save(settings, channelName);
-
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
+        RecurringJob.RemoveIfExists("CheckForRequests");
+        RecurringJob.RemoveIfExists("CheckForResponses");
+
         try
         {
             await channel.DeleteChannel(ChannelUri);
@@ -124,8 +138,5 @@ public class ManageRequestViewModel
         ProviderSessionId = "";
 
         await Save(settings, channelName);
-
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
     }
 }

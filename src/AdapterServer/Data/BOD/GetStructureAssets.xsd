@@ -6,8 +6,8 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified">
 
-	<xs:import schemaLocation="../../../../Lib/CCOM.Net/XSD/BOD/OAGIS/Meta.xsd" namespace="http://www.openapplications.org/oagis/9"/>
-	<xs:include schemaLocation="../../../../Lib/CCOM.Net/XSD/BOD/Messages/CCOMQuery.xsd"/>
+	<xs:import schemaLocation="../../XSD/BOD/OAGIS/Meta.xsd" namespace="http://www.openapplications.org/oagis/9"/>
+	<xs:include schemaLocation="../../XSD/BOD/Messages/CCOMQuery.xsd"/>
 
 	<xs:element name="GetStructureAssets">
 		<xs:annotation>

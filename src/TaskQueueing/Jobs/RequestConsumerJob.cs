@@ -37,7 +37,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
             Topic = topic,
             MediaType = request.MessageContent.MediaType,
             ContentEncoding = request.MessageContent.ContentEncoding,
-            Content = JsonSerializer.SerializeToDocument(content)
+            Content = request.MessageContent.Content
         };
 
         using var context = await factory.CreateDbContext(principal);

@@ -2,6 +2,7 @@
 using Hangfire;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
+using System.Xml.Linq;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
@@ -9,7 +10,8 @@ using TaskModels = TaskQueueing.ObjectModel.Models;
 
 namespace AdapterServer.Pages.Request;
 
-using RequestJob = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using RequestJobJSON = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using RequestJobBOD = RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
 
 public class RequestViewModel
 {
@@ -84,7 +86,8 @@ public class RequestViewModel
                 RequestJSON();
                 break;
             case MessageTypes.ExampleBOD:
-                throw new Exception("Not yet implemented");
+                RequestExampleBOD();
+                break;
             case MessageTypes.CCOM:
                 throw new Exception("Not yet implemented");
         }
@@ -94,6 +97,13 @@ public class RequestViewModel
     {
         var requestFilter = new StructureAssetsFilter(FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector);
 
-        BackgroundJob.Enqueue<RequestJob>(x => x.PostRequest(SessionId, requestFilter, Topic, null!));
+        BackgroundJob.Enqueue<RequestJobJSON>(x => x.PostRequest(SessionId, requestFilter, Topic, null!));
+    }
+
+    public void RequestExampleBOD()
+    {
+        var requestFilter = new StructureAssetsFilter(FilterCode, FilterType, FilterLocation, FilterOwner, FilterCondition, FilterInspector);
+        var bod = requestFilter.ToGetStructureAssetsBOD();
+        BackgroundJob.Enqueue<RequestJobBOD>(x => x.PostRequest(SessionId, bod, Topic, null!));
     }
 }

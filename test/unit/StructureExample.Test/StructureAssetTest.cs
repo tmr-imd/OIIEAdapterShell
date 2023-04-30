@@ -129,7 +129,9 @@ public class StructureAssetTest
     <oa:BODID>{bodid}</oa:BODID>
   </oa:ApplicationArea>
   <DataArea>
-    <oa:Get />
+    <oa:Get>
+      <oa:Expression>//*</oa:Expression>
+    </oa:Get>
     <StructureAssetsFilter>
       <FilterCode>B1</FilterCode>
       <FilterType>Bridge</FilterType>

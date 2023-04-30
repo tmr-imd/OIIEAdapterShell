@@ -30,7 +30,13 @@ public static class StructureAssetsExt
             },
             DataArea = new GenericDataAreaType<GetType, List<StructureAssetsFilter>>()
             {
-                Verb = new GetType(),
+                Verb = new GetType
+                {
+                    Expression = new[]
+                    {
+                        new ExpressionType { Value = "//*" }
+                    }
+                },
                 Noun = new List<StructureAssetsFilter>()
                 {
                     self

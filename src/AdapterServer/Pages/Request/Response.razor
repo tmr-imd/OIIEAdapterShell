@@ -129,6 +129,11 @@
     {
         get
         {
+            if (viewModel.Request?.Content.RootElement.ValueKind == JsonValueKind.String)
+            {
+                return viewModel.Request?.Content.Deserialize<string>() ?? "No content unexpectedly";
+            }
+
             var doc = viewModel.Request?.Content;
             var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
             options.WriteIndented = true;

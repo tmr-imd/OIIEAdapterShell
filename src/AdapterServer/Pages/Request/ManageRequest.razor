@@ -58,7 +58,7 @@
                         <h3>Message Type</h3>
                         <InputSelect class="form-input" disabled=@(viewModel.ConsumerSessionId != "") @bind-Value="@viewModel.MessageType">
                             <option value="@RequestViewModel.MessageTypes.JSON">Simple JSON</option>
-                            @* <option value="@RequestViewModel.MessageTypes.ExampleBOD">Example BOD</option> *@
+                            <option value="@RequestViewModel.MessageTypes.ExampleBOD">Example BOD</option>
                             @* <option value="@RequestViewModel.MessageTypes.CCOM">CCOM BOD</option> *@
                         </InputSelect>
                     </label>
