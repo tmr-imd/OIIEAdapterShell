@@ -6,14 +6,14 @@
     Currently have a simple work around that is self-contained here. Might want to utilise the AnchorLink component of the above link.
  *@
 
-<div>
-    <p>
+<div class="grid gap-2">
+    <p class="p-0">
         Encountered @Errors.Count(x => x.Severity > ErrorSeverity.Warning) errors
         and @(Errors.Count(x => x.Severity <= ErrorSeverity.Warning)) warnings.
     </p>
 @foreach (var error in Errors)
 {
-    <div class="col-span-full border rounded @(ColourClassesForError(error))">
+    <div class="border rounded @(ColourClassesForError(error))">
         <p class="px-4 py-1">
             <span class="mr-2">
             @if ( (int)error.Severity < 3 )

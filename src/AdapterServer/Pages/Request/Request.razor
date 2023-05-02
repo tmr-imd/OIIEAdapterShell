@@ -55,7 +55,7 @@
         <div />
 
         <div>
-            <InputSelect class="form-input" disabled @bind-Value="@viewModel.MessageType">
+            <InputSelect class="form-select" disabled @bind-Value="@viewModel.MessageType">
                 <option value="@RequestViewModel.MessageTypes.JSON">Simple JSON</option>
                 <option value="@RequestViewModel.MessageTypes.ExampleBOD">Example BOD</option>
                 <option value="@RequestViewModel.MessageTypes.CCOM">CCOM BOD</option>
@@ -111,13 +111,15 @@
             </div>
         }
 
-        <h2 class="col-span-full mt-6 @(viewModel.Requests.Count() == 0 ? "hidden" : "")">Response</h2>
-        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table @(viewModel.Requests.Count() == 0 ? "hidden" : "")">
+        <h2 class="col-span-full mt-6 @(viewModel.Requests.Count() == 0 ? "hidden" : "")">Requests</h2>
+        <table class="col-span-full min-w-full divide-y divide-gray-300 border rounded data-table @(viewModel.Requests.Count() == 0 ? "hidden" : "")">
             <thead class="bg-gray-100">
                 <tr>
                     <th scope="col">Job #</th>
                     <th scope="col">Created</th>
                     <th scope="col">RequestId</th>
+                    <th scope="col">Process</th>
+                    <th scope="col">Direction</th>
                     <th scope="col">Processed</th>
                     <th scope="col">Action</th>
                 </tr>
@@ -125,10 +127,17 @@
             <tbody class="bg-white divide-y divide-gray-200">
                 @foreach (var request in viewModel.Requests)
                 {
-                    <tr>
+                    <tr class="@(request.Received ? "bg-gray-50" : "")">
                         <td>@request.JobId</td>
                         <td>@request.DateCreated.ToLocalTime().ToString("G")</td>
-                        <td>@request.RequestId <DirectionIndicator State="@request.State" /></td>
+                        <td>@request.RequestId</td>
+                        <td>
+                            <span>@(request.Posted ? "Consumer" : "Provider")</span>
+                        </td>
+                        <td>
+                            <DirectionIndicator State="@request.State" />
+                            <span>@(request.Posted ? "Request" : "Response")</span>
+                        </td>
                         <td><ProcessingIndicator State="@(request.Posted && request.Responses.Any() ? request.Responses.Last().State : request.State)" /></td>
                         <td>
                             @if ( request.ResponseContent is not null )
@@ -149,6 +158,7 @@
     private bool notReady => viewModel.SessionId == "";
     private string error = "";
     private string channelName = "request-response";
+    private bool showResponses;
 
     [Parameter]
     [SupplyParameterFromQuery]
