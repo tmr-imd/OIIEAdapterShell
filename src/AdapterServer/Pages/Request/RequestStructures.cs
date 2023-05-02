@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using AdapterServer.Data;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 
 namespace TaskQueueing.Data;

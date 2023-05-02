@@ -1,3 +1,4 @@
+using AdapterServer.Data;
 using CommonBOD;
 using Oagis;
 using System.Xml.Linq;

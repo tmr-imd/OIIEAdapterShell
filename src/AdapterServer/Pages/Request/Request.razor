@@ -136,7 +136,7 @@
                         </td>
                         <td>
                             <DirectionIndicator State="@request.State" />
-                            <span>@(request.Posted ? "Request" : "Response")</span>
+                            <span>@(request.Posted ? "Posted" : "Received")</span>
                         </td>
                         <td><ProcessingIndicator State="@(request.Posted && request.Responses.Any() ? request.Responses.Last().State : request.State)" /></td>
                         <td>
@@ -158,7 +158,6 @@
     private bool notReady => viewModel.SessionId == "";
     private string error = "";
     private string channelName = "request-response";
-    private bool showResponses;
 
     [Parameter]
     [SupplyParameterFromQuery]
