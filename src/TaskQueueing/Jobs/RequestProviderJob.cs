@@ -27,14 +27,47 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
 
     public async Task<string> CheckForRequests( string sessionId )
     {
-        var lastReadRequest = "";
         try
         {
-            lastReadRequest = await readRemoveAll(sessionId);
+            return await ReadRemoveAll(sessionId);
         }
         catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.SessionFault )
         {
             // Do nothing
+        }
+
+        return "";
+    }
+
+    private async Task<string> ReadRemoveAll(string sessionId)
+    {
+        var context = await factory.CreateDbContext(principal);
+        var lastReadRequest = "";
+
+        for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
+        {
+            var content = requestMessage.MessageContent.Deserialise<TRequest>();
+
+            var request = new Request
+            {
+                State = MessageState.Received,
+                RequestId = requestMessage.Id,
+                Topic = requestMessage.Topics.FirstOrDefault() ?? "",
+                MediaType = requestMessage.MessageContent.MediaType,
+                ContentEncoding = requestMessage.MessageContent.ContentEncoding,
+                Content = requestMessage.MessageContent.Content
+            };
+
+            context.Requests.Add(request);
+            await context.SaveChangesAsync();
+
+            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
+            request.JobId = jobId;
+            await context.SaveChangesAsync();
+
+            await provider.RemoveRequest(sessionId);
+
+            lastReadRequest = requestMessage.Id;
         }
 
         return lastReadRequest;
@@ -67,39 +100,5 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         await context.SaveChangesAsync();
 
         return response.Id;
-    }
-    
-    private async Task<string> readRemoveAll(string sessionId)
-    {
-        var context = await factory.CreateDbContext(principal);
-        var lastReadRequest = "";
-        
-        for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
-        {
-            var content = requestMessage.MessageContent.Deserialise<TRequest>();
-
-            var request = new Request
-            {
-                State = MessageState.Received,
-                RequestId = requestMessage.Id,
-                Topic = requestMessage.Topics.FirstOrDefault() ?? "",
-                MediaType = requestMessage.MessageContent.MediaType,
-                ContentEncoding = requestMessage.MessageContent.ContentEncoding,
-                Content = requestMessage.MessageContent.Content
-            };
-            
-            context.Requests.Add(request);
-            await context.SaveChangesAsync();
-
-            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
-            request.JobId = jobId;
-            await context.SaveChangesAsync();
-
-            await provider.RemoveRequest(sessionId);
-
-            lastReadRequest = requestMessage.Id;
-        }
-
-        return lastReadRequest;
     }
 }
