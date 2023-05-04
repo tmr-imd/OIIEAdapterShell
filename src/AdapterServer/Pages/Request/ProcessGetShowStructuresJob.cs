@@ -37,8 +37,7 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
         //var converter = TypeDescriptor.GetConverter( typeof(StructureAsset) );
 
         // The followning will check for the TypeConverter attribute first, then look for TypeConverterSelector attribute(s) if it does not exist
-        var converter = TypeDescriptorExtensions.SelectConverter(typeof(StructureAsset), typeof(Ccom.Asset));
-        //var converter = TypeDescriptorExtensions.SelectConverter(typeof(StructureAsset), typeof(JsonDocument));
+        var converter = TypeDescriptorExtensions.SelectConverter(StructureAsset, typeof(Ccom.Asset));
 
         var assets = StructureAssetService.GetStructures(_filter).Select(x => {
             var asset = converter.ConvertTo( x, typeof(Ccom.Asset) );
