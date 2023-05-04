@@ -1,0 +1,14 @@
+{
+      "profiles": {
+      "CIRLib": {
+        "commandName": "CIRLib",
+        "dotnetRunMessages": true,
+        "launchBrowser": true,
+        "applicationUrl": "https://localhost:8080;http://localhost:8000",
+        "environmentVariables": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        }
+      }
+    }
+  }
+  
