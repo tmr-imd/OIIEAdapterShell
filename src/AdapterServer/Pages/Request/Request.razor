@@ -49,6 +49,22 @@
             <InputText type="text" class="form-input w-full" disabled @bind-Value="@viewModel.Topic" />
         </div>
 
+        <h3>Message Type</h3>
+        <div />
+        <div />
+        <div />
+
+        <div>
+            <InputSelect class="form-input" disabled @bind-Value="@viewModel.MessageType">
+                <option value="@RequestViewModel.MessageTypes.JSON">Simple JSON</option>
+                <option value="@RequestViewModel.MessageTypes.ExampleBOD">Example BOD</option>
+                <option value="@RequestViewModel.MessageTypes.CCOM">CCOM BOD</option>
+            </InputSelect>
+        </div>
+        <div />
+        <div />
+        <div />
+
         <h2 class="col-span-full mt-6">Message Settings</h2>
 
         <h3>Code</h3>
@@ -111,13 +127,13 @@
                 {
                     <tr>
                         <td>@request.JobId</td>
-                        <td>@request.DateCreated.ToString("G")</td>
-                        <td>@request.RequestId</td>
-                        <td><TrueIndicator Value="@request.Processed" /></td>
+                        <td>@request.DateCreated.ToLocalTime().ToString("G")</td>
+                        <td>@request.RequestId <DirectionIndicator State="@request.State" /></td>
+                        <td><ProcessingIndicator State="@(request.Posted && request.Responses.Any() ? request.Responses.Last().State : request.State)" /></td>
                         <td>
-                            @if ( request.Content is not null )
+                            @if ( request.ResponseContent is not null )
                             { 
-                                <a href="response/@request.RequestId" class="btn">View</a>
+                                <a href="response/@request.Id" class="btn">View</a>
                             }
                         </td>
                     </tr>

@@ -38,21 +38,18 @@ namespace TaskQueueing.Persistence
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Request>()
-                .Property(x => x.Content)
-                .HasConversion<JsonDocumentConverter>();
+            modelBuilder.Entity<AbstractMessage>()
+                .UseTpcMappingStrategy() // Table per class as before
+                .Property(x => x.MessageErrors)
+                .HasConversion<MessageErrorsConverter>();
 
-            modelBuilder.Entity<Request>()
-                .Property(x => x.Filter)
-                .HasConversion<JsonDocumentConverter>();
-
-            modelBuilder.Entity<Response>()
+            modelBuilder.Entity<AbstractMessage>()
                 .Property(x => x.Content)
                 .HasConversion<JsonDocumentConverter>();
 
             modelBuilder.Entity<Publication>()
-                .Property(x => x.Content)
-                .HasConversion<JsonDocumentConverter>();
+                .Property(x => x.Topics)
+                .HasConversion<TopicsConverter>();
         }
 
         private void SetAuditFields()

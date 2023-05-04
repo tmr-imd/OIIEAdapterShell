@@ -1,4 +1,5 @@
-﻿using Hangfire.Server;
+﻿using Hangfire;
+using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using System.Security.Claims;
@@ -7,7 +8,9 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public class PubSubConsumerJob<T> where T : notnull
+public class PubSubConsumerJob<TProcessJob, TContent>
+    where TContent : notnull
+    where TProcessJob : ProcessPublicationJob<TContent>
 {
     private readonly IConsumerPublication consumer;
     private readonly JobContextFactory factory;
@@ -22,34 +25,51 @@ public class PubSubConsumerJob<T> where T : notnull
 
     public async Task<string> PollSubscription(string sessionId, PerformContext ctx)
     {
+        var lastReadMessage = "";
         try
         {
-            var publication = await consumer.ReadPublication(sessionId);
-
-            if (publication is not null)
-            {
-                using var context = await factory.CreateDbContext(principal);
-
-                var storedPublication = new Publication()
-                {
-                    JobId = ctx.BackgroundJob.Id,
-                    Content = publication.MessageContent.Content
-                };
-
-                await context.Publications.AddAsync(storedPublication);
-
-                await context.SaveChangesAsync();
-
-                await consumer.RemovePublication(sessionId);
-
-                return publication.Id;
-            }
+            lastReadMessage = await readRemoveAll(sessionId, ctx);
         }
         catch (IsbmFault)
         {
             // Do nothing
         }
 
-        return "";
+        return lastReadMessage;
+    }
+
+    private async Task<string> readRemoveAll(string sessionId, PerformContext ctx)
+    {
+        var lastReadMessage = "";
+
+        for (var publication = await consumer.ReadPublication(sessionId);
+                    publication is not null;
+                    publication = await consumer.ReadPublication(sessionId))
+        {
+            using var context = await factory.CreateDbContext(principal);
+
+            var storedPublication = new Publication()
+            {
+                JobId = ctx.BackgroundJob.Id,
+                State = MessageState.Received,
+                MessageId = publication.Id,
+                Topics = publication.Topics,
+                MediaType = publication.MessageContent.MediaType,
+                ContentEncoding = publication.MessageContent.ContentEncoding,
+                Content = publication.MessageContent.Content
+            };
+
+            context.Publications.Add(storedPublication);
+
+            await context.SaveChangesAsync();
+
+            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessPublication(storedPublication.MessageId, null!));
+
+            await consumer.RemovePublication(sessionId);
+
+            lastReadMessage = publication.Id;
+        }
+
+        return lastReadMessage;
     }
 }

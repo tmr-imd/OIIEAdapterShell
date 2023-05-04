@@ -2,9 +2,8 @@
 
 namespace TaskQueueing.ObjectModel.Models;
 
-public record class Publication : ModelObject
+public record class Publication : AbstractMessage
 {
-    public string JobId { get; set; } = "";
-    public JsonDocument Content { get; set; } = null!;
-    public string Topic { get; set; } = "";
+    public string MessageId { get; set; } = "";
+    public IEnumerable<string> Topics { get; set; } = Array.Empty<string>();
 }

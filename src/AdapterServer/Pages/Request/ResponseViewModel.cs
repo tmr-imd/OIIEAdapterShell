@@ -1,12 +1,18 @@
-﻿using AdapterServer.Data;
+using AdapterServer.Data;
 using Isbm2Client.Model;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 using TaskQueueing.Data;
 using TaskQueueing.ObjectModel;
+using RequestMessage = TaskQueueing.ObjectModel.Models.Request;
+
+using CommonBOD;
+using Oagis;
 
 namespace AdapterServer.Pages.Request;
+
+using RequestBODType = GenericBodType<GetType, List<StructureAssetsFilter>>;
+using ResponseBODType = GenericBodType<ShowType, List<RequestStructures>>;
 
 public class ResponseViewModel
 {
@@ -21,6 +27,8 @@ public class ResponseViewModel
     public string FilterOwner { get; set; } = "";
     public string FilterCondition { get; set; } = "";
     public string FilterInspector { get; set; } = "";
+
+    public RequestMessage? Request { get; set; } = null;
 
     public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
 
@@ -49,33 +57,87 @@ public class ResponseViewModel
         }
     }
 
-    public async Task Load(IJobContext context, string RequestId)
+    public async Task Load(IJobContext context, Guid RequestId)
     {
-        var request = await RequestService.GetRequest( context, RequestId );
+        Request = await RequestService.GetRequest( context, RequestId );
 
-        if (request is not null)
+        if (Request is not null)
         {
-            var filter = request.Filter.Deserialize<StructureAssetsFilter>();
+            StructureAssets = Enumerable.Empty<StructureAsset>();
 
-            if (filter is not null)
+            if (Request.MediaType == "application/json")
             {
-                FilterCode = filter.FilterCode;
-                FilterType = filter.FilterType;
-                FilterLocation = filter.FilterLocation;
-                FilterOwner = filter.FilterOwner;
-                FilterCondition = filter.FilterCondition;
-                FilterInspector = filter.FilterInspector;
+                DeserializeStructures(Request);
             }
-
-            if (request.Content is not null)
+            else if (Request.Content.RootElement.ValueKind == JsonValueKind.String)
             {
-                var structures = request.Content.Deserialize<RequestStructures>();
-
-                if (structures is not null)
-                {
-                    StructureAssets = structures.StructureAssets;
-                }
+                DeserializeBOD(Request);
             }
         }
+    }
+
+    private void DeserializeStructures(RequestMessage request)
+    {
+        var filter = request.Content.Deserialize<StructureAssetsFilter>();
+
+        if (filter is not null)
+        {
+            FilterCode = filter.FilterCode;
+            FilterType = filter.FilterType;
+            FilterLocation = filter.FilterLocation;
+            FilterOwner = filter.FilterOwner;
+            FilterCondition = filter.FilterCondition;
+            FilterInspector = filter.FilterInspector;
+        }
+
+        if (request.ResponseContent is not null && request.Responses.Last().MediaType == "application/json")
+        {
+            // Deserialize the content only. Ignore ConfirmBOD as errors have already been attached to the request
+            var structures = request.ResponseContent.Deserialize<RequestStructures>();
+            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
+        }
+    }
+
+    private void DeserializeBOD(RequestMessage request)
+    {
+        var bod = new RequestBODType("GetStructureAssets", Ccom.Namespace.URI, nounName: "StructureAssetsFilter");
+        bod = DeserializeBODContent<RequestBODType, GetType, List<StructureAssetsFilter>>(request.Content, bod);
+        if (bod is null) return;
+
+        var filter = bod.DataArea.Noun.First();
+        FilterCode = filter.FilterCode;
+        FilterType = filter.FilterType;
+        FilterLocation = filter.FilterLocation;
+        FilterOwner = filter.FilterOwner;
+        FilterCondition = filter.FilterCondition;
+        FilterInspector = filter.FilterInspector;
+
+        if (request.ResponseContent is not null)
+        {
+            // Deserialize the content only. Ignore ConfirmBOD as errors have already been attached to the request
+            var responseBod = new ResponseBODType("ShowStructureAssets", Ccom.Namespace.URI);
+            responseBod = DeserializeBODContent<ResponseBODType, ShowType, List<RequestStructures>>(request.ResponseContent, responseBod);
+            if (responseBod is null) return;
+
+            var structures = responseBod.DataArea.Noun.FirstOrDefault();
+            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
+        }
+    }
+
+    private T? DeserializeBODContent<T, TV, TN>(JsonDocument content, T bod)
+        where T : GenericBodType<TV, TN>
+        where TV : VerbType, new()
+        where TN : class, new()
+    {
+        var rawContent = content.Deserialize<string>();
+        if (rawContent is null || rawContent.Contains("ConfirmBOD")) return default(T);
+
+        T? newBod;
+        using (var input = new StringReader(rawContent))
+        {
+            newBod = bod.CreateSerializer().Deserialize(input) as T;
+        }
+
+        return newBod;
     }
 }

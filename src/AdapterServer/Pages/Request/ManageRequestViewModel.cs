@@ -2,13 +2,17 @@
 using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
-using Microsoft.EntityFrameworkCore;
+using System.Xml.Linq;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
-using TaskQueueing.ObjectModel.Models;
-using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Request;
+
+using RequestJobJSON = RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using ResponseJobJSON = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
+using RequestJobBOD = RequestProviderJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
+using ResponseJobBOD = RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
+using MessageTypes = RequestViewModel.MessageTypes;
 
 public class ManageRequestViewModel
 {
@@ -18,6 +22,8 @@ public class ManageRequestViewModel
     public string Topic { get; set; } = "Test Topic";
     public string ConsumerSessionId { get; set; } = "";
     public string ProviderSessionId { get; set; } = "";
+
+    public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
     public async Task Load(SettingsService settings, string channelName)
     {
@@ -29,6 +35,12 @@ public class ManageRequestViewModel
             Topic = channelSettings.Topic;
             ConsumerSessionId = channelSettings.ConsumerSessionId;
             ProviderSessionId = channelSettings.ProviderSessionId;
+            MessageType = channelSettings.MessageType switch
+            {
+                var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
+                var m when m == MessageTypes.CCOM.ToString() => MessageTypes.CCOM,
+                _ => MessageTypes.JSON
+            };
         }
         catch (FileNotFoundException)
         {
@@ -43,7 +55,8 @@ public class ManageRequestViewModel
             ChannelUri = ChannelUri,
             Topic = Topic,
             ConsumerSessionId = ConsumerSessionId,
-            ProviderSessionId = ProviderSessionId
+            ProviderSessionId = ProviderSessionId,
+            MessageType = MessageType.ToString()
         };
 
         await settings.SaveSettings(channelSettings, channelName);
@@ -70,12 +83,26 @@ public class ManageRequestViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        RecurringJob.AddOrUpdate<RequestProviderJob<StructureAssetsFilter>>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-        RecurringJob.AddOrUpdate<RequestConsumerJob>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+        switch (MessageType)
+        {
+            case MessageTypes.JSON:
+                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+                break;
+            case MessageTypes.ExampleBOD:
+                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
+                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+                break;
+            case MessageTypes.CCOM:
+                throw new Exception("Not yet implemented");
+        }
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
     {
+        RecurringJob.RemoveIfExists("CheckForRequests");
+        RecurringJob.RemoveIfExists("CheckForResponses");
+
         try
         {
             await channel.GetChannel(ChannelUri);
@@ -92,13 +119,13 @@ public class ManageRequestViewModel
         ProviderSessionId = "";
 
         await Save(settings, channelName);
-
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
+        RecurringJob.RemoveIfExists("CheckForRequests");
+        RecurringJob.RemoveIfExists("CheckForResponses");
+
         try
         {
             await channel.DeleteChannel(ChannelUri);
@@ -111,8 +138,5 @@ public class ManageRequestViewModel
         ProviderSessionId = "";
 
         await Save(settings, channelName);
-
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
     }
 }

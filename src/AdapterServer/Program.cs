@@ -35,6 +35,8 @@ builder.Services.AddScoped<StructureAssetService>();
 builder.Services.AddScoped<RequestViewModel>();
 builder.Services.AddScoped<ResponseViewModel>();
 builder.Services.AddScoped<PublicationService>();
+builder.Services.AddScoped<PublicationDetailViewModel>();
+builder.Services.AddScoped<PublicationListViewModel>();
 builder.Services.AddScoped<PublicationViewModel>();
 builder.Services.AddScoped<ConfirmBODConfigViewModel>();
 

@@ -1,5 +1,6 @@
 ﻿@page "/pub-sub"
 @using AdapterServer.Data;
+@using AdapterServer.Components;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
 
@@ -47,6 +48,22 @@
             <InputText type="text" class="form-input w-full" disabled @bind-Value="@viewModel.Topic" />
         </div>
 
+        <h3>Message Type</h3>
+        <div />
+        <div />
+        <div />
+
+        <div>
+            <InputSelect class="form-input" disabled @bind-Value="@viewModel.MessageType">
+                <option value="@PublicationViewModel.MessageTypes.JSON">Simple JSON</option>
+                <option value="@PublicationViewModel.MessageTypes.ExampleBOD">Example BOD</option>
+                @* <option value="@PublicationViewModel.MessageTypes.CCOM">CCOM BOD</option> *@
+            </InputSelect>
+        </div>
+        <div />
+        <div />
+        <div />
+
         <h2 class="col-span-full mt-6">Message Settings</h2>
 
         <h3>Code</h3>
@@ -70,7 +87,7 @@
         <div />
 
         <div class="col-span-full flex justify-between w-full">
-            <button type="submit" class="btn-primary" disabled="@working">
+            <button type="submit" class="btn-primary" disabled="@(working || notReady)">
                 <div class="flex items-center">
                     <span role="status" class="mr-2 align-center @(!working ? "hidden" : "")">
                         <svg aria-hidden="true" class="inline w-4 h-4 text-gray-200 animate-spin dark:text-gray-600 fill-gray-600 dark:fill-gray-300" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -84,7 +101,7 @@
             </button>
         </div>
 
-        <div class="text-green-500 @(posted ? "" : "hidden")">Request sent!</div>
+        <div class="text-green-500 @(posted ? "" : "hidden")">Message sent!</div>
 
         @if (!string.IsNullOrEmpty(error))
         {
@@ -123,6 +140,9 @@
         </table>
     </div>
 </EditForm>
+
+<h2 class="col-span-full mt-6">Publications</h2>
+<PublicationList />
 
 @code {
     bool working;

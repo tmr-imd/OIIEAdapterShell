@@ -1,0 +1,66 @@
+@using TaskQueueing.ObjectModel.Models;
+@inject NavigationManager NavManager
+
+@* 
+    Blazor routing prevents normal in-page references from working, see https://mikaberglund.com/creating-anchor-links-in-blazor-applications/
+    Currently have a simple work around that is self-contained here. Might want to utilise the AnchorLink component of the above link.
+ *@
+
+<div>
+    <p>
+        Encountered @Errors.Count(x => x.Severity > ErrorSeverity.Warning) errors
+        and @(Errors.Count(x => x.Severity <= ErrorSeverity.Warning)) warnings.
+    </p>
+@foreach (var error in Errors)
+{
+    <div class="col-span-full border rounded @(ColourClassesForError(error))">
+        <p class="px-4 py-1">
+            <span class="mr-2">
+            @if ( (int)error.Severity < 3 )
+            {
+                @* Info, information-circle *@
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline align-text-top drop-shadow">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+            }
+            else if (error.Severity <= ErrorSeverity.Warning)
+            {
+                @* Warning, exclamation-triangle*@
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline align-text-top drop-shadow">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            }
+            else
+            {
+                @* Danger/Error, x-circle *@
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline align-text-top drop-shadow">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            }
+            </span>
+            <span class=""><a href="@(RelativeUriNoFragment())#line-@(error.LineNumber)" onclick="(function (target) { document.getElementById(target).scrollIntoView(); })('line-@(error.LineNumber)');" @onclick:preventDefault="true" >@(error.LineNumber)-@(error.LinePosition)</a>:&nbsp;</span>@error.Message
+        </p>
+    </div>    
+}
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<MessageError> Errors { get; set; } = Enumerable.Empty<MessageError>();
+    
+    private string ColourClassesForError(MessageError error)
+    {
+        return error.Severity switch
+        {
+            ErrorSeverity.Error => "bg-red-100 border-red-800 text-red-800",
+            ErrorSeverity.Warning => "bg-yellow-100 border-yellow-800 text-yellow-800",
+            var val when (int)val < 3 => "bg-blue-100 border-blue-800 text-blue-800",
+            _ => "bg-red-100 border-red-800 text-red-800"
+        };
+    }
+
+    private string RelativeUriNoFragment()
+    {
+        return NavManager.ToBaseRelativePath(NavManager.Uri.Split('#', 2).First());
+    }
+}

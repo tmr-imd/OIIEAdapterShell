@@ -9,7 +9,10 @@ using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
 
-public class RequestProviderJob<T> where T : notnull
+public class RequestProviderJob<TProcessJob, TRequest, TResponse>
+    where TRequest : notnull
+    where TResponse : notnull
+    where TProcessJob : ProcessRequestResponseJob<TRequest, TResponse>
 {
     private readonly IProviderRequest provider;
     private readonly JobContextFactory factory;
@@ -24,56 +27,79 @@ public class RequestProviderJob<T> where T : notnull
 
     public async Task<string> CheckForRequests( string sessionId )
     {
+        var lastReadRequest = "";
         try
         {
-            var requestMessage = await provider.ReadRequest(sessionId);
-
-            if (requestMessage is not null)
-            {
-                var content = requestMessage.MessageContent.Deserialise<T>();
-
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-                BackgroundJob.Enqueue<RequestProviderJob<T>>(x => x.PostResponse(sessionId, requestMessage.Id, content, null));
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-
-                await provider.RemoveRequest(sessionId);
-
-                return requestMessage.Id;
-            }
-
+            lastReadRequest = await readRemoveAll(sessionId);
         }
         catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.SessionFault )
         {
             // Do nothing
         }
 
-        return "";
+        return lastReadRequest;
     }
-    public async Task<string> PostResponse(string sessionId, string requestId, T content, PerformContext ctx)
+
+    public async Task<string> PostResponse(string sessionId, string requestId, TResponse content, PerformContext ctx)
     {
-        if ( content is StructureAssetsFilter filter)
+        var response = await provider.PostResponse(sessionId, requestId, content);
+
+        using var context = await factory.CreateDbContext( principal );
+
+        var request = await RequestProviderService.GetOpenRequest(requestId, context);
+        if (request is null) return ""; // does not exist or already processed
+
+        var storedResponse = new Response()
         {
-            var structures = StructureAssetService.GetStructures(filter);
+            JobId = ctx.BackgroundJob.Id,
+            State = MessageState.Posted,
+            ResponseId = response.Id,
+            RequestId = requestId,
+            Request = request,
+            MediaType = response.MessageContent.MediaType,
+            ContentEncoding = response.MessageContent.ContentEncoding,
+            Content = response.MessageContent.Content
+        };
 
-            var response = await provider.PostResponse(sessionId, requestId, new RequestStructures(structures));
+        context.Responses.Add( storedResponse );
+        request.Processed = true;
 
-            using var context = await factory.CreateDbContext( principal );
+        await context.SaveChangesAsync();
 
-            var storedResponse = new Response()
+        return response.Id;
+    }
+    
+    private async Task<string> readRemoveAll(string sessionId)
+    {
+        var context = await factory.CreateDbContext(principal);
+        var lastReadRequest = "";
+        
+        for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
+        {
+            var content = requestMessage.MessageContent.Deserialise<TRequest>();
+
+            var request = new Request
             {
-                JobId = ctx.BackgroundJob.Id,
-                ResponseId = response.Id,
-                RequestId = requestId,
-                Content = response.MessageContent.Content
+                State = MessageState.Received,
+                RequestId = requestMessage.Id,
+                Topic = requestMessage.Topics.FirstOrDefault() ?? "",
+                MediaType = requestMessage.MessageContent.MediaType,
+                ContentEncoding = requestMessage.MessageContent.ContentEncoding,
+                Content = requestMessage.MessageContent.Content
             };
-
-            await context.Responses.AddAsync( storedResponse );
-
+            
+            context.Requests.Add(request);
             await context.SaveChangesAsync();
 
-            return response.Id;
+            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
+            request.JobId = jobId;
+            await context.SaveChangesAsync();
+
+            await provider.RemoveRequest(sessionId);
+
+            lastReadRequest = requestMessage.Id;
         }
 
-        return "";
+        return lastReadRequest;
     }
 }

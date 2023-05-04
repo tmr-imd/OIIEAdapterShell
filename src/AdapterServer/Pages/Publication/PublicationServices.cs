@@ -2,7 +2,7 @@
 using TaskQueueing.ObjectModel;
 using TaskModels = TaskQueueing.ObjectModel.Models;
 
-namespace AdapterServer.Pages.Request;
+namespace AdapterServer.Pages.Publication;
 
 public class PublicationService
 {
@@ -11,5 +11,12 @@ public class PublicationService
         return await context.Publications
             .OrderByDescending(x => x.DateCreated)
             .ToListAsync();
+    }
+
+    public static async Task<TaskModels.Publication?> GetPublication(IJobContext context, Guid publicationId)
+    {
+        return await context.Publications
+            .Where(x => x.Id == publicationId)
+            .FirstOrDefaultAsync();
     }
 }

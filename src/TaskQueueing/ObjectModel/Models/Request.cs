@@ -2,11 +2,19 @@
 
 namespace TaskQueueing.ObjectModel.Models;
 
-public record class Request : ModelObject
+public record class Request : AbstractMessage
 {
-    public string JobId { get; set; } = "";
     public string RequestId { get; set; } = "";
-    public JsonDocument Filter { get; set; } = null!;
-    public JsonDocument? Content { get; set; }
-    public bool Processed { get; set; }
+    public string Topic { get; set; } = "";
+    public ICollection<Response> Responses { get; } = new List<Response>();
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public JsonDocument? ResponseContent
+    {
+        get
+        {
+            return Responses.LastOrDefault()?.Content;
+        }
+    }
+
 }

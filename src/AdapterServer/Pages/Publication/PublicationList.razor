@@ -1,0 +1,54 @@
+@using AdapterServer.Components;
+@using System.Security.Claims;
+@using TaskQueueing.Persistence;
+
+@inject ILogger<Publication> Logger
+@inject PublicationListViewModel viewModel
+@inject JobContextFactory factory
+@inject ClaimsPrincipal principal
+
+<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+    <thead class="bg-gray-100">
+        <tr>
+            <th scope="col">Job #</th>
+            <th scope="col">Created</th>
+            <th scope="col">MessageId</th>
+            <th scope="col">Topics</th>
+            <th scope="col">Processed</th>
+            <th scope="col">Action</th>
+        </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        @foreach (var publication in viewModel.Publications)
+        {
+            <tr>
+                <td>@publication.JobId</td>
+                <td>@publication.DateCreated.ToLocalTime().ToString("G")</td>
+                <td>@publication.MessageId <DirectionIndicator State="@publication.State" /></td>
+                <td>@String.Join(", ", publication.Topics)</td>
+                <td><ProcessingIndicator State="@(publication.State)" /></td>
+                @* <td><ProcessingIndicator State="@(publication.Posted && publication.Responses.Any() ? publication.Responses.Last().State : publication.State)" /></td> *@
+                <td>
+                    <a href="publication/@publication.Id" class="btn">View</a>
+                </td>
+            </tr>
+        }
+        @if (!viewModel.Publications.Any())
+        {
+            <tr><td colspan="6">No publications sent nor received.</td></tr>
+        }
+    </tbody>
+</table>
+
+@code {
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await viewModel.LoadSettings("publications-list");
+
+        using var context = await factory.CreateDbContext(principal);
+        await viewModel.Load(context);
+
+        await base.OnParametersSetAsync();
+    }
+}

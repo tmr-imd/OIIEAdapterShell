@@ -1,3 +1,7 @@
 ﻿namespace TaskQueueing.Data;
 
-public record class StructureAsset( string Code, string Type, string Location, string Owner, string Condition, string Inspector );
+public record class StructureAsset( string Code, string Type, string Location, string Owner, string Condition, string Inspector )
+{
+    // To support serialization
+    public StructureAsset() : this("", "", "", "", "", "") {}
+}

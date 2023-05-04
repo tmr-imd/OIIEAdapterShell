@@ -1,0 +1,139 @@
+@page "/publication/{MessageId:guid}"
+@using AdapterServer.Data;
+@using System.Security.Claims;
+@using TaskQueueing.Persistence;
+@using TaskQueueing.ObjectModel.Models;
+@using AdapterServer.Components
+
+@inject ILogger<Publication> Logger
+
+@inject PublicationDetailViewModel viewModel
+@inject NavigationManager navigation
+@inject JobContextFactory factory
+
+<PageTitle>Publication - Adapter Shell</PageTitle>
+
+<h1>Publication</h1>
+
+<div class="grid grid-cols-4 gap-2">
+    <h2 class="col-span-full mt-6">Message Settings</h2>
+
+    <h3>Code</h3>
+    <h3>Type</h3>
+    <h3>Location</h3>
+    <h3>Owner</h3>
+
+    <div>@viewModel.Code</div>
+    <div>@viewModel.Type</div>
+    <div>@viewModel.Location</div>
+    <div>@viewModel.Owner</div>
+
+    <h3>Condition</h3>
+    <h3>Inspector</h3>
+    <div />
+    <div />
+
+    <div>@viewModel.Condition</div>
+    <div>@viewModel.Inspector</div>
+    <div />
+    <div />
+
+    @if ( !string.IsNullOrEmpty(error) )
+    {
+        <div class="col-span-full">
+            <span class="text-red-500">@error</span>
+        </div>
+    }
+
+    @if (MessageErrors.Any() || viewModel.RawContent is not null)
+    {
+        <div class="col-span-full">
+
+            <h2 class="mt-6">Message Detail</h2>
+            <ErrorsDisplay Errors="@MessageErrors" />
+
+            <h3 class="mt-3">Raw Message</h3>
+            <RawMessage Content="@MessageContent" />
+
+        </div>
+    }
+
+    @if (ResponseErrors.Any())
+    {
+        <div class="col-span-full">
+
+            <h2 class="mt-6">Response Detail</h2>
+            <ErrorsDisplay Errors="@ResponseErrors" />
+            
+            <h3 class="mt-3">Raw Response</h3>
+            <RawMessage Content="@ResponseContent" />
+        </div>
+    }
+
+</div>
+
+@code {
+    private string error = "";
+    private string channelName = "pub-sub";
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Edit { get; set; }
+
+    [Parameter]
+    public Guid MessageId { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await viewModel.LoadSettings(channelName);
+
+        await InvokeAsync(StateHasChanged);
+
+        using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
+        await viewModel.Load( context, MessageId );
+
+        await base.OnParametersSetAsync();
+    }
+
+    private IEnumerable<MessageError> MessageErrors
+    {
+        get
+        {
+            return viewModel.Message?.MessageErrors ?? Enumerable.Empty<MessageError>();
+        }
+    }
+
+    private string MessageContent
+    {
+        get
+        {
+            if (viewModel.RawContent is not null) return viewModel.RawContent;
+            
+            var doc = viewModel.Message?.Content;
+            var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
+            options.WriteIndented = true;
+            return System.Text.Json.JsonSerializer.Serialize(doc, options);
+        }
+    }
+
+    private IEnumerable<MessageError> ResponseErrors
+    {
+        get
+        {
+            @* return viewModel.Message?.Responses?.LastOrDefault()?.MessageErrors ?? Enumerable.Empty<MessageError>(); *@
+            return Enumerable.Empty<MessageError>();
+        }
+    }
+
+    private string ResponseContent
+    {
+        get
+        {
+            @* var doc = viewModel.Message?.ResponseContent;
+            var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
+            options.WriteIndented = true;
+            return System.Text.Json.JsonSerializer.Serialize(doc, options); *@
+            return "";
+        }
+    }
+}

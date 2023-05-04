@@ -10,13 +10,15 @@ public class RequestService
     {
         return await context.Requests
             .OrderByDescending(x => x.DateCreated)
+            .Include(x => x.Responses)
             .ToListAsync();
     }
 
-    public static async Task<TaskModels.Request?> GetRequest(IJobContext context, string requestId)
+    public static async Task<TaskModels.Request?> GetRequest(IJobContext context, Guid requestId)
     {
         return await context.Requests
-            .Where(x => x.RequestId == requestId)
+            .Where(x => x.Id == requestId)
+            .Include(x => x.Responses)
             .FirstOrDefaultAsync();
     }
 }
