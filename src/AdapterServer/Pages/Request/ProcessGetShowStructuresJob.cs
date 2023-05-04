@@ -16,6 +16,7 @@ using System.Xml.Serialization;
 using AdapterServer.Data;
 using AdapterServer.Extensions;
 using System.Text.Json;
+using System.ComponentModel;
 
 namespace AdapterServer.Pages.Request;
 
@@ -32,9 +33,18 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
     {
         if (_filter is null) throw new Exception("Unexpected null StructureAssetsFilter in process GetStructuresJob.");
 
-        var structures = StructureAssetService.GetStructures(_filter);
-        var requestStructures = new RequestStructures(structures, structures.Length);
-        return await Task.FromResult(requestStructures.ToShowStructureAssetsBOD());
+        var converter = TypeDescriptor.GetConverter(typeof(StructureAsset));
+
+        var assets = StructureAssetService.GetStructures(_filter).Select(x => {
+            var asset = converter.ConvertTo( x, typeof(Ccom.Asset) );
+
+            if ( asset is null ) throw new InvalidOperationException("Problem converting StructureAsset to Ccom.Asset");
+
+            return (Ccom.Asset)asset;
+        })
+        .ToList();
+
+        return await Task.FromResult( assets.ToShowStructureAssetsBOD() );
     }
 
     protected override async Task<bool> process(XDocument content, ResponseMessage response, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
