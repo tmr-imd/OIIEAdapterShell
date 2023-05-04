@@ -1,11 +1,12 @@
 using Isbm2Client.Model;
 using AdapterServer.Extensions;
 using AdapterServer.Data;
+using AdapterServer.Pages;
+using AdapterServer.Pages.Request;
+using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Data;
-using AdapterServer.Pages.Request;
-using AdapterServer.Pages.Publication;
 
 var builder = WebApplication.CreateBuilder(args);
 
