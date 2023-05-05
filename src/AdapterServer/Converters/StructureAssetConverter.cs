@@ -66,7 +66,23 @@ namespace AdapterServer.Converters
                         UUID = new Ccom.UUID(autogen : true),
                         FullName = new[] { new Ccom.TextType() { Value = structure.Condition } },
                     } 
-                }
+                },
+                //AssetOwnerEvent = new[]
+                //{
+                //    new Ccom.AssetOwnerEvent()
+                //    {
+                //        FullName = new[] {
+                //            new Ccom.TextType()
+                //            {
+                //                Value = structure.Owner,
+                //            }
+                //        }
+                //    }
+                //}
+                //Description = new Ccom.TextType()
+                //{
+                //    Value = structure.
+                //}
             };
         }
     }

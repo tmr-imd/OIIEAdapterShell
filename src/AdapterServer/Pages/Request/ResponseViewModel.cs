@@ -95,8 +95,8 @@ public class ResponseViewModel
         if (request.ResponseContent is not null && request.Responses.Last().MediaType == "application/json")
         {
             // Deserialize the content only. Ignore ConfirmBOD as errors have already been attached to the request
-            var structures = request.ResponseContent.Deserialize<RequestStructures>();
-            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
+            var assets = request.ResponseContent.Deserialize<List<Ccom.Asset>>();
+            Assets = assets ?? Enumerable.Empty<Ccom.Asset>();
         }
     }
 
