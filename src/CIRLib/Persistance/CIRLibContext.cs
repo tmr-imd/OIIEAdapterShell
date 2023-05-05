@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using CIRLib.ObjectModel.Models;
 using CIRLib.ObjectModel;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +17,23 @@ namespace CIRLib.Persistence
         public DbSet<PropertyValue> PropertyValue { get; set; } = null!;
 
         public CIRLibContext(DbContextOptions options, string who) : base(options)
-        {
+        { 
             this.who = who;
-        }
+        } 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
+            if (!optionsBuilder.IsConfigured){
+                //Implicitly fetching the db provider for migrations.
+
+                IConfigurationRoot configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .Build();
+                var defaultConnection = configuration.GetConnectionString("CIRLibConnection");
+                optionsBuilder.UseSqlite($"Filename={defaultConnection}");
+            }
+            
             #if DEBUG
                 optionsBuilder.EnableSensitiveDataLogging(true);
             #endif
@@ -32,11 +43,11 @@ namespace CIRLib.Persistence
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Registry>();
-            modelBuilder.Entity<Category>();
-            modelBuilder.Entity<Entry>();
-            modelBuilder.Entity<Property>();
-            modelBuilder.Entity<PropertyValue>();
+            modelBuilder.Entity<Registry>().HasKey(t => t.RegistryId);
+            modelBuilder.Entity<Category>().HasKey(t => new {t.CategoryId, t.RegistryRefId, t.SourceId});
+            modelBuilder.Entity<Entry>().HasKey(t => new {t.CategoryRefId, t.RegistryRefId, t.SourceRefId, t.SourceId});
+            modelBuilder.Entity<Property>().HasKey(t => new { t.CategoryRefId, t.RegistryRefId, t.SourceRefId, t.SourceId, t.IdInSource});
+            modelBuilder.Entity<PropertyValue>().HasKey(t => t.Key);
         }
 
         private void SetAuditFields()

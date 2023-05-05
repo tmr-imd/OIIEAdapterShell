@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CIRLib.Migrations
 {
     /// <inheritdoc />
-    public partial class makeMigration : Migration
+    public partial class newDbTables : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,10 +15,11 @@ namespace CIRLib.Migrations
                 name: "Category",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CategoryId = table.Column<string>(type: "TEXT", nullable: false),
+                    RegistryRefId = table.Column<string>(type: "TEXT", nullable: false),
                     SourceId = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -26,21 +27,24 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Category", x => x.Id);
+                    table.PrimaryKey("PK_Category", x => new { x.CategoryId, x.RegistryRefId, x.SourceId });
                 });
 
             migrationBuilder.CreateTable(
                 name: "Entry",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    EntryId = table.Column<string>(type: "TEXT", nullable: false),
+                    CategoryRefId = table.Column<string>(type: "TEXT", nullable: false),
+                    RegistryRefId = table.Column<string>(type: "TEXT", nullable: false),
+                    SourceRefId = table.Column<string>(type: "TEXT", nullable: false),
                     SourceId = table.Column<string>(type: "TEXT", nullable: false),
+                    IdInSource = table.Column<string>(type: "TEXT", nullable: true),
+                    EntryId = table.Column<string>(type: "TEXT", nullable: false),
                     CIRId = table.Column<string>(type: "TEXT", nullable: false),
-                    SourceOwnerId = table.Column<string>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
                     Inactive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -48,16 +52,22 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Entry", x => x.Id);
+                    table.PrimaryKey("PK_Entry", x => new { x.CategoryRefId, x.RegistryRefId, x.SourceRefId, x.SourceId });
                 });
 
             migrationBuilder.CreateTable(
                 name: "Property",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    PropertyId = table.Column<string>(type: "TEXT", nullable: false),
+                    CategoryRefId = table.Column<string>(type: "TEXT", nullable: false),
+                    RegistryRefId = table.Column<string>(type: "TEXT", nullable: false),
+                    SourceRefId = table.Column<string>(type: "TEXT", nullable: false),
+                    SourceId = table.Column<string>(type: "TEXT", nullable: false),
+                    IdInSource = table.Column<string>(type: "TEXT", nullable: false),
+                    PropertyId = table.Column<string>(type: "TEXT", nullable: true),
+                    PropertyValue = table.Column<string>(type: "TEXT", nullable: false),
                     DataType = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -65,17 +75,17 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Property", x => x.Id);
+                    table.PrimaryKey("PK_Property", x => new { x.CategoryRefId, x.RegistryRefId, x.SourceRefId, x.SourceId, x.IdInSource });
                 });
 
             migrationBuilder.CreateTable(
                 name: "PropertyValue",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Key = table.Column<string>(type: "TEXT", nullable: false),
                     Value = table.Column<string>(type: "TEXT", nullable: false),
                     UnitOfMeasure = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -83,16 +93,16 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PropertyValue", x => x.Id);
+                    table.PrimaryKey("PK_PropertyValue", x => x.Key);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Registry",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     RegistryId = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -100,7 +110,7 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Registry", x => x.Id);
+                    table.PrimaryKey("PK_Registry", x => x.RegistryId);
                 });
         }
 
