@@ -10,24 +10,24 @@ public record class Property : ModelObject
     public string DataType { get; set; } = "";
     
     [ForeignKey("Category")]
-    [Key, Column(Order = 1)]
+    [Column(Order = 1),Key]
     public string CategoryRefId { get; set; } = "";
 
     [ForeignKey("Registry")]
-    [Key, Column(Order = 2)]
+    [Column(Order = 2), Key]
     public string RegistryRefId { get; set; } = "";
 
     
     [ForeignKey("Category")]
-    [Key, Column(Order = 3)]
+    [Column(Order = 3), Key]
     public string SourceRefId { get; set; } = "";
 
     [ForeignKey("Entry")]
-    [Key, Column(Order = 4)]
+    [Column(Order = 4), Key]
     public string SourceId { get; set; } = "";
 
     [ForeignKey("Entry")]
-    [Key, Column(Order = 5)]
+    [Column(Order = 5), Key]
      public string IdInSource { get; set; } = "";
 
 }
