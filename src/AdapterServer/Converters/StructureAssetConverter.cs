@@ -26,14 +26,56 @@ namespace AdapterServer.Converters
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        private Ccom.Asset ConvertToAsset( StructureAsset structure )
+        private static Ccom.Asset ConvertToAsset( StructureAsset structure )
         {
             return new Ccom.Asset()
             {
+                UUID = new Ccom.UUID(autogen: true),
                 ShortName = new[] { 
                     new Ccom.TextType() { 
                         Value = structure.Code 
-                }}
+                }},
+                Type = new Ccom.AssetType()
+                {
+                    UUID = new Ccom.UUID(autogen: true),
+                    FullName = new[] { new Ccom.TextType() { Value = structure.Type} } 
+                },
+                RegistrationSite = new Ccom.Site()
+                { 
+                    UUID = new Ccom.UUID(autogen: true), 
+                    FullName = new[] { new Ccom.TextType() { Value = structure.Location } }
+                },
+                AssetOwnerEvent = new[] {
+                    new Ccom.AssetOwnerEvent()
+                    {
+                        UUID = new Ccom.UUID(autogen: true),
+                        FullName = new[] { new Ccom.TextType() { Value = structure.Owner} }
+                    }
+                },
+                HealthAssessment = new[] 
+                { 
+                    new Ccom.HealthAssessment() 
+                    { 
+                        UUID = new Ccom.UUID(autogen : true),
+                        FullName = new[] { new Ccom.TextType() { Value = structure.Condition } },
+                    } 
+                },
+                //AssetOwnerEvent = new[]
+                //{
+                //    new Ccom.AssetOwnerEvent()
+                //    {
+                //        FullName = new[] {
+                //            new Ccom.TextType()
+                //            {
+                //                Value = structure.Owner,
+                //            }
+                //        }
+                //    }
+                //}
+                //Description = new Ccom.TextType()
+                //{
+                //    Value = structure.
+                //}
             };
         }
     }

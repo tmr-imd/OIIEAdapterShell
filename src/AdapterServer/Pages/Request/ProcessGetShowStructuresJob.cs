@@ -29,7 +29,7 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
     {
     }
 
-    protected override async Task<XDocument> process(XDocument getBod, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
+    protected override Task<XDocument> process(XDocument getBod, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
     {
         if (_filter is null) throw new Exception("Unexpected null StructureAssetsFilter in process GetStructuresJob.");
 
@@ -44,7 +44,7 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
         })
         .ToList();
 
-        return await Task.FromResult( assets.ToShowStructureAssetsBOD() );
+        return Task.FromResult( assets.ToShowStructureAssetsBOD() );
     }
 
     protected override async Task<bool> process(XDocument content, ResponseMessage response, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
@@ -102,10 +102,10 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
             return await Task.FromResult(false); // No need to continue with processing
         }
 
-        var bod = _bodReader.AsBod<GenericBodType<ShowType, List<RequestStructures>>>();
-        var requestStructures = bod?.DataArea.Noun.FirstOrDefault();
+        var bod = _bodReader.AsBod<GenericBodType<ShowType, List<Ccom.Asset>>>();
+        var assets = bod?.DataArea.Noun.FirstOrDefault();
 
-        return await validateStructures(requestStructures ?? new RequestStructures(), response, context, errorCallback);
+        return await validateStructures(assets ?? new List<Ccom.Asset>(), response, context, errorCallback);
     }
 
     // Simple example of overriding the error handler. Preserves default behaviour and writes to console.
