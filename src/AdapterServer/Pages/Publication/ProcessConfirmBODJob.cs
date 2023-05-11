@@ -13,6 +13,7 @@ using Oagis;
 using System.Xml;
 using System.Xml.Serialization;
 using AdapterServer.Data;
+using AdapterServer.Extensions;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -31,7 +32,7 @@ public class ProcessConfirmBODJob : ProcessPublicationJob<string>
         var serializer = new XmlSerializer(typeof(BODType));
         var bodNouns = _bodReader?.Nouns.Select(x => serializer.Deserialize(x.CreateReader())).Cast<BODType>() ?? Enumerable.Empty<BODType>();
         var errors = bodNouns?.SelectMany(
-            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => toMessageError(m)) ?? Enumerable.Empty<MessageError>()
+            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => m.ToMessageError()) ?? Enumerable.Empty<MessageError>()
         ) ?? Enumerable.Empty<MessageError>();
 
         var originalMessageId = (_bodReader?.Verb as ConfirmType)?.OriginalApplicationArea?.BODID?.Value ?? "";
@@ -65,13 +66,7 @@ public class ProcessConfirmBODJob : ProcessPublicationJob<string>
 
             foreach (var validationError in _bodReader.ValidationErrors)
             {
-                var severity = validationError.Severity switch
-                {
-                    System.Xml.Schema.XmlSeverityType.Error => ErrorSeverity.Error,
-                    System.Xml.Schema.XmlSeverityType.Warning => ErrorSeverity.Warning,
-                     _ => ErrorSeverity.Error
-                };
-                error = new MessageError(severity, validationError.Message, validationError.LineNumber, validationError.LinePosition);
+                error = validationError.ToMessageError();
                 errorCallback(error, publication, context);
             }
         }
@@ -90,26 +85,6 @@ public class ProcessConfirmBODJob : ProcessPublicationJob<string>
     {
         base.onError(error, publication, context);
         Console.WriteLine("Encountered an error processing publication {0}: {1}", publication.MessageId, error);
-    }
-
-    private MessageError toMessageError(MessageType oagisError)
-    {
-        return new MessageError(ErrorSeverity.Error, oagisError.Description.First().Value);
-    }
-
-    private Oagis.MessageType toOagisMessage(MessageError error)
-    {
-        return new MessageType
-        {
-            Description = new DescriptionType[]
-            {
-                new DescriptionType()
-                {
-                    languageID = "en-US",
-                    Value = $"{error.Message} at Line: {error.LineNumber} Position: {error.LinePosition}"
-                }
-            }
-        };
     }
 
     private async Task<ChannelSettings?> loadSettingsAsync()

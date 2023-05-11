@@ -13,6 +13,7 @@ using Oagis;
 using System.Xml;
 using System.Xml.Serialization;
 using AdapterServer.Data;
+using AdapterServer.Extensions;
 using System.Text.Json;
 
 namespace AdapterServer.Pages.Request;
@@ -105,18 +106,13 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
 
             foreach (var validationError in _bodReader.ValidationErrors)
             {
-                var severity = validationError.Severity switch
-                {
-                    System.Xml.Schema.XmlSeverityType.Error => ErrorSeverity.Error,
-                    System.Xml.Schema.XmlSeverityType.Warning => ErrorSeverity.Warning,
-                     _ => ErrorSeverity.Error
-                };
-                error = new MessageError(severity, validationError.Message, validationError.LineNumber, validationError.LinePosition);
+                error = validationError.ToMessageError();
                 errorCallback(error, response, context);
             }
         }
 
-        if (_bodReader.Verb is not ConfirmType)
+        var bod = _bodReader.AsBod<ConfirmBODType>();
+        if (bod is null)
         {
             success = false;
             var error = new MessageError(ErrorSeverity.Error, $"Invalid ConfirmBOD: got {_bodReader.Verb.GetType().Name} instead.");
@@ -127,17 +123,17 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
 
         Console.Out.WriteLine(content);
 
-        var serializer = new XmlSerializer(typeof(BODType));
-        var bodNouns = _bodReader?.Nouns.Select(x => serializer.Deserialize(x.CreateReader())).Cast<BODType>() ?? Enumerable.Empty<BODType>();
-        var errors = bodNouns?.SelectMany(
-            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => toMessageError(m, ErrorSeverity.Error)) ?? Enumerable.Empty<MessageError>()
+        var errors = bod?.DataArea.BOD.SelectMany(
+            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => m.ToMessageError()) ?? Enumerable.Empty<MessageError>()
         ) ?? Enumerable.Empty<MessageError>();
-        var warnings = bodNouns?.SelectMany(
-            x => x?.BODFailureMessage?.WarningProcessMessage?.Select(m => toMessageError(m, ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>()
+
+        var warnings = bod?.DataArea.BOD.SelectMany(
+            x => x?.BODFailureMessage?.WarningProcessMessage?.Select(m => m.ToMessageError(ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>()
         ) ?? Enumerable.Empty<MessageError>();
+
         warnings = warnings.Concat(
-            bodNouns?.SelectMany(
-                x => x?.BODSuccessMessage?.WarningProcessMessage?.Select((m) => { Console.Out.WriteLine(m); return toMessageError(m, ErrorSeverity.Warning);}) ?? Enumerable.Empty<MessageError>()
+            bod?.DataArea.BOD.SelectMany(
+                x => x?.BODSuccessMessage?.WarningProcessMessage?.Select(m => m.ToMessageError(ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>()
             ) ?? Enumerable.Empty<MessageError>()
         );
 
@@ -165,7 +161,7 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
                 {
                     Value = Guid.NewGuid().ToString()
                 },
-                CreationDateTime = DateTime.UtcNow.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                CreationDateTime = DateTime.UtcNow.ToXsDateTimeString(),
                 Sender = new SenderType()
                 {
                     LogicalID = new IdentifierType()
@@ -181,7 +177,7 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
                     OriginalApplicationArea = new ApplicationAreaType
                     {
                         BODID = new IdentifierType { Value = message.RequestId },
-                        CreationDateTime = message.DateCreated.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                        CreationDateTime = message.DateCreated.ToUniversalTime().ToXsDateTimeString(),
                         Sender = new SenderType
                         {
                             LogicalID = new IdentifierType { Value = Guid.NewGuid().ToString() } // TODO
@@ -198,7 +194,7 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
             confirmBOD.DataArea.BOD[0].BODSuccessMessage = new BODSuccessMessageType();
             if (message.MessageErrors?.Any() ?? false)
             {
-                confirmBOD.DataArea.BOD[0].BODSuccessMessage.WarningProcessMessage = message.MessageErrors.Select(r => toOagisMessage(r)).ToArray();
+                confirmBOD.DataArea.BOD[0].BODSuccessMessage.WarningProcessMessage = message.MessageErrors.Select(r => r.ToOagisMessage()).ToArray();
             }
         }
         else
@@ -207,44 +203,14 @@ public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFil
             {
                 ErrorProcessMessage = (from error in message.MessageErrors
                                        where error.Severity > ErrorSeverity.Warning
-                                       select toOagisMessage(error)).ToArray(),
+                                       select error.ToOagisMessage()).ToArray(),
                 WarningProcessMessage = (from warning in message.MessageErrors
                                          where warning.Severity <= ErrorSeverity.Warning
-                                         select toOagisMessage(warning)).ToArray()
+                                         select warning.ToOagisMessage()).ToArray()
             };
         }
 
-        var stream = new System.IO.StringWriter();
-        var writerSettings = new XmlWriterSettings()
-        {
-            ConformanceLevel = ConformanceLevel.Document,
-            Encoding = System.Text.Encoding.UTF8,
-            Indent = true,
-            OmitXmlDeclaration = true,
-        };
-        var writer = XmlWriter.Create(stream, writerSettings);
-        new XmlSerializer(typeof(ConfirmBODType)).Serialize(writer, confirmBOD);
-        return stream.ToString();
-    }
-
-    private Oagis.MessageType toOagisMessage(MessageError error)
-    {
-        return new MessageType
-        {
-            Description = new DescriptionType[]
-            {
-                new DescriptionType()
-                {
-                    languageID = "en-US",
-                    Value = $"{error.Message} at Line: {error.LineNumber} Position: {error.LinePosition}"
-                }
-            }
-        };
-    }
-
-    private MessageError toMessageError(MessageType oagisError, ErrorSeverity severity)
-    {
-        return new MessageError(severity, oagisError.Description.First().Value);
+        return confirmBOD.SerializeToString();
     }
 
     private SettingsService Settings = new SettingsService();

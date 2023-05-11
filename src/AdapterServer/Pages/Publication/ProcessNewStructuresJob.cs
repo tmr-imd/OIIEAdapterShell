@@ -8,10 +8,12 @@ using TaskQueueing.ObjectModel;
 using TaskQueueing.ObjectModel.Models;
 using PubMessage = TaskQueueing.ObjectModel.Models.Publication;
 
+using CommonBOD;
 using Oagis;
 using System.Xml;
 using System.Xml.Serialization;
 using AdapterServer.Data;
+using AdapterServer.Extensions;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -67,7 +69,7 @@ public class ProcessNewStructuresJob : ProcessPublicationJob<NewStructureAsset>
                 {
                     Value = Guid.NewGuid().ToString()
                 },
-                CreationDateTime = DateTime.UtcNow.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                CreationDateTime = DateTime.UtcNow.ToXsDateTimeString(),
                 Sender = new SenderType()
                 {
                     LogicalID = new IdentifierType()
@@ -83,7 +85,7 @@ public class ProcessNewStructuresJob : ProcessPublicationJob<NewStructureAsset>
                     OriginalApplicationArea = new ApplicationAreaType
                     {
                         BODID = new IdentifierType { Value = message.MessageId },
-                        CreationDateTime = message.DateCreated.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                        CreationDateTime = message.DateCreated.ToUniversalTime().ToXsDateTimeString(),
                         Sender = new SenderType
                         {
                             LogicalID = new IdentifierType { Value = Guid.NewGuid().ToString() } // TODO
@@ -100,7 +102,7 @@ public class ProcessNewStructuresJob : ProcessPublicationJob<NewStructureAsset>
             confirmBOD.DataArea.BOD[0].BODSuccessMessage = new BODSuccessMessageType();
             if (message.MessageErrors?.Any() ?? false)
             {
-                confirmBOD.DataArea.BOD[0].BODSuccessMessage.WarningProcessMessage = message.MessageErrors.Select(r => toOagisMessage(r)).ToArray();
+                confirmBOD.DataArea.BOD[0].BODSuccessMessage.WarningProcessMessage = message.MessageErrors.Select(r => r.ToOagisMessage()).ToArray();
             }
         }
         else
@@ -109,39 +111,14 @@ public class ProcessNewStructuresJob : ProcessPublicationJob<NewStructureAsset>
             {
                 ErrorProcessMessage = (from error in message.MessageErrors
                                        where error.Severity > ErrorSeverity.Warning
-                                       select toOagisMessage(error)).ToArray(),
+                                       select error.ToOagisMessage()).ToArray(),
                 WarningProcessMessage = (from warning in message.MessageErrors
                                          where warning.Severity <= ErrorSeverity.Warning
-                                         select toOagisMessage(warning)).ToArray()
+                                         select warning.ToOagisMessage()).ToArray()
             };
         }
 
-        var stream = new System.IO.StringWriter();
-        var writerSettings = new XmlWriterSettings()
-        {
-            ConformanceLevel = ConformanceLevel.Document,
-            Encoding = System.Text.Encoding.UTF8,
-            Indent = true,
-            OmitXmlDeclaration = true,
-        };
-        var writer = XmlWriter.Create(stream, writerSettings);
-        new XmlSerializer(typeof(ConfirmBODType)).Serialize(writer, confirmBOD);
-        return stream.ToString();
-    }
-
-    private Oagis.MessageType toOagisMessage(MessageError error)
-    {
-        return new MessageType
-        {
-            Description = new DescriptionType[]
-            {
-                new DescriptionType()
-                {
-                    languageID = "en-US",
-                    Value = $"{error.Message} at Line: {error.LineNumber} Position: {error.LinePosition}"
-                }
-            }
-        };
+        return confirmBOD.SerializeToString();
     }
 
     private async Task<ChannelSettings?> loadSettingsAsync()
