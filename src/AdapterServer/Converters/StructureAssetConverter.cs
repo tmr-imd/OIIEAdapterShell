@@ -6,6 +6,13 @@ namespace AdapterServer.Converters
 {
     public class StructureAssetConverter : TypeConverter
     {
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
+        {
+            if (sourceType == typeof(StructureAsset))
+                return true;
+
+            return base.CanConvertFrom(context, sourceType);
+        }
         public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             if (destinationType == typeof(Ccom.Asset))
