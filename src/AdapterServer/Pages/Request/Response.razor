@@ -65,31 +65,64 @@
     }
 
     <h2 class="col-span-full mt-6">Response</h2>
-    <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
-        <thead class="bg-gray-100">
-            <tr>
-                <th scope="col">Short Name</th>
-                <th scope="col">Type</th>
-                <th scope="col">Registration Site</th>
-                <th scope="col">Asset Owner</th>
-                <th scope="col">Health Assessment</th>
-                @*<th scope="col">Inspector</th>*@
-            </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-            @foreach (var structureAsset in viewModel.Assets)
-            {
+
+    @if ( viewModel.Assets.Any() )
+    {
+        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+            <thead class="bg-gray-100">
                 <tr>
-                    <td>@structureAsset.ShortName.First().Value</td>
-                    <td>@structureAsset.Type?.FullName.First().Value</td>
-                    <td>@structureAsset.RegistrationSite?.FullName.First().Value</td>
-                    <td>@structureAsset.AssetOwnerEvent?.First().FullName.First().Value</td>
-                    <td>@structureAsset.HealthAssessment?.First().FullName.First().Value</td>
-                    @*<td>@structureAsset.Inspector</td>*@
+                    <th scope="col">Short Name</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Registration Site</th>
+                    <th scope="col">Asset Owner</th>
+                    <th scope="col">Health Assessment</th>
+                    @*<th scope="col">Inspector</th>*@
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @foreach (var structureAsset in viewModel.Assets)
+                {
+                    <tr>
+                        <td>@structureAsset.ShortName.First().Value</td>
+                        <td>@structureAsset.Type?.FullName.First().Value</td>
+                        <td>@structureAsset.RegistrationSite?.FullName.First().Value</td>
+                        <td>@structureAsset.AssetOwnerEvent?.First().FullName.First().Value</td>
+                        <td>@structureAsset.HealthAssessment?.First().FullName.First().Value</td>
+                        @*<td>@structureAsset.Inspector</td>*@
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (viewModel.StructureAssets.Any())
+    {
+        <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th scope="col">Code</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Location</th>
+                    <th scope="col">Owner</th>
+                    <th scope="col">Condition</th>
+                    <th scope="col">Inspector</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @foreach (var structureAsset in viewModel.StructureAssets)
+                {
+                    <tr>
+                        <td>@structureAsset.Code</td>
+                        <td>@structureAsset.Type</td>
+                        <td>@structureAsset.Location</td>
+                        <td>@structureAsset.Owner</td>
+                        <td>@structureAsset.Condition</td>
+                        <td>@structureAsset.Inspector</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </div>
 
 @code {

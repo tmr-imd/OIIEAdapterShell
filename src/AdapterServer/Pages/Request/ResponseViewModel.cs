@@ -30,6 +30,7 @@ public class ResponseViewModel
 
     public RequestMessage? Request { get; set; } = null;
 
+    public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
     public IEnumerable<Ccom.Asset> Assets { get; set; } = Enumerable.Empty<Ccom.Asset>();
 
     private readonly SettingsService settings;
@@ -63,6 +64,7 @@ public class ResponseViewModel
 
         if (Request is not null)
         {
+            StructureAssets = Enumerable.Empty<StructureAsset>();
             Assets = Enumerable.Empty<Ccom.Asset>();
 
             if (Request.MediaType == "application/json")
@@ -93,8 +95,8 @@ public class ResponseViewModel
         if (request.ResponseContent is not null && request.Responses.Last().MediaType == "application/json")
         {
             // Deserialize the content only. Ignore ConfirmBOD as errors have already been attached to the request
-            var assets = request.ResponseContent.Deserialize<List<Ccom.Asset>>();
-            Assets = assets ?? Enumerable.Empty<Ccom.Asset>();
+            var structures = request.ResponseContent.Deserialize<RequestStructures>();
+            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
         }
     }
 
@@ -124,7 +126,7 @@ public class ResponseViewModel
         }
     }
 
-    private T? DeserializeBODContent<T, TV, TN>(JsonDocument content, T bod)
+    private static T? DeserializeBODContent<T, TV, TN>(JsonDocument content, T bod)
         where T : GenericBodType<TV, TN>
         where TV : VerbType, new()
         where TN : class, new()
