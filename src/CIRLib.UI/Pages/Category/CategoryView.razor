@@ -1,0 +1,79 @@
+@page "/CategoryView"
+
+@using CIRLib.Data;
+@using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.Persistence;
+@using System.Security.Claims;
+@using CIRLib.UI.Pages.Category;
+
+@inject CategoryServices Services
+@inject NavigationManager NavigationManager
+@inject CIRLibContextFactory Factory
+
+<div class="panel panel-default border"> @(Collapsed? " ": "" )
+    <div class="panel-heading alert-primary">
+        <h3 class="panel-title">Category
+            <button class="btn btn-primary" @onclick="(() => AddCategory())" style="float: right;">
+                <i class="oi oi-pencil"></i> Add Category
+            </button> 
+        </h3>
+        
+    
+<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+    <thead class="bg-gray-100">
+        <tr>
+            <th scope="col">Category Id</th>
+            <th scope="col">Source Id</th>            
+            <th scope="col">Registry Id</th>
+            <th scope="col">Description</th>
+            <td><button @onclick="e => this.Collapsed = !this.Collapsed">
+                        @( this.Collapsed ? "+" : "-")
+                </button>
+            </td>                
+        </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        @foreach (var category in CategoryList)
+        {
+            <tr>
+                <td>@category.CategoryId</td>
+                <td>@category.SourceId</td>
+                <td>@category.RegistryRefId</td>
+                <td>@category.Description</td>
+                <td> 
+                    <button class="btn btn-primary" @onclick="(() =>EditCategory(category.Id))">
+                            Edit
+                    </button>                    
+                </td> 
+            </tr>
+        } 
+    </tbody>
+</table>
+</div>
+</div>
+
+
+@code {
+    public bool Collapsed{get;set;}= true; // hide by default
+    public List<ObjModels.Category> CategoryList{ get; set; } = new List<ObjModels.Category>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+        CategoryList = Services.GetAllCategories(Context);
+        await base.OnInitializedAsync();
+    }
+
+    void EditCategory(string Id)
+    {
+        NavigationManager.NavigateTo($"/EditCategory/{Id}");
+    }
+    void AddCategory(){
+        NavigationManager.NavigateTo("/EditCategory");
+    } 
+}

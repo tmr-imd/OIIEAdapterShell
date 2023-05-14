@@ -1,0 +1,107 @@
+@page "/EditProperty"
+@page "/EditProperty/{Id}"
+
+@using CIRLib.Data;
+@using CIRLIB.UI.Pages;
+@using Microsoft.Extensions.Logging;
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Components.Forms;
+@using ObjModels = CIRLib.ObjectModel.Models;
+
+@inject PropertyServices Services
+@inject NavigationManager NavigationManager
+@inject CIRLib.Persistence.CIRLibContextFactory Factory 
+@inject ILogger<PropertyViewModel> Logger
+
+@if (Id is null )
+{
+    <PageTitle> Add Property</PageTitle>
+    <h3> Add a new Property</h3>
+}else{
+    <PageTitle> Edit Property</PageTitle>
+    <h3> Edit Property</h3>
+}
+
+<EditForm Model="@viewModel" OnValidSubmit="@HandleSubmit">
+    <Modal Title="Property">  
+        <ChildContent>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="grid gap-2">
+                <div>
+                    <label>
+                        <h3 class="col-span-2">Property Id 
+                            @if (Id is not null ){  
+                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteProperty(Id))">
+                                        Delete
+                                </button>
+                            }
+                        </h3>
+                        @if (Id is null ){                            
+                            <InputText type="text" @bind-Value="viewModel.PropertyId" 
+                                placeholder="Enter Property Id" class="form-input w-full" />
+                        }else{
+                            <InputText readonly="true" type="text" @bind-Value="viewModel.PropertyId"
+                                class="form-input w-full" />
+                        }
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        <h3>Property Value</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.PropertyValue" />
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        <h3>Data Type</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.DataType" />
+                    </label>
+                </div>
+            </div>
+        </ChildContent>
+        <Footer>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(Id is null ? "Save New Property" : "Update")</button>
+            <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
+        </Footer>
+    </Modal>
+</EditForm> 
+
+@code {
+    [Parameter]
+    public string? Id { get; set; } = "";
+    public ObjModels.Property PropertyObj;
+    public PropertyViewModel viewModel = new PropertyViewModel();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        if ( Id is not null){
+            using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+            PropertyObj = Services.GetPropertyById((string)Id, Context);
+            if (PropertyObj is not null){
+                viewModel.PropertyId = PropertyObj.PropertyId;
+                viewModel.PropertyValue = PropertyObj.PropertyValue;
+                viewModel.DataType = PropertyObj.DataType;
+            }else{                
+                NavigationManager.NavigateTo("/cir-library");
+            }
+        } 
+    }
+    private async Task HandleSubmit()
+    {   
+        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+        if( Id is null){
+            Services.CreateNewProperty(viewModel,Context);
+        }else{
+            Services.UpdateProperty((string)Id, viewModel ,Context);            
+        }
+        NavigationManager.NavigateTo("/cir-library");
+    }
+    
+    void DeleteProperty(string Id){
+        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        Services.DeletePropertyById(Id, Context.Result);
+        NavigationManager.NavigateTo("/cir-library");
+    }
+}
