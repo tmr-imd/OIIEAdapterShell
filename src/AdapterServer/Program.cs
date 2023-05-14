@@ -7,6 +7,11 @@ using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Data;
+using CIRLib.UI.Pages;
+using CIRLib.UI;
+using CIRLib.Data;
+using CIRLib.Persistence;
+using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,9 +27,13 @@ builder.Services.AddHangfireServer();
 
 builder.Services.AddScoped( x => JobContextHelper.PrincipalFromString("AdapterServer") );
 builder.Services.AddSingleton(new JobContextFactory(builder.Configuration));
+builder.Services.AddSingleton(new CIRLibContextFactory(builder.Configuration));
 
 // Add services to the container.
-builder.Services.AddRazorPages();
+ builder.Services.AddRazorPages();
+if (builder.Environment.IsDevelopment()){
+    builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+}
 builder.Services.AddServerSideBlazor();
 
 var isbmSection = builder.Configuration.GetSection("Isbm");
@@ -40,6 +49,12 @@ builder.Services.AddScoped<PublicationDetailViewModel>();
 builder.Services.AddScoped<PublicationListViewModel>();
 builder.Services.AddScoped<PublicationViewModel>();
 builder.Services.AddScoped<ConfirmBODConfigViewModel>();
+builder.Services.AddScoped<RegistryServices>();
+builder.Services.AddScoped<CategoryServices>();
+builder.Services.AddScoped<EntryServices>();
+builder.Services.AddScoped<PropertyServices>();
+builder.Services.AddScoped<PropertyValueServices>();
+
 
 var app = builder.Build();
 

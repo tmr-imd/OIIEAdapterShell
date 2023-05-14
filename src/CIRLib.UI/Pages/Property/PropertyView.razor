@@ -1,0 +1,85 @@
+@page "/PropertyView"
+
+@using CIRLib.Data;
+@using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.Persistence;
+@using System.Security.Claims;
+
+@inject PropertyServices Services
+@inject NavigationManager NavigationManager
+@inject CIRLibContextFactory Factory
+
+<div class="panel panel-default border"> @(Collapsed? " ": "" )
+    <div class="panel-heading alert-primary">
+        <h3 class="panel-title" align="justify"> Property              
+            <button class="btn btn-primary" @onclick="(() => AddProperty())" style="float: right;">
+                <i class="oi oi-pencil"></i> Add Property
+            </button> 
+        </h3> 
+    </div> 
+        
+<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+    <thead class="bg-gray-100">
+        <tr>
+            <th scope="col">Property Id</th>
+            <th scope="col">Property Value</th>
+            <th scope="col">Property DataType</th>
+            <th scope="col">Created By</th> 
+            <th scope="col">Date Created</th>
+            <th scope="col">Modified By</th> 
+            <th scope="col">Date Modified</th>  
+            <th></th>
+        @* <button @onclick="e => this.Collapsed = !this.Collapsed">
+                            @( this.Collapsed ? "+" : "-")
+            </button> *@
+        </tr>
+    </thead>
+    
+    <tbody class="bg-white divide-y divide-gray-200">
+        @foreach (var Property in PropertyList)
+        {
+            <tr>
+                <td>@Property.PropertyId</td>
+                <td>@Property.PropertyValue</td>
+                <td>@Property.DataType</td>
+                <td>@Property.CreatedBy</td>
+                <td>@Property.DateCreated</td>
+                <td>@Property.ModifiedBy</td>
+                <td>@Property.DateModified</td>               
+                <td> 
+                    <button class="btn btn-primary" @onclick="(() =>EditProperty(Property.Id))">
+                            Edit
+                    </button>                    
+                </td>      
+            </tr>
+        } 
+    </tbody>
+</table>
+</div>
+
+
+@code {
+
+    public bool Collapsed{get;set;}= true; // hide by default
+    public List<ObjModels.Property> PropertyList{ get; set; } = new List<ObjModels.Property>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+        PropertyList = Services.GetAllProperties(Context);
+        await base.OnInitializedAsync();
+    }
+    
+    void EditProperty(string Id){
+        NavigationManager.NavigateTo($"/EditProperty/{Id}");
+    }
+
+    void AddProperty(){
+        NavigationManager.NavigateTo("/EditProperty");
+    }    
+}
