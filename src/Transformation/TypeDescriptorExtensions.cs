@@ -1,8 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using Transformation;
 
-namespace AdapterServer.Extensions;
+namespace Transformation;
 
 public static class TypeDescriptorExtensions
 {
@@ -15,7 +14,7 @@ public static class TypeDescriptorExtensions
             .OfType<TypeConverterSelectorAttribute>()
             .ToList();
 
-        if ( attributes.Any() )
+        if (attributes.Any())
         {
             var converterTypeSelectors = attributes.Where(x => x.ToTypeName == toType.AssemblyQualifiedName);
 

@@ -1,7 +1,6 @@
-using AdapterServer.Extensions;
 using StructureExample.Test.Converters;
 using StructureExample.Test.Data;
-using System.ComponentModel;
+using Transformation;
 
 namespace StructureExample.Test;
 
