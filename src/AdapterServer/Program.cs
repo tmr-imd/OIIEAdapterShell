@@ -28,7 +28,7 @@ builder.Services.AddSingleton(new JobContextFactory(builder.Configuration));
 builder.Services.AddSingleton(new CIRLibContextFactory(builder.Configuration));
 
 // Add services to the container.
- builder.Services.AddRazorPages();
+builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
 var isbmSection = builder.Configuration.GetSection("Isbm");
