@@ -3,6 +3,7 @@ using System;
 using CIRLib.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CIRLib.Migrations
 {
     [DbContext(typeof(CIRLibContext))]
-    partial class CIRLibContextModelSnapshot : ModelSnapshot
+    [Migration("20230515064312_minorDataTypeFix")]
+    partial class minorDataTypeFix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.0");
