@@ -457,3 +457,4 @@ src/AdapterServer/Data/Settings
 src/AdapterServer/Data/adapter_shell.db*
 src/AdapterServer/Data/hangfire.db*
 src/AdapterServer/Data/CIRLib.db*
+src/CIRLib/Data/CIRLib.db*
