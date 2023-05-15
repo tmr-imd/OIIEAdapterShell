@@ -1,8 +1,7 @@
-using StructureExample.Test.Converters;
-using StructureExample.Test.Data;
-using Transformation;
+using Transformation.Test.Converters;
+using Transformation.Test.Data;
 
-namespace StructureExample.Test;
+namespace Transformation.Test;
 
 public class TypeConverterSelectorTest
 {
@@ -10,9 +9,9 @@ public class TypeConverterSelectorTest
     public void NoConverter()
     {
         // You can't convert from a Plumber to a MarioBrother. Sad, but true
-        var thereIsNoPlumberConverter = () => TypeDescriptorExtensions.SelectConverter( typeof(Plumber), typeof(MarioBrother) );
+        var thereIsNoPlumberConverter = () => TypeDescriptorExtensions.SelectConverter(typeof(Plumber), typeof(MarioBrother));
 
-        Assert.Throws<InvalidOperationException>( thereIsNoPlumberConverter );
+        Assert.Throws<InvalidOperationException>(thereIsNoPlumberConverter);
     }
 
     [Fact]
@@ -34,9 +33,9 @@ public class TypeConverterSelectorTest
     [Fact]
     public void SelectConverterThatDoesExist()
     {
-        var converter = TypeDescriptorExtensions.SelectConverter( typeof(Bio), typeof(MarioBrother) );
+        var converter = TypeDescriptorExtensions.SelectConverter(typeof(Bio), typeof(MarioBrother));
         Assert.NotNull(converter);
-        Assert.IsType<SuperMarioConverter>( converter );
+        Assert.IsType<SuperMarioConverter>(converter);
     }
 
     [Fact]
@@ -50,9 +49,9 @@ public class TypeConverterSelectorTest
     [Theory]
     [InlineData(new object[] { "Mario", "", true, true, "Jumping" })]
     [InlineData(new object[] { "Luigi", "", true, true, "Older than Mario" })]
-    public void BioToPlumber( string name, string description, bool IsPlumber, bool IsCharacter, string specialAbility )
+    public void BioToPlumber(string name, string description, bool IsPlumber, bool IsCharacter, string specialAbility)
     {
-        var bio = new Bio( name, description, IsPlumber, IsCharacter, specialAbility );
+        var bio = new Bio(name, description, IsPlumber, IsCharacter, specialAbility);
 
         var converter = TypeDescriptorExtensions.SelectConverter(typeof(Bio), typeof(Plumber));
         var plumber = converter.ConvertTo(bio, typeof(Plumber));

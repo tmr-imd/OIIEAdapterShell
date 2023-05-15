@@ -1,7 +1,7 @@
-﻿using StructureExample.Test.Converters;
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using Transformation.Test.Converters;
 
-namespace StructureExample.Test.Data;
+namespace Transformation.Test.Data;
 
 [TypeConverter(typeof(PlumberConverter))]
 public record class MarioBrother(string Name, string Description, string SpecialAbility);

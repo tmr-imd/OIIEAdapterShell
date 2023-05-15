@@ -39,7 +39,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskQueueing.Test", "test\u
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StructureExample.Test", "test\unit\StructureExample.Test\StructureExample.Test.csproj", "{FF33C5B6-EEB7-40B8-8E5C-853139C72610}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transformation", "src\Transformation\Transformation.csproj", "{B5FA6526-81F2-44F9-94EA-C34142F3C183}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Transformation", "src\Transformation\Transformation.csproj", "{B5FA6526-81F2-44F9-94EA-C34142F3C183}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transformation.Test", "test\unit\Transformation.Test\Transformation.Test.csproj", "{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +93,10 @@ Global
 		{B5FA6526-81F2-44F9-94EA-C34142F3C183}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B5FA6526-81F2-44F9-94EA-C34142F3C183}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B5FA6526-81F2-44F9-94EA-C34142F3C183}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,6 +118,7 @@ Global
 		{87D8C9BA-E295-49AD-87DE-D6344FCF890A} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
 		{FF33C5B6-EEB7-40B8-8E5C-853139C72610} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
 		{B5FA6526-81F2-44F9-94EA-C34142F3C183} = {E315CC81-1F19-4BFC-8620-985988E85838}
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F5A6E8E2-8254-42CF-9FB4-BDFB9B2CB3FD}
