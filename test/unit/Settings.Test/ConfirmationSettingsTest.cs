@@ -47,15 +47,15 @@ public class ConfirmationSettingsTest
     }
 
     [Theory]
-    [InlineData(new object[] { "*", "*", ConfirmationOptions.Never })]
-    [InlineData(new object[] { "*", "A Topic", ConfirmationOptions.OnError })]
-    [InlineData(new object[] { "/different/channel", "A Topic", ConfirmationOptions.Always })]
-    [InlineData(new object[] { "/some/channel", "*", ConfirmationOptions.OnError })]
-    [InlineData(new object[] { "/some/channel", "A Topic", ConfirmationOptions.Always })]
-    [InlineData(new object[] { "/some/channel", "Different Topic", ConfirmationOptions.Never })]
-    [InlineData(new object[] { "/some/channel", "Random Topic", ConfirmationOptions.OnError })]
-    [InlineData(new object[] { "/different/channel", "Different Topic", ConfirmationOptions.Never })]
-    [InlineData(new object[] { "/random/channel", "A Topic", ConfirmationOptions.OnError })]
+    [InlineData(new object[]{ "*", "*", ConfirmationOptions.Never })]
+    [InlineData(new object[]{ "*", "A Topic", ConfirmationOptions.OnError })]
+    [InlineData(new object[]{ "/different/channel", "A Topic", ConfirmationOptions.Always })]
+    [InlineData(new object[]{ "/some/channel", "*", ConfirmationOptions.OnError })]
+    [InlineData(new object[]{ "/some/channel", "A Topic", ConfirmationOptions.Always })]
+    [InlineData(new object[]{ "/some/channel", "Different Topic", ConfirmationOptions.Never })]
+    [InlineData(new object[]{ "/some/channel", "Random Topic", ConfirmationOptions.OnError })]
+    [InlineData(new object[]{ "/different/channel", "Different Topic", ConfirmationOptions.Never })]
+    [InlineData(new object[]{ "/random/channel", "A Topic", ConfirmationOptions.OnError })]
     public void ConfirmationRuleTest(string channelUri, string topic, ConfirmationOptions expected)
     {
         // Start the rules off unsorted to ensure the check method is working correctly.
@@ -67,7 +67,7 @@ public class ConfirmationSettingsTest
             new ConfirmBODSetting( "/some/channel", "*", ConfirmationOptions.OnError ),
             new ConfirmBODSetting( "/some/channel", "A Topic", ConfirmationOptions.Always ),
             new ConfirmBODSetting( "/some/channel", "Different Topic", ConfirmationOptions.Never )
-        }.OrderBy(s => s.GetId()));
+        }.OrderBy( s => s.GetId() ));
 
         var result = unsortedRules .ConfirmationOptionFor(channelUri, topic);
 
