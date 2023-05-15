@@ -11,9 +11,7 @@ using AdapterServer.Pages.Request;
 using AdapterServer.Pages.Publication;
 using CIRLib.UI.Pages;
 using CIRLib.UI;
-using CIRLib.Data;
 using CIRLib.Persistence;
-using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,9 +57,6 @@ builder.Services.AddSingleton(new CIRLibContextFactory(builder.Configuration));
 
 // Add services to the container.
  builder.Services.AddRazorPages();
-if (builder.Environment.IsDevelopment()){
-    builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
-}
 builder.Services.AddServerSideBlazor();
 
 var isbmSection = builder.Configuration.GetSection("Isbm");
