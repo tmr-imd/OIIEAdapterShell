@@ -15,7 +15,7 @@ public static class StructureAssetsExt
             ApplicationArea = new ApplicationAreaType()
             {
                 BODID = new IdentifierType { Value = bodid ?? Guid.NewGuid().ToString() },
-                CreationDateTime = (creationTime?.ToUniversalTime() ?? DateTime.UtcNow).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                CreationDateTime = (creationTime?.ToUniversalTime() ?? DateTime.UtcNow).ToXsDateTimeString(),
                 Sender = new SenderType
                 {
                     LogicalID = new IdentifierType
@@ -44,7 +44,7 @@ public static class StructureAssetsExt
             }
         };
 
-        return bod.serialize();
+        return bod.SerializeToDocument();
     }
 
     public static XDocument ToShowStructureAssetsBOD(this RequestStructures self, string? bodid = null, string? senderId = null, DateTime? creationTime = null)
@@ -56,7 +56,7 @@ public static class StructureAssetsExt
             ApplicationArea = new ApplicationAreaType()
             {
                 BODID = new IdentifierType { Value = bodid ?? Guid.NewGuid().ToString() },
-                CreationDateTime = (creationTime?.ToUniversalTime() ?? DateTime.UtcNow).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                CreationDateTime = (creationTime?.ToUniversalTime() ?? DateTime.UtcNow).ToXsDateTimeString(),
                 Sender = new SenderType
                 {
                     LogicalID = new IdentifierType
@@ -79,18 +79,6 @@ public static class StructureAssetsExt
             }
         };
 
-        return bod.serialize();
-    }
-
-    private static XDocument serialize<TVerb, TNoun>(this GenericBodType<TVerb, TNoun> bod)
-        where TVerb : VerbType, new()
-        where TNoun : class, new()
-    {
-        var doc = new XDocument();
-        using (var writer = doc.CreateWriter())
-        {
-            bod.CreateSerializer().Serialize(writer, bod, bod.Namespaces);
-        }
-        return doc;
+        return bod.SerializeToDocument();
     }
 }
