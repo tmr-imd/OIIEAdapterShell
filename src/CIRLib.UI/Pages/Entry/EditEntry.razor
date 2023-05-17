@@ -1,11 +1,12 @@
 @page "/EditEntry"
-@page "/EditEntry/{Id}"
+@page "/EditEntry/{Id:guid}"
 
 @using CIRLIB.UI.Pages;
 @using Microsoft.Extensions.Logging;
 @using System.Security.Claims;
 @using Microsoft.AspNetCore.Components.Forms
 @using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.UI.Services;
 
 @inject EntryServices Services
 @inject NavigationManager NavigationManager
@@ -20,7 +21,12 @@
     <PageTitle> Edit Entry</PageTitle>
     <h3> Edit Entry</h3>
 }
-
+@if ( !string.IsNullOrEmpty(error) )
+        {
+            <div class="col-span-full">
+                <span class="text-red-500">@error</span>
+            </div>
+}
 <EditForm Model="@viewModel" OnValidSubmit="@HandleSubmit">
     <Modal Title="Registry">  
         <ChildContent>
@@ -31,16 +37,16 @@
                     <label>
                         <h3 class="col-span-2">Entry Id 
                             @if (Id is not null ){  
-                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteRegistry(Id))">
+                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteRegistry((Guid)Id))">
                                         Delete
                                 </button>
                             }
                         </h3>
                         @if (Id is null ){                            
-                            <InputText type="text" @bind-Value="viewModel.EntryId" 
+                            <InputText type="text" @bind-Value="viewModel.IdInSource" 
                                 placeholder="Enter Entry Id" class="form-input w-full" />
                         }else{
-                            <InputText readonly="true" type="text" @bind-Value="viewModel.EntryId"
+                            <InputText readonly="true" type="text" @bind-Value="viewModel.IdInSource"
                                 class="form-input w-full" />
                         }
                     </label>
@@ -60,7 +66,7 @@
                 <div>
                     <label>
                         <h3>Id In Source</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.IdInSource" />
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.SourceOwnerId" />
                     </label>
                 </div>
                 <div>
@@ -81,10 +87,22 @@
                         <input type="checkbox" align="left"  @bind="viewModel.Inactive" /> </h3>
                     </label>
                 </div>
+                <div>
+                    <label>
+                        <h3>Category Ref Id
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.CategoryRefId" /> </h3>
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        <h3>Registry Ref Id
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.RegistryRefId" /> </h3>
+                    </label>
+                </div>
             </div>
         </ChildContent>
         <Footer>
-            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(Id is null ? "Save New Entry" : "Update")</button>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto @(error is not null ? "" : "hidden")">@(Id is null ? "Save New Entry" : "Update")</button>
             <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
         </Footer>
     </Modal>
@@ -92,24 +110,27 @@
 
 @code {
     [Parameter]
-    public string? Id { get; set; } = "";
+    public Guid? Id { get; set; }
     public ObjModels.Entry EntryObj;
     public EntryViewModel viewModel = new EntryViewModel();
+    public string error { get; set; } ="";
 
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
         if ( Id is not null){
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-            EntryObj = Services.GetEntryById((string)Id, Context);
+            EntryObj = Services.GetEntryById((Guid)Id, Context);
             if (EntryObj is not null){
-                viewModel.EntryId = EntryObj.EntryId;
+                viewModel.IdInSource = EntryObj.IdInSource;
                 viewModel.SourceId = EntryObj.SourceId;
                 viewModel.CIRId = EntryObj.CIRId;
-                viewModel.IdInSource = EntryObj.IdInSource;
+                viewModel.SourceOwnerId = EntryObj.SourceOwnerId;
                 viewModel.Name = EntryObj.Name;
                 viewModel.Description = EntryObj.Description;
                 viewModel.Inactive = EntryObj.Inactive;
+                viewModel.CategoryRefId = EntryObj.CategoryRefId;
+                viewModel.RegistryRefId = EntryObj.RegistryRefId;
             }else{                
                 NavigationManager.NavigateTo("/cir-library");
             }
@@ -117,16 +138,26 @@
     }
     private async Task HandleSubmit()
     {   
-        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-        if( Id is null){
-            Services.CreateNewEntry(viewModel,Context);
-        }else{
-            Services.UpdateEntry((string)Id, viewModel ,Context);            
+        try{            
+            using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+            if( Id is null){
+                Services.CreateNewEntry(viewModel,Context);
+            }else{
+                Services.UpdateEntry((Guid)Id, viewModel ,Context);            
+            }
+            NavigationManager.NavigateTo("/cir-library");
         }
-        NavigationManager.NavigateTo("/cir-library");
+        catch( Exception ex )
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+           StateHasChanged();
+        }
     }
     
-    void DeleteRegistry(string Id){
+    void DeleteRegistry(Guid Id){
         var Context = Factory.CreateDbContext(new ClaimsPrincipal());
         Services.DeleteEntryById(Id, Context.Result);
         NavigationManager.NavigateTo("/cir-library");

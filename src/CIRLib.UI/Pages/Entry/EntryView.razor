@@ -4,6 +4,7 @@
 @using ObjModels = CIRLib.ObjectModel.Models;
 @using CIRLib.Persistence;
 @using System.Security.Claims;
+@using CIRLib.UI.Services;
 
 @inject EntryServices Services
 @inject NavigationManager NavigationManager
@@ -24,14 +25,13 @@
             <th scope="col">Entry Id</th>
             <th scope="col">Source Id </th>
             <th scope="col">CIRID </th>
-            <th scope="col">IdInSource </th>
+            <th scope="col">SourceOwnerId </th>
             <th scope="col">Name</th>
             <th scope="col">Description</th>
             <th scope="col">Inactive </th>
+            <th scope="col">Category Ref Id</th>
+            <th scope="col">Registry Ref Id</th>
              <th></th>
-        @* <button @onclick="e => this.Collapsed = !this.Collapsed">
-                            @( this.Collapsed ? "+" : "-")
-            </button> *@
         </tr>
     </thead>
     
@@ -39,13 +39,16 @@
         @foreach (var Entry in EntryList)
         {
             <tr>
-                <td>@Entry.EntryId</td>
+                <td>@Entry.IdInSource</td>
                 <td>@Entry.SourceId</td>
                 <td>@Entry.CIRId</td>
-                <td>@Entry.IdInSource</td>
+                <td>@Entry.SourceOwnerId</td>
                 <td>@Entry.Name</td>
                 <td>@Entry.Description</td>
-                <td>@Entry.Inactive</td>             
+                <td>@Entry.Inactive</td>
+                <td>@Entry.CategoryRefId</td>
+                <td>@Entry.RegistryRefId</td>
+
                 <td> 
                     <button class="btn btn-primary" @onclick="(() =>EditEntry(Entry.Id))">
                             Edit
@@ -75,7 +78,7 @@
         await base.OnInitializedAsync();
     }
     
-    void EditEntry(string Id){
+    void EditEntry(Guid Id){
         NavigationManager.NavigateTo($"/EditEntry/{Id}");
     }
 

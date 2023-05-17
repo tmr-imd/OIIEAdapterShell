@@ -28,8 +28,8 @@ namespace CIRLib.Persistence
                 //Implicitly fetching the db provider for migrations.
 
                 IConfigurationRoot configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
+                                                                                .AddJsonFile("appsettings.json")
+                                                                                .Build();
                 var defaultConnection = configuration.GetConnectionString("CIRLibConnection");
                 optionsBuilder.UseSqlite($"Filename={defaultConnection}");
             }
@@ -44,10 +44,17 @@ namespace CIRLib.Persistence
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Registry>().HasKey(t => t.RegistryId);
-            modelBuilder.Entity<Category>().HasKey(t => new {t.CategoryId, t.RegistryRefId, t.SourceId});
-            modelBuilder.Entity<Entry>().HasKey(t => new {t.CategoryRefId, t.RegistryRefId, t.SourceRefId, t.SourceId});
-            modelBuilder.Entity<Property>().HasKey(t => new { t.CategoryRefId, t.RegistryRefId, t.SourceRefId, t.SourceId, t.IdInSource});
+            modelBuilder.Entity<Category>().HasKey(t => t.CategoryId);
+            modelBuilder.Entity<Entry>().HasKey(t => t.IdInSource);
+            modelBuilder.Entity<Property>().HasKey(t => t.PropertyId);
             modelBuilder.Entity<PropertyValue>().HasKey(t => t.Key);
+            
+            modelBuilder.Entity<Registry>().HasIndex(t => t.RegistryId);
+            modelBuilder.Entity<Category>().HasIndex(t => t.CategoryId);
+            modelBuilder.Entity<Entry>().HasIndex(t => t.IdInSource);
+            modelBuilder.Entity<Property>().HasIndex(t => t.PropertyId);
+            modelBuilder.Entity<PropertyValue>().HasIndex(t => t.Key);
+
         }
 
         private void SetAuditFields()

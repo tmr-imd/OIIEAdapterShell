@@ -29,7 +29,7 @@
     <PackageReference Include="Hangfire.Core" Version="1.7.33" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.7.33" />
     <PackageReference Include="Hangfire.Storage.SQLite" Version="0.3.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -39,6 +39,7 @@
     <ProjectReference Include="..\..\Lib\Isbm2RestClient\src\Isbm2Client\Isbm2Client.csproj" />
     <ProjectReference Include="..\TaskQueueing\TaskQueueing.csproj" />
     <ProjectReference Include="..\..\Lib\CCOM.Net\src\CCOM.Net\CCOM.net.csproj" />
+    <ProjectReference Include="..\CIRLib\CIRLib.csproj" />
     <ProjectReference Include="..\CIRLib.UI\CIRLib.UI.csproj" />
   </ItemGroup>
 

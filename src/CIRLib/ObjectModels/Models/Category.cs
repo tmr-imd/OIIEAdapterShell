@@ -1,18 +1,17 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-namespace CIRLib.ObjectModel.Models;
 
+namespace CIRLib.ObjectModel.Models;
 public record class Category : ModelObject
 {
-    [Column(Order = 1), Key]
     public string CategoryId { get; set; } = "";
-
-    [ForeignKey("Registry")]
-    [Column(Order = 2), Key]
     public string RegistryRefId { get; set; } = "";
     
-    [Column(Order = 3), Key]
+    [ForeignKey("RegistryRefId")]
+    public Registry Registry { get; set; } = null!;
     public string SourceId { get; set; } = "";
     public string Description { get; set; } = "";
+
+    public ICollection<Entry> Entries {get; set;}
+    public ICollection<Property> Properties {get; set;}
 
 }

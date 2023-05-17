@@ -7,9 +7,8 @@ using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Data;
-using CIRLib.UI.Pages;
-using CIRLib.UI;
 using CIRLib.Persistence;
+using CIRLib.UI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

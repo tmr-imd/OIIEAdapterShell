@@ -1,11 +1,12 @@
 @page "/EditProperty"
-@page "/EditProperty/{Id}"
+@page "/EditProperty/{Id:guid}"
 
 @using CIRLIB.UI.Pages;
 @using Microsoft.Extensions.Logging;
 @using System.Security.Claims;
 @using Microsoft.AspNetCore.Components.Forms;
 @using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.UI.Services;
 
 @inject PropertyServices Services
 @inject NavigationManager NavigationManager
@@ -21,6 +22,12 @@
     <h3> Edit Property</h3>
 }
 
+@if ( !string.IsNullOrEmpty(error) )
+        {
+            <div class="col-span-full">
+                <span class="text-red-500">@error</span>
+            </div>
+}
 <EditForm Model="@viewModel" OnValidSubmit="@HandleSubmit">
     <Modal Title="Property">  
         <ChildContent>
@@ -31,7 +38,7 @@
                     <label>
                         <h3 class="col-span-2">Property Id 
                             @if (Id is not null ){  
-                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteProperty(Id))">
+                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteProperty((Guid)Id))">
                                         Delete
                                 </button>
                             }
@@ -57,10 +64,28 @@
                         <InputText type="text" class="form-input w-full" @bind-Value="viewModel.DataType" />
                     </label>
                 </div>
+                <div>
+                    <label>
+                        <h3>Category Ref Id</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.CategoryRefId" />
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        <h3>Registry Ref Id</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.RegistryRefId" />
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        <h3>Entry Ref Id</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.EntryRefIdInSource" />
+                    </label>
+                </div>
             </div>
         </ChildContent>
         <Footer>
-            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(Id is null ? "Save New Property" : "Update")</button>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto @(error is not null ? "" : "hidden")">@(Id is null ? "Save New Property" : "Update")</button>
             <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
         </Footer>
     </Modal>
@@ -68,20 +93,24 @@
 
 @code {
     [Parameter]
-    public string? Id { get; set; } = "";
+    public Guid? Id { get; set; }
     public ObjModels.Property PropertyObj;
     public PropertyViewModel viewModel = new PropertyViewModel();
+    public string error { get; set; } ="";
 
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
         if ( Id is not null){
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-            PropertyObj = Services.GetPropertyById((string)Id, Context);
+            PropertyObj = Services.GetPropertyById((Guid)Id, Context);
             if (PropertyObj is not null){
                 viewModel.PropertyId = PropertyObj.PropertyId;
                 viewModel.PropertyValue = PropertyObj.PropertyValue;
                 viewModel.DataType = PropertyObj.DataType;
+                viewModel.CategoryRefId = PropertyObj.CategoryRefId;
+                viewModel.EntryRefIdInSource = PropertyObj.EntryRefIdInSource;
+                viewModel.RegistryRefId = PropertyObj.RegistryRefId;
             }else{                
                 NavigationManager.NavigateTo("/cir-library");
             }
@@ -89,16 +118,26 @@
     }
     private async Task HandleSubmit()
     {   
-        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-        if( Id is null){
-            Services.CreateNewProperty(viewModel,Context);
-        }else{
-            Services.UpdateProperty((string)Id, viewModel ,Context);            
+        try{
+            using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+            if( Id is null){
+                Services.CreateNewProperty(viewModel,Context);
+            }else{
+                Services.UpdateProperty((Guid)Id, viewModel ,Context);            
+            }
+            NavigationManager.NavigateTo("/cir-library");
         }
-        NavigationManager.NavigateTo("/cir-library");
+        catch( Exception ex )
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+           StateHasChanged();
+        }
     }
     
-    void DeleteProperty(string Id){
+    void DeleteProperty(Guid Id){
         var Context = Factory.CreateDbContext(new ClaimsPrincipal());
         Services.DeletePropertyById(Id, Context.Result);
         NavigationManager.NavigateTo("/cir-library");

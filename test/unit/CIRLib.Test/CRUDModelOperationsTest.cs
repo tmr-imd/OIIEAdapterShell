@@ -23,8 +23,8 @@ public class CRUDModelOperationsTest
     {              
         var registryObj = new Registry { RegistryId = "Registration Server A", Description ="Registration Server A description"};
         var categoryObj = new Category { CategoryId = "Asset", SourceId = "MIMOSA OSA-EAI V3", Description = "MIMOSA OSA-EAI V3 description"  };
-        var entryObj = new Entry { EntryId ="A101", SourceId ="EAM/CMMS System B", CIRId ="ISO/IEC 9834-8",
-                                IdInSource ="Oil Company A", Name ="A101", Description ="A101 desc", Inactive = false };
+        var entryObj = new Entry { IdInSource ="A101", SourceId ="EAM/CMMS System B", CIRId ="ISO/IEC 9834-8",
+                                SourceOwnerId ="Oil Company A", Name ="A101", Description ="A101 desc", Inactive = false };
         var propertyObj = new Property { PropertyId="c", PropertyValue="PV101", DataType ="DT101"};
         var propertyValueObj = new PropertyValue { Key="PV101", Value="PV101", UnitOfMeasure ="Units"};
 
@@ -38,7 +38,7 @@ public class CRUDModelOperationsTest
 
         Assert.Equal(mockDbContext.Registry.First().RegistryId, registryObj.RegistryId);
         Assert.Equal(mockDbContext.Category.First().CategoryId, categoryObj.CategoryId);
-        Assert.Equal(mockDbContext.Entry.First().EntryId, entryObj.EntryId);
+        Assert.Equal(mockDbContext.Entry.First().IdInSource, entryObj.IdInSource);
         Assert.Equal(mockDbContext.Property.First().PropertyId, propertyObj.PropertyId);
         Assert.Equal(mockDbContext.PropertyValue.First().Key, propertyValueObj.Key);                       
     }
@@ -60,10 +60,10 @@ public class CRUDModelOperationsTest
         Assert.Equal(updated_cats.Description,cats.Description);
 
         //Entry_Table
-        var entries = mockDbContext.Entry.Where(item => item.EntryId.Contains("A101")).First();
+        var entries = mockDbContext.Entry.Where(item => item.IdInSource.Contains("A101")).First();
         entries.Description = "Updated A101 desc";
         mockDbContext.SaveChanges();
-        var updated_entries = mockDbContext.Entry.Where(item => item.EntryId.Contains("A101")).First();
+        var updated_entries = mockDbContext.Entry.Where(item => item.IdInSource.Contains("A101")).First();
         Assert.Equal(updated_entries.Description,entries.Description);
 
         //Property Table
@@ -98,10 +98,10 @@ public class CRUDModelOperationsTest
         Assert.Empty(updated_cats);
 
         //Entry_Table
-        var entries = mockDbContext.Entry.Where(item => item.EntryId.Contains("A101")).First();
+        var entries = mockDbContext.Entry.Where(item => item.IdInSource.Contains("A101")).First();
         mockDbContext.Entry.Remove(entries);                
         mockDbContext.SaveChanges();
-        var updated_entries = mockDbContext.Entry.Where(item => item.EntryId.Contains("A101"));
+        var updated_entries = mockDbContext.Entry.Where(item => item.IdInSource.Contains("A101"));
         Assert.Empty(updated_entries);
 
         //Property Table

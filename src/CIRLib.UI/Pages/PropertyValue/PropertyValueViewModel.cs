@@ -14,6 +14,7 @@ namespace CIRLIB.UI.Pages
 
         [Required(AllowEmptyStrings = false)]
         public string UnitOfMeasure { get; set; } = "";
+        public string PropertyRefId { get; set; } = "";
         
 
         public PropertyValueViewModel(){

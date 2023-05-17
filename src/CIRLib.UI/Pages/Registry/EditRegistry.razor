@@ -1,11 +1,12 @@
 @page "/EditRegistry"
-@page "/EditRegistry/{Id}"
+@page "/EditRegistry/{Id:guid}"
 
 @using CIRLIB.UI.Pages;
 @using Microsoft.Extensions.Logging;
 @using System.Security.Claims;
 @using Microsoft.AspNetCore.Components.Forms
 @using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.UI.Services;
 
 @inject RegistryServices Services
 @inject NavigationManager NavigationManager
@@ -31,7 +32,7 @@
                     <label>
                         <h3 class="col-span-2">Registry Id 
                             @if (Id is not null ){  
-                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteRegistry(Id))">
+                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteRegistry((Guid)Id))">
                                         Delete
                                 </button>
                             }
@@ -62,7 +63,7 @@
 
 @code {
     [Parameter]
-    public string? Id { get; set; } = "";
+    public Guid? Id { get; set; }
     public ObjModels.Registry RegObj;
     public RegistryViewModel viewModel = new RegistryViewModel();
 
@@ -71,7 +72,7 @@
         await base.OnParametersSetAsync();
         if ( Id is not null){
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-            RegObj = Services.GetRegistryById((string)Id, Context);
+            RegObj = Services.GetRegistryById((Guid)Id, Context);
             if (RegObj is not null){
                 viewModel.RegistryId = RegObj.RegistryId;
                 viewModel.Description = RegObj.Description;
@@ -86,14 +87,14 @@
         if( Id is null){
             Services.CreateNewRegistry(viewModel,Context);
         }else{
-            Services.UpdateRegistry((string)Id, viewModel ,Context);            
+            Services.UpdateRegistry((Guid) Id, viewModel ,Context);            
         }
         NavigationManager.NavigateTo("/cir-library");
     }
     
-    void DeleteRegistry(string Id){
+    void DeleteRegistry(Guid Id){
         var Context = Factory.CreateDbContext(new ClaimsPrincipal());
-        Services.DeleteRegistryById(Id, Context.Result);
+        Services.DeleteRegistryById((Guid)Id, Context.Result);
         NavigationManager.NavigateTo("/cir-library");
     }
 }

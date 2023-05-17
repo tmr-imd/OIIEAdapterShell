@@ -15,13 +15,8 @@ namespace CIRLIB.UI.Pages
         [Required(AllowEmptyStrings = false)]
         public string DataType { get; set; } = "";
         public string CategoryRefId { get; set; } = "";
-        public string RegistryRefId { get; set; } = "";
-        //ForeignKey("Category")
-        public string SourceRefId { get; set; } = "";
-        //ForeignKey("Entry")
-        public string SourceId { get; set; } = "";
-        //ForeignKey("Entry")
-         public string IdInSource { get; set; } = "";
+        public string RegistryRefId { get; set; } = "";        
+        public string EntryRefIdInSource { get; set; } = "";
 
         public PropertyViewModel(){
             PropertyId ="";

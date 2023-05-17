@@ -5,35 +5,30 @@ using ObjModels = CIRLib.ObjectModel.Models;
 using System.Security.Claims;
 
 
-namespace CIRLib.UI{
+namespace CIRLib.UI.Services{
 public class RegistryServices{
     
     public List<ObjModels.Registry> GetAllRegistries(CIRLibContext DbContext)
     {     
         return DbContext.Registry.OrderByDescending(x => x.DateCreated).ToList();
     }
-    public ObjModels.Registry GetRegistryById(string Id, CIRLibContext DbContext)
+    public ObjModels.Registry GetRegistryById(Guid Id, CIRLibContext DbContext)
     {     
         return DbContext.Registry.Where(item => item.Id.Equals(Id)).First(); 
     }
     public void CreateNewRegistry( RegistryViewModel newRegistry, CIRLibContext DbContext ){
         var RegistryObj = new ObjModels.Registry { RegistryId = newRegistry.RegistryId,
-                                                   Description = newRegistry.Description,
-                                                   CreatedBy = "authUser",
-                                                   DateCreated = DateTime.UtcNow,
-                                                   ModifiedBy = "authUser",
-                                                   DateModified = DateTime.UtcNow };
+                                                   Description = newRegistry.Description
+                                                    };
         DbContext.Registry.Add(RegistryObj);
         DbContext.SaveChanges();
     }
-    public void UpdateRegistry(string Id, RegistryViewModel updateRegistry, CIRLibContext DbContext ){
+    public void UpdateRegistry(Guid Id, RegistryViewModel updateRegistry, CIRLibContext DbContext ){
         var RegObj = DbContext.Registry.Where(item => item.Id.Equals(Id)).First();
         RegObj.Description = updateRegistry.Description;
-        RegObj.ModifiedBy = "authUser";
-        RegObj.DateModified = DateTime.UtcNow;
         DbContext.SaveChanges();
     }
-    public void DeleteRegistryById(string Id, CIRLibContext DbContext)
+    public void DeleteRegistryById(Guid Id, CIRLibContext DbContext)
     {    
        var DelRegObj = DbContext.Registry.Where(item => item.Id.Equals(Id)).First(); 
        DbContext.Registry.Remove(DelRegObj);

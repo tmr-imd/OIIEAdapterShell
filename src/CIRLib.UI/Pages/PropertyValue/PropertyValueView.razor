@@ -3,6 +3,7 @@
 @using ObjModels = CIRLib.ObjectModel.Models;
 @using CIRLib.Persistence;
 @using System.Security.Claims;
+@using CIRLib.UI.Services;
 
 @inject PropertyValueServices Services
 @inject NavigationManager NavigationManager
@@ -23,14 +24,12 @@
             <th scope="col">Property Key</th>
             <th scope="col">Property Value</th>
             <th scope="col">Unit Of Measure</th>
+            <th scope="col">Property Ref Id</th>
             <th scope="col">Created By</th> 
             <th scope="col">Date Created</th>
             <th scope="col">Modified By</th> 
             <th scope="col">Date Modified</th>  
             <th></th>
-        @* <button @onclick="e => this.Collapsed = !this.Collapsed">
-                            @( this.Collapsed ? "+" : "-")
-            </button> *@
         </tr>
     </thead>
     
@@ -41,6 +40,7 @@
                 <td>@PropertyValue.Key</td>
                 <td>@PropertyValue.Value</td>
                 <td>@PropertyValue.UnitOfMeasure</td>
+                <td>@PropertyValue.PropertyRefId</td>
                 <td>@PropertyValue.CreatedBy</td>
                 <td>@PropertyValue.DateCreated</td>
                 <td>@PropertyValue.ModifiedBy</td>
@@ -74,7 +74,7 @@
         await base.OnInitializedAsync();
     }
     
-    void EditPropertyValue(string Id){
+    void EditPropertyValue(Guid Id){
         NavigationManager.NavigateTo($"/EditPropertyValue/{Id}");
     }
 
