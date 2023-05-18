@@ -1,4 +1,4 @@
-@page "/RegistryView"
+@page "/registry-view"
 
 @using ObjModels = CIRLib.ObjectModel.Models;
 @using CIRLib.Persistence;
@@ -71,10 +71,10 @@
     }
     
     void EditRegistry(Guid Id){
-        NavigationManager.NavigateTo($"/EditRegistry/{Id}");
+        NavigationManager.NavigateTo($"/edit-registry/{Id}");
     }
 
     void AddRegistry(){
-        NavigationManager.NavigateTo("/EditRegistry");
+        NavigationManager.NavigateTo("/edit-registry");
     }    
 }

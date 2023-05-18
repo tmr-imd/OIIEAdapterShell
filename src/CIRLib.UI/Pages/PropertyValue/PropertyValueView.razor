@@ -1,4 +1,4 @@
-@page "/PropertyValueView"
+@page "/property-value-view"
 
 @using ObjModels = CIRLib.ObjectModel.Models;
 @using CIRLib.Persistence;
@@ -75,10 +75,10 @@
     }
     
     void EditPropertyValue(Guid Id){
-        NavigationManager.NavigateTo($"/EditPropertyValue/{Id}");
+        NavigationManager.NavigateTo($"/edit-property-value/{Id}");
     }
 
     void AddPropertyValue(){
-        NavigationManager.NavigateTo("/EditPropertyValue");
+        NavigationManager.NavigateTo("/edit-property-value");
     }    
 }

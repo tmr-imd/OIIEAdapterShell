@@ -1,4 +1,4 @@
-@page "/EntryView"
+@page "/entry-view"
 
 @using CIRLib.UI;
 @using ObjModels = CIRLib.ObjectModel.Models;
@@ -79,10 +79,10 @@
     }
     
     void EditEntry(Guid Id){
-        NavigationManager.NavigateTo($"/EditEntry/{Id}");
+        NavigationManager.NavigateTo($"/edit-entry/{Id}");
     }
 
     void AddEntry(){
-        NavigationManager.NavigateTo("/EditEntry");
+        NavigationManager.NavigateTo("/edit-entry");
     }    
 }

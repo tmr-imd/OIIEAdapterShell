@@ -1,4 +1,4 @@
-@page "/CategoryView"
+@page "/category-view"
 
 @using ObjModels = CIRLib.ObjectModel.Models;
 @using CIRLib.Persistence;
@@ -76,9 +76,9 @@
 
     void EditCategory(Guid Id)
     {
-        NavigationManager.NavigateTo($"/EditCategory/{Id}");
+        NavigationManager.NavigateTo($"/edit-category/{Id}");
     }
     void AddCategory(){
-        NavigationManager.NavigateTo("/EditCategory");
+        NavigationManager.NavigateTo("/edit-category");
     } 
 }
