@@ -21,12 +21,23 @@ public class CRUDModelOperationsTest
     
     public void InsertData(CIRLibContext mockDbContext)
     {              
-        var registryObj = new Registry { RegistryId = "Registration Server A", Description ="Registration Server A description"};
-        var categoryObj = new Category { CategoryId = "Asset", SourceId = "MIMOSA OSA-EAI V3", Description = "MIMOSA OSA-EAI V3 description"  };
-        var entryObj = new Entry { IdInSource ="A101", SourceId ="EAM/CMMS System B", CIRId ="ISO/IEC 9834-8",
-                                SourceOwnerId ="Oil Company A", Name ="A101", Description ="A101 desc", Inactive = false };
-        var propertyObj = new Property { PropertyId="c", PropertyValue="PV101", DataType ="DT101"};
-        var propertyValueObj = new PropertyValue { Key="PV101", Value="PV101", UnitOfMeasure ="Units"};
+        var registryObj = new Registry{ RegistryId = "Registration Server A", Description ="Registration Server A description"};
+        var categoryObj = new Category{ 
+                                        CategoryId = "Asset", RegistryRefId = "Registration Server A", 
+                                        SourceId = "MIMOSA OSA-EAI V3", Description = "MIMOSA OSA-EAI V3 description"
+                                    };
+        var entryObj = new Entry{  
+                                    IdInSource ="A101", CategoryRefId = "Asset", RegistryRefId = "Registration Server A", 
+                                    SourceId ="EAM/CMMS System B", CIRId ="ISO/IEC 9834-8",
+                                    SourceOwnerId ="Oil Company A", Name ="A101", Description ="A101 desc", Inactive = false
+                                };
+        var propertyObj = new Property{    
+                                        PropertyId="c",CategoryRefId = "Asset", RegistryRefId = "Registration Server A",
+                                        EntryRefIdInSource = "A101", PropertyValue="PV101", DataType ="DT101"
+                                    };
+        var propertyValueObj = new PropertyValue{ Key="PV101", Value="PV101", UnitOfMeasure ="Units",
+                                                    PropertyRefId = "c"
+                                            };
 
         mockDbContext.Registry.Add(registryObj);
         mockDbContext.Category.Add(categoryObj);
@@ -86,35 +97,33 @@ public class CRUDModelOperationsTest
         //Registry_Table
         var regs = mockDbContext.Registry.Where(item => item.RegistryId.Contains("Registration Server A")).First();
         mockDbContext.Registry.Remove(regs);                
-        mockDbContext.SaveChanges();
-        var updated_reg = mockDbContext.Registry.Where(item => item.RegistryId.Contains("Registration Server A"));
-        Assert.Empty(updated_reg);
 
         //Category_Table
         var cats = mockDbContext.Category.Where(item => item.CategoryId.Contains("Asset")).First();
         mockDbContext.Category.Remove(cats);                
-        mockDbContext.SaveChanges();
-        var updated_cats = mockDbContext.Category.Where(item => item.CategoryId.Contains("Asset"));
-        Assert.Empty(updated_cats);
 
         //Entry_Table
         var entries = mockDbContext.Entry.Where(item => item.IdInSource.Contains("A101")).First();
         mockDbContext.Entry.Remove(entries);                
-        mockDbContext.SaveChanges();
-        var updated_entries = mockDbContext.Entry.Where(item => item.IdInSource.Contains("A101"));
-        Assert.Empty(updated_entries);
 
         //Property Table
         var props = mockDbContext.Property.Where(item => item.PropertyId.Contains("c")).First();
         mockDbContext.Property.Remove(props);                
-        mockDbContext.SaveChanges();
-        var updated_props = mockDbContext.Property.Where(item => item.PropertyId.Contains("c"));
-        Assert.Empty(updated_props);
 
         //Property Value Table
         var prop_vals = mockDbContext.PropertyValue.Where(item => item.Key.Contains("PV101")).First();
-        mockDbContext.PropertyValue.Remove(prop_vals);                
+        mockDbContext.PropertyValue.Remove(prop_vals);    
+
+        // Assert deleted            
         mockDbContext.SaveChanges();
+        var updated_reg = mockDbContext.Registry.Where(item => item.RegistryId.Contains("Registration Server A"));
+        Assert.Empty(updated_reg);
+        var updated_cats = mockDbContext.Category.Where(item => item.CategoryId.Contains("Asset"));
+        Assert.Empty(updated_cats);
+        var updated_entries = mockDbContext.Entry.Where(item => item.IdInSource.Contains("A101"));
+        Assert.Empty(updated_entries);
+        var updated_props = mockDbContext.Property.Where(item => item.PropertyId.Contains("c"));
+        Assert.Empty(updated_props);
         var updated_prop_vals = mockDbContext.PropertyValue.Where(item => item.Key.Contains("PV101"));
         Assert.Empty(updated_prop_vals);      
     }    

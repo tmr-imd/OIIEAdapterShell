@@ -9,7 +9,9 @@ public record class Entry : ModelObject
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
     public bool Inactive { get; set; }
-
+    // Decided to keep direct FK's to below tables
+    // due to functional reasons where comparison with Id would be sufficient
+    // and object loading can be avoided.
     public string CategoryRefId { get; set; } = "";
     [ForeignKey("CategoryRefId")]
     public Category Category {get; set; } = null!;
