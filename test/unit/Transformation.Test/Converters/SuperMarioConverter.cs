@@ -32,4 +32,16 @@ public class SuperMarioConverter : TypeConverter
                 base.ConvertTo(context, culture, value, destinationType)
         };
     }
+
+    public bool IsPlumber( Bio instance, string value )
+    {
+        var boolValue = bool.Parse(value);
+
+        return instance.IsPlumber == boolValue;
+    }
+
+    public bool IsPlumber( Bio instance )
+    {
+        return instance.IsPlumber;
+    }
 }

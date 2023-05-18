@@ -35,12 +35,16 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
         //var converter = TypeDescriptor.GetConverter( typeof(StructureAsset) );
 
         // The followning will check for the TypeConverter attribute first, then look for TypeConverterSelector attribute(s) if it does not exist
-        var converter = TypeDescriptorExtensions.SelectConverter(StructureAsset, typeof(Ccom.Asset));
+        var converter = TypeDescriptorExtensions.SelectConverter(typeof(StructureAsset), typeof(Ccom.Asset));
 
         var assets = StructureAssetService.GetStructures(_filter).Select(x => {
+            var converter = TypeConverterSelector.SelectConverter(x, typeof(Ccom.Asset));
             var asset = converter.ConvertTo( x, typeof(Ccom.Asset) );
 
-            if ( asset is null ) throw new InvalidOperationException("Problem converting StructureAsset to Ccom.Asset");
+            if ( asset is null )
+            {
+                throw new InvalidOperationException("Problem converting StructureAsset to Ccom.Asset");
+            }
 
             return (Ccom.Asset)asset;
         })

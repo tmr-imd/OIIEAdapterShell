@@ -78,6 +78,9 @@ public sealed class TypeConverterSelectorAttribute : Attribute
     /// </devdoc>
     public string ToTypeName => toTypeName;
 
+    public string SelectionMethod { get; set; } = "";
+    public string SelectionParameter { get; set; } = "";
+
     public override bool Equals(object? obj)
     {
         return obj is TypeConverterSelectorAttribute other && other.ConverterTypeName == converterTypeName && other.ToTypeName == toTypeName;

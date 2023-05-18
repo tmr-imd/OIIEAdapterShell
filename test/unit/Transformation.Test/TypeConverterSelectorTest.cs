@@ -1,3 +1,4 @@
+using Transformation.Extensions;
 using Transformation.Test.Converters;
 using Transformation.Test.Data;
 
@@ -5,72 +6,60 @@ namespace Transformation.Test;
 
 public class TypeConverterSelectorTest
 {
-    [Fact]
-    public void NoConverter()
+    public static IEnumerable<object[]> GetPlumbers()
     {
+        yield return new object[] { "Mario", "The iconic plumber and hero of the Mushroom Kingdom, known for his red hat, mustache, and heroic adventures." };
+        yield return new object[] { "Luigi", "Luigi is the timid yet loyal younger brother of Mario, known for his high jumps and green attire." };
+    }
+
+    public static IEnumerable<object[]> GetBios()
+    {
+        yield return new object[] { "Mario", "The iconic plumber and hero of the Mushroom Kingdom, known for his red hat, mustache, and heroic adventures.", true, true, "Triple Jump" };
+        yield return new object[] { "Luigi", "Luigi is the timid yet loyal younger brother of Mario, known for his high jumps and green attire.", true, true, "Poltergust" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetPlumbers))]
+    public void NoConverter(string name, string description)
+    {
+        var plumber = new Plumber(name, description);
+
         // You can't convert from a Plumber to a MarioBrother. Sad, but true
-        var thereIsNoPlumberConverter = () => TypeDescriptorExtensions.SelectConverter(typeof(Plumber), typeof(MarioBrother));
+        var thereIsNoPlumberConverter = () => TypeConverterSelector.SelectConverter(plumber, typeof(MarioBrother));
 
         Assert.Throws<InvalidOperationException>(thereIsNoPlumberConverter);
     }
 
-    [Fact]
-    public void CompatibleWithTypeConverterAttribute()
+    [Theory]
+    [MemberData(nameof(GetBios))]
+    public void SelectConverterThatDoesNotExist(string name, string description, bool IsPlumber, bool IsCharacter, string specialAbility)
     {
-        var converter = TypeDescriptorExtensions.SelectConverter(typeof(MarioBrother), typeof(Plumber));
-        Assert.NotNull(converter);
-        Assert.IsType<PlumberConverter>(converter);
-    }
+        var bio = new Bio(name, description, IsPlumber, IsCharacter, specialAbility);
 
-    [Fact]
-    public void SelectConverterThatDoesNotExist()
-    {
         // I.e. there are converters, but none for PiranhaPlant
-        var convertersExistButNotToPiranhaPlant = () => TypeDescriptorExtensions.SelectConverter(typeof(Bio), typeof(PiranhaPlant));
+        var convertersExistButNotToPiranhaPlant = () => TypeConverterSelector.SelectConverter(bio, typeof(PiranhaPlant));
         Assert.Throws<InvalidOperationException>(convertersExistButNotToPiranhaPlant);
     }
 
-    [Fact]
-    public void SelectConverterThatDoesExist()
+    [Theory]
+    [MemberData(nameof(GetBios))]
+    public void SelectSuperMarioConverter(string name, string description, bool IsPlumber, bool IsCharacter, string specialAbility)
     {
-        var converter = TypeDescriptorExtensions.SelectConverter(typeof(Bio), typeof(MarioBrother));
+        var bio = new Bio(name, description, IsPlumber, IsCharacter, specialAbility);
+
+        var converter = TypeConverterSelector.SelectConverter(bio, typeof(MarioBrother));
         Assert.NotNull(converter);
         Assert.IsType<SuperMarioConverter>(converter);
     }
 
-    [Fact]
-    public void FallbackToTypeConverterAttributeIfSelectionDoesNotExist()
+    [Theory]
+    [MemberData(nameof(GetBios))]
+    public void FallbackToTypeConverterAttributeIfSelectionDoesNotExist(string name, string description, bool IsPlumber, bool IsCharacter, string specialAbility)
     {
-        var converter = TypeDescriptorExtensions.SelectConverter(typeof(Bio), typeof(Plumber));
+        var bio = new Bio(name, description, IsPlumber, IsCharacter, specialAbility);
+
+        var converter = TypeConverterSelector.SelectConverter(bio, typeof(Plumber));
         Assert.NotNull(converter);
         Assert.IsType<PlumberConverter>(converter);
-    }
-
-    [Theory]
-    [InlineData(new object[] { "Mario", "", true, true, "Jumping" })]
-    [InlineData(new object[] { "Luigi", "", true, true, "Older than Mario" })]
-    public void BioToPlumber(string name, string description, bool IsPlumber, bool IsCharacter, string specialAbility)
-    {
-        var bio = new Bio(name, description, IsPlumber, IsCharacter, specialAbility);
-
-        var converter = TypeDescriptorExtensions.SelectConverter(typeof(Bio), typeof(Plumber));
-        var plumber = converter.ConvertTo(bio, typeof(Plumber));
-
-        Assert.NotNull(plumber);
-        Assert.IsType<Plumber>(plumber);
-    }
-
-    [Theory]
-    [InlineData(new object[] { "Mario", "", true, true, "Jumping" })]
-    [InlineData(new object[] { "Luigi", "", true, true, "Older than Mario" })]
-    public void BioToSuperMario(string name, string description, bool IsPlumber, bool IsCharacter, string specialAbility)
-    {
-        var bio = new Bio(name, description, IsPlumber, IsCharacter, specialAbility);
-
-        var converter = TypeDescriptorExtensions.SelectConverter(typeof(Bio), typeof(MarioBrother));
-        var brother = converter.ConvertTo(bio, typeof(MarioBrother));
-
-        Assert.NotNull(brother);
-        Assert.IsType<MarioBrother>(brother);
     }
 }
