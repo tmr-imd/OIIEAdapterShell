@@ -108,7 +108,7 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
         }
 
         var bod = _bodReader.AsBod<GenericBodType<ShowType, List<Ccom.Asset>>>();
-        var assets = bod?.DataArea.Noun.FirstOrDefault();
+        var assets = bod?.DataArea.Noun;
 
         return await validateStructures(assets ?? new List<Ccom.Asset>(), response, context, errorCallback);
     }
@@ -189,9 +189,9 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
         }
     }
 
-    private async Task<bool> validateStructures(RequestStructures requestStructures, ResponseMessage response, IJobContext context, ValidationDelegate<ResponseMessage> errorCallback)
+    private async Task<bool> validateStructures(List<Ccom.Asset> assets, ResponseMessage response, IJobContext context, ValidationDelegate<ResponseMessage> errorCallback)
     {
-        if (requestStructures.StructureAssets.Any()) return await Task.FromResult(true);
+        if (assets.Any()) return await Task.FromResult(true);
 
         var error = new MessageError(ErrorSeverity.Error, "No Structures were found!");
         errorCallback(error, response, context);
