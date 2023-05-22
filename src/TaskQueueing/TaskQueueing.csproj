@@ -7,13 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Data\Structure Assets.csv" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Data\Structure Assets.csv">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Compile Remove="Data\**" />
+    <EmbeddedResource Remove="Data\**" />
+    <None Remove="Data\**" />
   </ItemGroup>
 
   <ItemGroup>

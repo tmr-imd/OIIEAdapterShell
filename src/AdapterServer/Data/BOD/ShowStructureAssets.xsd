@@ -25,25 +25,7 @@ Response returning Structure Assets example data (non-CCOM) or the number of ass
 							<xs:complexType>
 								<xs:sequence>
 									<xs:element ref="oa:Show"/>
-									<xs:element name="StructureAssets" minOccurs="0" maxOccurs="unbounded">
-										<xs:complexType>
-											<xs:sequence>
-												<xs:element name="Count" type="cct:NumericType" minOccurs="0" maxOccurs="1"/>
-												<xs:element name="StructureAsset" minOccurs="0" maxOccurs="unbounded">
-													<xs:complexType>
-														<xs:all>
-															<xs:element name="Code" type="xs:string" minOccurs="0" maxOccurs="1" />
-															<xs:element name="Type" type="xs:string" minOccurs="0" maxOccurs="1" />
-															<xs:element name="Location" type="xs:string" minOccurs="0" maxOccurs="1" />
-															<xs:element name="Owner" type="xs:string" minOccurs="0" maxOccurs="1" />
-															<xs:element name="Condition" type="xs:string" minOccurs="0" maxOccurs="1" />
-															<xs:element name="Inspector" type="xs:string" minOccurs="0" maxOccurs="1" />
-														</xs:all>
-													</xs:complexType>
-												</xs:element>
-											</xs:sequence>
-										</xs:complexType>
-									</xs:element>
+									<xs:element name="StructureAssets" minOccurs="0" maxOccurs="unbounded" type="Asset" />
 								</xs:sequence>
 							</xs:complexType>
 						</xs:element>

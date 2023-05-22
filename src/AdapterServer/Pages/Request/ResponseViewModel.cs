@@ -12,7 +12,7 @@ using Oagis;
 namespace AdapterServer.Pages.Request;
 
 using RequestBODType = GenericBodType<GetType, List<StructureAssetsFilter>>;
-using ResponseBODType = GenericBodType<ShowType, List<RequestStructures>>;
+using ResponseBODType = GenericBodType<ShowType, List<Ccom.Asset>>;
 
 public class ResponseViewModel
 {
@@ -31,6 +31,7 @@ public class ResponseViewModel
     public RequestMessage? Request { get; set; } = null;
 
     public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
+    public IEnumerable<Ccom.Asset> Assets { get; set; } = Enumerable.Empty<Ccom.Asset>();
 
     private readonly SettingsService settings;
 
@@ -64,6 +65,7 @@ public class ResponseViewModel
         if (Request is not null)
         {
             StructureAssets = Enumerable.Empty<StructureAsset>();
+            Assets = Enumerable.Empty<Ccom.Asset>();
 
             if (Request.MediaType == "application/json")
             {
@@ -93,8 +95,8 @@ public class ResponseViewModel
         if (request.ResponseContent is not null && request.Responses.Last().MediaType == "application/json")
         {
             // Deserialize the content only. Ignore ConfirmBOD as errors have already been attached to the request
-            var structures = request.ResponseContent.Deserialize<RequestStructures>();
-            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
+            var assets = request.ResponseContent.Deserialize<List<Ccom.Asset>>();
+            Assets = assets ?? Enumerable.Empty<Ccom.Asset>();
         }
     }
 
@@ -116,15 +118,15 @@ public class ResponseViewModel
         {
             // Deserialize the content only. Ignore ConfirmBOD as errors have already been attached to the request
             var responseBod = new ResponseBODType("ShowStructureAssets", Ccom.Namespace.URI);
-            responseBod = DeserializeBODContent<ResponseBODType, ShowType, List<RequestStructures>>(request.ResponseContent, responseBod);
+            responseBod = DeserializeBODContent<ResponseBODType, ShowType, List<Ccom.Asset>>(request.ResponseContent, responseBod);
             if (responseBod is null) return;
 
-            var structures = responseBod.DataArea.Noun.FirstOrDefault();
-            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
+            var assets = responseBod.DataArea.Noun;
+            Assets = assets ?? Enumerable.Empty<Ccom.Asset>();
         }
     }
 
-    private T? DeserializeBODContent<T, TV, TN>(JsonDocument content, T bod)
+    private static T? DeserializeBODContent<T, TV, TN>(JsonDocument content, T bod)
         where T : GenericBodType<TV, TN>
         where TV : VerbType, new()
         where TN : class, new()

@@ -6,6 +6,7 @@ using Oagis.CodeLists;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using AdapterServer.Data;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -21,7 +22,7 @@ public record class NewStructureAsset(string Verb, StructureAsset Data)
             ApplicationArea = new ApplicationAreaType()
             {
                 BODID = new IdentifierType { Value = bodid ?? Guid.NewGuid().ToString() },
-                CreationDateTime = (creationTime?.ToUniversalTime() ?? DateTime.UtcNow).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                CreationDateTime = (creationTime?.ToUniversalTime() ?? DateTime.UtcNow).ToXsDateTimeString(),
                 Sender = new SenderType
                 {
                     LogicalID = new IdentifierType
@@ -57,14 +58,7 @@ public record class NewStructureAsset(string Verb, StructureAsset Data)
             }
         };
 
-        var serializer = bod.CreateSerializer();
-        var doc = new XDocument();
-        using (var writer = doc.CreateWriter())
-        {
-            serializer.Serialize(writer, bod, bod.Namespaces);
-        }
-
-        return doc;
+        return bod.SerializeToDocument();
     }
 }
 

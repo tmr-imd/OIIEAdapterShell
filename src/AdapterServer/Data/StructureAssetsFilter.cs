@@ -1,4 +1,4 @@
-﻿namespace TaskQueueing.Data;
+﻿namespace AdapterServer.Data;
 
 public record class StructureAssetsFilter
 (

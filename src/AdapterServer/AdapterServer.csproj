@@ -8,11 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Data\Structure Assets.csv" />
-    <None Remove="Data\BOD\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Data\Structure Assets.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -41,6 +36,7 @@
     <ProjectReference Include="..\..\Lib\CCOM.Net\src\CCOM.Net\CCOM.net.csproj" />
     <ProjectReference Include="..\CIRLib\CIRLib.csproj" />
     <ProjectReference Include="..\CIRLib.UI\CIRLib.UI.csproj" />
+    <ProjectReference Include="..\Transformation\Transformation.csproj" />
   </ItemGroup>
 
 	<Target Name="CheckForNpm" BeforeTargets="BuildCSS">

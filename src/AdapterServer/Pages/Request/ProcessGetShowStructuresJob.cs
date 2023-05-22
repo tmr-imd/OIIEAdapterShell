@@ -10,11 +10,13 @@ using ResponseMessage = TaskQueueing.ObjectModel.Models.Response;
 
 using CommonBOD;
 using Oagis;
-using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using AdapterServer.Data;
+using AdapterServer.Extensions;
 using System.Text.Json;
+using Transformation;
+using Transformation.Extensions;
 
 namespace AdapterServer.Pages.Request;
 
@@ -27,13 +29,24 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
     {
     }
 
-    protected override async Task<XDocument> process(XDocument getBod, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
+    protected override Task<XDocument> process(XDocument getBod, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
     {
         if (_filter is null) throw new Exception("Unexpected null StructureAssetsFilter in process GetStructuresJob.");
 
-        var structures = StructureAssetService.GetStructures(_filter);
-        var requestStructures = new RequestStructures(structures, structures.Length);
-        return await Task.FromResult(requestStructures.ToShowStructureAssetsBOD());
+        var assets = StructureAssetService.GetStructures(_filter).Select(x => {
+            var converter = TypeConverterSelector.SelectConverter(x, typeof(Ccom.Asset));
+            var asset = converter.ConvertTo( x, typeof(Ccom.Asset) );
+
+            if ( asset is null )
+            {
+                throw new InvalidOperationException("Problem converting StructureAsset to Ccom.Asset");
+            }
+
+            return (Ccom.Asset)asset;
+        })
+        .ToList();
+
+        return Task.FromResult( assets.ToShowStructureAssetsBOD() );
     }
 
     protected override async Task<bool> process(XDocument content, ResponseMessage response, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
@@ -55,38 +68,15 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
         if (!_bodReader.IsValid)
         {
             handleBodValidationErrors(_bodReader, request, context, errorCallback);
-            var confirmBOD = _bodReader.GenerateConfirmBOD();
-            var confirmDoc = new XDocument();
-            using (var writer = confirmDoc.CreateWriter()) {
-                new XmlSerializer(typeof(ConfirmBODType)).Serialize(writer, confirmBOD);
-            }
-            var settings = await loadSettingsAsync();
-            if (settings is null) throw new Exception("Unable to load settings to post ConfirmBOD response in BOD validation");
-
-            BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<XDocument, XDocument>, XDocument, XDocument>>(x => x.PostResponse(settings.ProviderSessionId, request.RequestId, confirmDoc, null!));
+            var confirmDoc = _bodReader.GenerateConfirmBOD().SerializeToDocument();
+            await postConfirmBODResponse(request, confirmDoc);
             return await Task.FromResult(false);
         }
 
-        var bod = new GenericBodType<GetType, List<StructureAssetsFilter>>("GetStructureAssets", Ccom.Namespace.URI, nounName: "StructureAssetsFilter");
-        using (var reader = getBod.CreateReader())
-        {
-            bod = bod.CreateSerializer().Deserialize(reader) as GenericBodType<GetType, List<StructureAssetsFilter>>;
-        }
+        var bod = _bodReader.AsBod<GenericBodType<GetType, List<StructureAssetsFilter>>>();
         _filter = bod?.DataArea.Noun.FirstOrDefault() ?? new StructureAssetsFilter();
 
-        if (!(_filter.FilterCode.Any() || _filter.FilterCondition.Any() || 
-                _filter.FilterInspector.Any() || _filter.FilterLocation.Any() || 
-                _filter.FilterOwner.Any() || _filter.FilterType.Any()))
-        {
-            var warning = new MessageError(ErrorSeverity.Warning, "No filters were provided, this may return a very large number of results.");
-            errorCallback(warning, request, context);
-
-            // Send a confirm BOD with the warnings (TODO: utilise the GenerateConfirmBOD. Need to be able to attach additional Validation errors)
-            var confirmBOD = createConfirmBOD(request);
-            var settings = await loadSettingsAsync();
-            if (settings is null) return await Task.FromResult(true);
-            BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<XDocument, XDocument>, XDocument, XDocument>>(x => x.PostResponse(settings.ProviderSessionId, request.RequestId, confirmBOD, null!));
-        }
+        await validateFilter(_filter, request, context, errorCallback);
 
         return await Task.FromResult(true);
     }
@@ -114,24 +104,10 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
             return await Task.FromResult(false); // No need to continue with processing
         }
 
-        var bod = new GenericBodType<ShowType, List<RequestStructures>>("ShowStructureAssets", Ccom.Namespace.URI);
-        using (var reader = content.CreateReader())
-        {
-            bod = bod.CreateSerializer().Deserialize(reader) as GenericBodType<ShowType, List<RequestStructures>>;
-        }
-        var requestStructures = bod?.DataArea.Noun.FirstOrDefault();
+        var bod = _bodReader.AsBod<GenericBodType<ShowType, List<Ccom.Asset>>>();
+        var assets = bod?.DataArea.Noun;
 
-        if (requestStructures is null || !requestStructures.StructureAssets.Any())
-        {
-            var error = new MessageError(ErrorSeverity.Error, "No Structures were found!");
-            errorCallback(error, response, context);
-
-            // Is there a better way to also fail the Request?
-            response.Request.Failed = true;
-            return await Task.FromResult(false);
-        }
-
-        return await Task.FromResult(true);
+        return await validateStructures(assets ?? new List<Ccom.Asset>(), response, context, errorCallback);
     }
 
     // Simple example of overriding the error handler. Preserves default behaviour and writes to console.
@@ -160,7 +136,8 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
             handleBodValidationErrors(_bodReader, response, context, errorCallback);
         }
 
-        if (_bodReader.Verb is not ConfirmType)
+        var bod = _bodReader.AsBod<ConfirmBODType>();
+        if (bod is null)
         {
             success = false;
             var error = new MessageError(ErrorSeverity.Error, $"Invalid ConfirmBOD: got {_bodReader.Verb.GetType().Name} instead.");
@@ -171,17 +148,17 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
 
         Console.Out.WriteLine(content);
 
-        var serializer = new XmlSerializer(typeof(BODType));
-        var bodNouns = _bodReader?.Nouns.Select(x => serializer.Deserialize(x.CreateReader())).Cast<BODType>() ?? Enumerable.Empty<BODType>();
-        var errors = bodNouns?.SelectMany(
-            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => toMessageError(m, ErrorSeverity.Error)) ?? Enumerable.Empty<MessageError>()
+        var errors = bod?.DataArea.BOD.SelectMany(
+            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => m.ToMessageError()) ?? Enumerable.Empty<MessageError>()
         ) ?? Enumerable.Empty<MessageError>();
-        var warnings = bodNouns?.SelectMany(
-            x => x?.BODFailureMessage?.WarningProcessMessage?.Select(m => toMessageError(m, ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>()
+
+        var warnings = bod?.DataArea.BOD.SelectMany(
+            x => x?.BODFailureMessage?.WarningProcessMessage?.Select(m => m.ToMessageError(ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>()
         ) ?? Enumerable.Empty<MessageError>();
+
         warnings = warnings.Concat(
-            bodNouns?.SelectMany(
-                x => x?.BODSuccessMessage?.WarningProcessMessage?.Select((m) => { Console.Out.WriteLine(m); return toMessageError(m, ErrorSeverity.Warning);}) ?? Enumerable.Empty<MessageError>()
+            bod?.DataArea.BOD.SelectMany(
+                x => x.BODSuccessMessage.WarningProcessMessage.Select(m => m.ToMessageError(ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>()
             ) ?? Enumerable.Empty<MessageError>()
         );
 
@@ -204,15 +181,46 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
 
         foreach (var validationError in reader.ValidationErrors)
         {
-            var severity = validationError.Severity switch
-            {
-                System.Xml.Schema.XmlSeverityType.Error => ErrorSeverity.Error,
-                System.Xml.Schema.XmlSeverityType.Warning => ErrorSeverity.Warning,
-                    _ => ErrorSeverity.Error
-            };
-            error = new MessageError(severity, validationError.Message, validationError.LineNumber, validationError.LinePosition);
+            error = validationError.ToMessageError();
             errorCallback(error, message, context);
         }
+    }
+
+    private async Task<bool> validateStructures(List<Ccom.Asset> assets, ResponseMessage response, IJobContext context, ValidationDelegate<ResponseMessage> errorCallback)
+    {
+        if (assets.Any()) return await Task.FromResult(true);
+
+        var error = new MessageError(ErrorSeverity.Error, "No Structures were found!");
+        errorCallback(error, response, context);
+
+        // Is there a better way to also fail the Request?
+        response.Request.Failed = true;
+        return await Task.FromResult(false);
+    }
+
+    private async Task validateFilter(StructureAssetsFilter filter, RequestMessage request, IJobContext context,ValidationDelegate<RequestMessage> errorCallback)
+    {
+        if (filter.FilterCode.Any() || filter.FilterCondition.Any() ||
+                filter.FilterInspector.Any() || filter.FilterLocation.Any() ||
+                filter.FilterOwner.Any() || filter.FilterType.Any())
+        {
+            return;
+        }
+
+        var warning = new MessageError(ErrorSeverity.Warning, "No filters were provided, this may return a very large number of results.");
+        errorCallback(warning, request, context);
+
+        // Send a confirm BOD with the warnings (TODO: utilise the GenerateConfirmBOD. Need to be able to attach additional Validation errors)
+        var confirmBOD = createConfirmBOD(request);
+        await postConfirmBODResponse(request, confirmBOD);
+    }
+
+    private async Task postConfirmBODResponse(RequestMessage request, XDocument confirmBOD)
+    {
+        var settings = await loadSettingsAsync();
+        if (settings is null) throw new Exception("Unable to load settings to post ConfirmBOD response in BOD validation");
+        
+        BackgroundJob.Enqueue<RequestProviderJob<ProcessRequestResponseJob<XDocument, XDocument>, XDocument, XDocument>>(x => x.PostResponse(settings.ProviderSessionId, request.RequestId, confirmBOD, null!));
     }
 
     private XDocument createConfirmBOD(RequestMessage message)
@@ -228,7 +236,7 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
                 {
                     Value = Guid.NewGuid().ToString()
                 },
-                CreationDateTime = DateTime.UtcNow.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                CreationDateTime = DateTime.UtcNow.ToXsDateTimeString(),
                 Sender = new SenderType()
                 {
                     LogicalID = new IdentifierType()
@@ -244,7 +252,7 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
                     OriginalApplicationArea = new ApplicationAreaType
                     {
                         BODID = new IdentifierType { Value = message.RequestId },
-                        CreationDateTime = message.DateCreated.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"),
+                        CreationDateTime = message.DateCreated.ToUniversalTime().ToXsDateTimeString(),
                         Sender = new SenderType
                         {
                             LogicalID = new IdentifierType { Value = Guid.NewGuid().ToString() } // TODO
@@ -261,7 +269,7 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
             confirmBOD.DataArea.BOD[0].BODSuccessMessage = new BODSuccessMessageType();
             if (message.MessageErrors?.Any() ?? false)
             {
-                confirmBOD.DataArea.BOD[0].BODSuccessMessage.WarningProcessMessage = message.MessageErrors.Select(r => toOagisMessage(r)).ToArray();
+                confirmBOD.DataArea.BOD[0].BODSuccessMessage.WarningProcessMessage = message.MessageErrors.Select(r => r.ToOagisMessage()).ToArray();
             }
         }
         else
@@ -270,39 +278,14 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
             {
                 ErrorProcessMessage = (from error in message.MessageErrors
                                        where error.Severity > ErrorSeverity.Warning
-                                       select toOagisMessage(error)).ToArray(),
+                                       select error.ToOagisMessage()).ToArray(),
                 WarningProcessMessage = (from warning in message.MessageErrors
                                          where warning.Severity <= ErrorSeverity.Warning
-                                         select toOagisMessage(warning)).ToArray()
+                                         select warning.ToOagisMessage()).ToArray()
             };
         }
 
-        var doc = new XDocument();
-        using (var writer = doc.CreateWriter())
-        {
-            new XmlSerializer(typeof(ConfirmBODType)).Serialize(writer, confirmBOD);
-        }
-        return doc;
-    }
-
-    private Oagis.MessageType toOagisMessage(MessageError error)
-    {
-        return new MessageType
-        {
-            Description = new DescriptionType[]
-            {
-                new DescriptionType()
-                {
-                    languageID = "en-US",
-                    Value = $"{error.Message} at Line: {error.LineNumber} Position: {error.LinePosition}"
-                }
-            }
-        };
-    }
-
-    private MessageError toMessageError(MessageType oagisError, ErrorSeverity severity)
-    {
-        return new MessageError(severity, oagisError.Description.First().Value);
+        return confirmBOD.SerializeToDocument();
     }
 
     private SettingsService Settings = new SettingsService();
