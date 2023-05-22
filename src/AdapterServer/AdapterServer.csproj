@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\Lib\Isbm2RestClient\src\Isbm2Client\Isbm2Client.csproj" />
     <ProjectReference Include="..\TaskQueueing\TaskQueueing.csproj" />
     <ProjectReference Include="..\..\Lib\CCOM.Net\src\CCOM.Net\CCOM.net.csproj" />
+    <ProjectReference Include="..\Transformation\Transformation.csproj" />
   </ItemGroup>
 
 	<Target Name="CheckForNpm" BeforeTargets="BuildCSS">

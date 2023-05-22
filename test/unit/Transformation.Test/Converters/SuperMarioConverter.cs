@@ -1,9 +1,8 @@
-﻿using AdapterServer.Data;
-using StructureExample.Test.Data;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
+using Transformation.Test.Data;
 
-namespace StructureExample.Test.Converters;
+namespace Transformation.Test.Converters;
 
 public class SuperMarioConverter : TypeConverter
 {
@@ -32,5 +31,17 @@ public class SuperMarioConverter : TypeConverter
             _ =>
                 base.ConvertTo(context, culture, value, destinationType)
         };
+    }
+
+    public bool IsPlumber( Bio instance, string value )
+    {
+        var boolValue = bool.Parse(value);
+
+        return instance.IsPlumber == boolValue;
+    }
+
+    public bool IsPlumber( Bio instance )
+    {
+        return instance.IsPlumber;
     }
 }

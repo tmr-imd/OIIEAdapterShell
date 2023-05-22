@@ -27,17 +27,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C76EBECF-3
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unit", "unit", "{55B3199C-8526-4B89-8CFD-C706AE7EFA7F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Settings.Test", "test\unit\Settings.Test\Settings.Test.csproj", "{5BAA00BE-5E38-4C01-88D5-C2B7427ECA58}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Settings.Test", "test\unit\Settings.Test\Settings.Test.csproj", "{5BAA00BE-5E38-4C01-88D5-C2B7427ECA58}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CCOM.Net", "CCOM.Net", "{89DFCBA9-5D88-4DB0-9826-CB59E24A453D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{85043B2A-3A57-4F9E-8E60-3EEBA3B9BEB9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCOM.net", "Lib\CCOM.Net\src\CCOM.Net\CCOM.net.csproj", "{E760A084-2FE1-47BB-B6B3-422DE6A7B507}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CCOM.net", "Lib\CCOM.Net\src\CCOM.Net\CCOM.net.csproj", "{E760A084-2FE1-47BB-B6B3-422DE6A7B507}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskQueueing.Test", "test\unit\TaskQueueing.Test\TaskQueueing.Test.csproj", "{87D8C9BA-E295-49AD-87DE-D6344FCF890A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskQueueing.Test", "test\unit\TaskQueueing.Test\TaskQueueing.Test.csproj", "{87D8C9BA-E295-49AD-87DE-D6344FCF890A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StructureExample.Test", "test\unit\StructureExample.Test\StructureExample.Test.csproj", "{FF33C5B6-EEB7-40B8-8E5C-853139C72610}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StructureExample.Test", "test\unit\StructureExample.Test\StructureExample.Test.csproj", "{FF33C5B6-EEB7-40B8-8E5C-853139C72610}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Transformation", "src\Transformation\Transformation.csproj", "{B5FA6526-81F2-44F9-94EA-C34142F3C183}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transformation.Test", "test\unit\Transformation.Test\Transformation.Test.csproj", "{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -85,6 +89,14 @@ Global
 		{FF33C5B6-EEB7-40B8-8E5C-853139C72610}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF33C5B6-EEB7-40B8-8E5C-853139C72610}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF33C5B6-EEB7-40B8-8E5C-853139C72610}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5FA6526-81F2-44F9-94EA-C34142F3C183}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5FA6526-81F2-44F9-94EA-C34142F3C183}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5FA6526-81F2-44F9-94EA-C34142F3C183}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5FA6526-81F2-44F9-94EA-C34142F3C183}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -105,6 +117,8 @@ Global
 		{E760A084-2FE1-47BB-B6B3-422DE6A7B507} = {85043B2A-3A57-4F9E-8E60-3EEBA3B9BEB9}
 		{87D8C9BA-E295-49AD-87DE-D6344FCF890A} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
 		{FF33C5B6-EEB7-40B8-8E5C-853139C72610} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
+		{B5FA6526-81F2-44F9-94EA-C34142F3C183} = {E315CC81-1F19-4BFC-8620-985988E85838}
+		{2AEAFEDD-CA54-486D-9B1D-E3CB51478B76} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F5A6E8E2-8254-42CF-9FB4-BDFB9B2CB3FD}

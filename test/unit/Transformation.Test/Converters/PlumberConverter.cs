@@ -1,8 +1,8 @@
-﻿using StructureExample.Test.Data;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
+using Transformation.Test.Data;
 
-namespace StructureExample.Test.Converters;
+namespace Transformation.Test.Converters;
 
 public class PlumberConverter : TypeConverter
 {
@@ -25,13 +25,13 @@ public class PlumberConverter : TypeConverter
     {
         return value switch
         {
-            Bio bio when destinationType == typeof(Plumber) => 
-                new Plumber(bio.Name, bio.Description ),
+            Bio bio when destinationType == typeof(Plumber) =>
+                new Plumber(bio.Name, bio.Description),
 
-            MarioBrother brother when destinationType == typeof(Plumber) => 
-                new Plumber(brother.Name, brother.Description ),
+            MarioBrother brother when destinationType == typeof(Plumber) =>
+                new Plumber(brother.Name, brother.Description),
 
-            _ => 
+            _ =>
                 base.ConvertTo(context, culture, value, destinationType)
         };
     }

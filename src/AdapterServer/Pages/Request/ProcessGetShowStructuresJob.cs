@@ -10,14 +10,13 @@ using ResponseMessage = TaskQueueing.ObjectModel.Models.Response;
 
 using CommonBOD;
 using Oagis;
-using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using AdapterServer.Data;
 using AdapterServer.Extensions;
 using System.Text.Json;
-using System.ComponentModel;
-using AdapterServer.Extensions;
+using Transformation;
+using Transformation.Extensions;
 
 namespace AdapterServer.Pages.Request;
 
@@ -34,16 +33,14 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
     {
         if (_filter is null) throw new Exception("Unexpected null StructureAssetsFilter in process GetStructuresJob.");
 
-        //var converter = TypeDescriptor.GetConverter( typeof(StructureAsset) );
-
-        // The followning will check for the TypeConverter attribute first, then look for TypeConverterSelector attribute(s) if it does not exist
-        var converter = TypeDescriptorExtensions.SelectConverter(typeof(StructureAsset), typeof(Ccom.Asset));
-        //var converter = TypeDescriptorExtensions.SelectConverter(typeof(StructureAsset), typeof(JsonDocument));
-
         var assets = StructureAssetService.GetStructures(_filter).Select(x => {
+            var converter = TypeConverterSelector.SelectConverter(x, typeof(Ccom.Asset));
             var asset = converter.ConvertTo( x, typeof(Ccom.Asset) );
 
-            if ( asset is null ) throw new InvalidOperationException("Problem converting StructureAsset to Ccom.Asset");
+            if ( asset is null )
+            {
+                throw new InvalidOperationException("Problem converting StructureAsset to Ccom.Asset");
+            }
 
             return (Ccom.Asset)asset;
         })
