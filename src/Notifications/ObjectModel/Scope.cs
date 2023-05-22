@@ -1,4 +1,4 @@
-﻿namespace Notifications.ObjectModel;
+namespace Notifications.ObjectModel;
 
 /// <summary>
 /// Scope to which a Notification applies, which provides a
