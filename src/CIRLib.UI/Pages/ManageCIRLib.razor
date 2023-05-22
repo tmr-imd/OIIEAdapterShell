@@ -1,0 +1,24 @@
+@page "/cir-library"
+
+@using CIRLib.Persistence;
+@using System.Security.Claims;
+@using CIRLib.UI.Pages.Registry;
+@using CIRLib.UI.Pages.Category;
+@using CIRLib.UI.Pages.Entry;
+@using CIRLib.UI.Pages.Property;
+@using CIRLib.UI.Pages.PropertyValue;
+<PageTitle>Common Interoperability Registry</PageTitle>
+<h1>Common Interoperability Registry Library</h1>
+
+<p>
+    Library View of mappings.
+    Operations allowed : Add, Update or Delete Mappings.
+</p>
+<div class="grid gap-4">
+    <RegistryView />
+    <CategoryView />
+    <EntryView />
+    <PropertyView />
+    <PropertyValueView />
+</div>
+

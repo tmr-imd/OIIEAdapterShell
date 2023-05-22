@@ -1,0 +1,80 @@
+@page "/registry-view"
+
+@using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.Persistence;
+@using System.Security.Claims;
+@using CIRLib.UI.Services;
+
+@inject RegistryServices Services
+@inject NavigationManager NavigationManager
+@inject CIRLibContextFactory Factory
+
+<div class="panel panel-default border"> @(Collapsed? " ": "" )
+    <div class="panel-heading alert-primary">
+        <h3 class="panel-title" align="justify"> Registry               
+            <button class="btn btn-primary" @onclick="(() => AddRegistry())" style="float: right;">
+                <i class="oi oi-pencil"></i> Add Registry
+            </button> 
+        </h3> 
+    </div> 
+        
+<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+    <thead class="bg-gray-100">
+        <tr>
+            <th scope="col">Registry Id</th>
+            <th scope="col">Description</th>
+            <th scope="col">Created By</th> 
+            <th scope="col">Date Created</th>
+            <th scope="col">Modified By</th> 
+            <th scope="col">Date Modified</th>  
+            <th></th>
+        </tr>
+    </thead>
+    
+    <tbody class="bg-white divide-y divide-gray-200">
+        @foreach (var Registry in RegistryList)
+        {
+            <tr>
+                <td>@Registry.RegistryId</td>
+                <td>@Registry.Description</td>
+                <td>@Registry.CreatedBy</td>
+                <td>@Registry.DateCreated</td>
+                <td>@Registry.ModifiedBy</td>
+                <td>@Registry.DateModified</td>               
+                <td> 
+                    <button class="btn btn-primary" @onclick="(() =>EditRegistry(Registry.Id))">
+                            Edit
+                    </button>                    
+                </td>      
+            </tr>
+        } 
+    </tbody>
+</table>
+</div>
+
+
+@code {
+
+    public bool Collapsed { get; set; } = true; // hide by default
+    public List<ObjModels.Registry> RegistryList { get; set; } = new List<ObjModels.Registry>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+        RegistryList = Services.GetAllRegistries(Context);
+        await base.OnInitializedAsync();
+    }
+    
+    void EditRegistry(Guid Id){
+        NavigationManager.NavigateTo($"/edit-registry/{Id}");
+    }
+
+    void AddRegistry(){
+        NavigationManager.NavigateTo("/edit-registry");
+    }    
+}

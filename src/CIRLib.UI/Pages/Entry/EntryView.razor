@@ -1,0 +1,88 @@
+@page "/entry-view"
+
+@using CIRLib.UI;
+@using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.Persistence;
+@using System.Security.Claims;
+@using CIRLib.UI.Services;
+
+@inject EntryServices Services
+@inject NavigationManager NavigationManager
+@inject CIRLibContextFactory Factory
+
+<div class="panel panel-default border"> @(Collapsed? " ": "" )
+    <div class="panel-heading alert-primary">
+        <h3 class="panel-title" align="justify"> Entry               
+            <button class="btn btn-primary" @onclick="(() => AddEntry())" style="float: right;">
+                <i class="oi oi-pencil"></i> Add Entry
+            </button> 
+        </h3> 
+    </div> 
+        
+<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+    <thead class="bg-gray-100">
+        <tr>
+            <th scope="col">Entry Id</th>
+            <th scope="col">Source Id </th>
+            <th scope="col">CIRID </th>
+            <th scope="col">SourceOwnerId </th>
+            <th scope="col">Name</th>
+            <th scope="col">Description</th>
+            <th scope="col">Inactive </th>
+            <th scope="col">Category Ref Id</th>
+            <th scope="col">Registry Ref Id</th>
+             <th></th>
+        </tr>
+    </thead>
+    
+    <tbody class="bg-white divide-y divide-gray-200">
+        @foreach (var Entry in EntryList)
+        {
+            <tr>
+                <td>@Entry.IdInSource</td>
+                <td>@Entry.SourceId</td>
+                <td>@Entry.CIRId</td>
+                <td>@Entry.SourceOwnerId</td>
+                <td>@Entry.Name</td>
+                <td>@Entry.Description</td>
+                <td>@Entry.Inactive</td>
+                <td>@Entry.CategoryRefId</td>
+                <td>@Entry.RegistryRefId</td>
+
+                <td> 
+                    <button class="btn btn-primary" @onclick="(() =>EditEntry(Entry.Id))">
+                            Edit
+                    </button>                    
+                </td>      
+            </tr>
+        } 
+    </tbody>
+</table>
+</div>
+
+
+@code {
+
+    public bool Collapsed{get;set;}= true; // hide by default
+    public List<ObjModels.Entry> EntryList{ get; set; } = new List<ObjModels.Entry>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+        EntryList = Services.GetAllEntries(Context);
+        await base.OnInitializedAsync();
+    }
+    
+    void EditEntry(Guid Id){
+        NavigationManager.NavigateTo($"/edit-entry/{Id}");
+    }
+
+    void AddEntry(){
+        NavigationManager.NavigateTo("/edit-entry");
+    }    
+}

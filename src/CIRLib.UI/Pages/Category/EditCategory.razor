@@ -1,0 +1,137 @@
+@page "/edit-category"
+@page "/edit-category/{Id:guid}"
+
+@using CIRLIB.UI.Pages;
+@using Microsoft.Extensions.Logging;
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Components.Forms
+@using ObjModels = CIRLib.ObjectModel.Models;
+@using CIRLib.UI.Services;
+
+@inject CategoryServices Services
+@inject NavigationManager NavigationManager
+@inject CIRLib.Persistence.CIRLibContextFactory Factory 
+@inject ILogger<RegistryViewModel> Logger
+
+@if (Id is null )
+{
+    <PageTitle> Add Category</PageTitle>
+    <h3> Add a new Category</h3>
+}else{
+    <PageTitle> Edit Category</PageTitle>
+    <h3> Edit Category</h3>
+}
+@if ( !string.IsNullOrEmpty(error) )
+        {
+            <div class="col-span-full">
+                <span class="text-red-500">@error</span>
+            </div>
+}
+<EditForm Model="@viewModel" OnValidSubmit="@HandleSubmit">
+    <Modal Title="Category">  
+        <ChildContent>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="grid gap-2">
+                <div>
+                    <label>
+                        <h3 class="col-span-2">Category Id 
+                            @if (Id is not null ){  
+                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteCategory((Guid)Id))">
+                                        Delete
+                                </button>
+                            }
+                        </h3>
+                        @if (Id is null ){                            
+                            <InputText type="text" @bind-Value="viewModel.CategoryId" 
+                                placeholder="Enter Category Id" class="form-input w-full" />
+                        }else{
+                            <InputText readonly="true" type="text" @bind-Value="viewModel.CategoryId"
+                                class="form-input w-full" />
+                        }
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        <h3>Source Id</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.SourceId"
+                            placeholder="Enter Source Id" />
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        <h3>Registry Id</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.RegistryRefId"
+                            placeholder="Enter Registry Id" />
+                    </label>
+                </div>         
+                <div>
+                    <label>
+                        <h3>Description</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.Description" 
+                            placeholder="Enter Description"/>
+                    </label>
+                </div>
+            </div>
+        </ChildContent>
+        <Footer>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto @(error is not null ? "" : "hidden")">@(Id is null ? "Save New Category" : "Update")</button>
+            <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
+        </Footer>
+    </Modal>
+</EditForm> 
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+    public ObjModels.Category CategoryObj;
+    public CategoryViewModel viewModel = new CategoryViewModel();
+    public string error { get; set; } ="";
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        if ( Id is not null){
+            using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+            CategoryObj = Services.GetCategoryById((Guid)Id, Context);
+            if (CategoryObj is not null){
+                viewModel.CategoryId = CategoryObj.CategoryId;
+                viewModel.SourceId = CategoryObj.SourceId;
+                viewModel.RegistryRefId = CategoryObj.RegistryRefId;
+                viewModel.Description = CategoryObj.Description;
+            }else{                
+                NavigationManager.NavigateTo("/cir-library");
+            }
+        } 
+    }
+    private async Task HandleSubmit()
+    {   
+        try
+        {
+            using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+            if( Id is null){
+                Services.CreateNewCategory(viewModel, Context);
+            }else{
+                Services.UpdateCategory((Guid)Id, viewModel ,Context);            
+            }
+            NavigationManager.NavigateTo("/cir-library");
+        }
+        catch( Exception ex )
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+           StateHasChanged();
+        }
+
+        
+    }
+    
+    void DeleteCategory(Guid Id){
+        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        Services.DeleteCategoryById(Id, Context.Result);
+        NavigationManager.NavigateTo("/cir-library");
+    }
+}
