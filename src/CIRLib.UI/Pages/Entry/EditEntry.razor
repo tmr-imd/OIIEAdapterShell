@@ -11,7 +11,7 @@
 @inject EntryServices Services
 @inject NavigationManager NavigationManager
 @inject CIRLib.Persistence.CIRLibContextFactory Factory 
-@inject ILogger<RegistryViewModel> Logger
+@inject ILogger<EntryViewModel> Logger
 
 @if (Id is null )
 {
@@ -28,7 +28,7 @@
             </div>
 }
 <EditForm Model="@viewModel" OnValidSubmit="@HandleSubmit">
-    <Modal Title="Registry">  
+    <Modal Title="Entry">  
         <ChildContent>
             <DataAnnotationsValidator />
             <ValidationSummary />

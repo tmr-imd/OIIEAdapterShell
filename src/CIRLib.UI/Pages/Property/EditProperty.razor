@@ -118,12 +118,16 @@
     }
     private async Task HandleSubmit()
     {   
-        try{
+        try
+        {
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-            if( Id is null){
-                Services.CreateNewProperty(viewModel,Context);
-            }else{
-                Services.UpdateProperty((Guid)Id, viewModel ,Context);            
+            if (Id is null)
+            {
+                Services.CreateNewProperty(viewModel, Context);
+            }
+            else
+            {
+                Services.UpdateProperty((Guid)Id, viewModel, Context);            
             }
             NavigationManager.NavigateTo("/cir-library");
         }

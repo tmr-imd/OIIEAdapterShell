@@ -19,17 +19,18 @@ public class EntryServices{
     public void CreateNewEntry( EntryViewModel newEntry, CIRLibContext DbContext ){
         CommonServices.CheckIfRegistryExists(newEntry.RegistryRefId, DbContext);
         CommonServices.CheckIfCategoryExists(newEntry.CategoryRefId, DbContext);
-        var EntryObj = new ObjModels.Entry {
-                                            IdInSource = newEntry.IdInSource,
-                                            SourceId = newEntry.SourceId,
-                                            CIRId = newEntry.CIRId,
-                                            SourceOwnerId = newEntry.SourceOwnerId,
-                                            Name = newEntry.Name,
-                                            Description = newEntry.Description,
-                                            Inactive = newEntry.Inactive,
-                                            CategoryRefId = newEntry.CategoryRefId,
-                                            RegistryRefId = newEntry.RegistryRefId
-                                            };    
+        var EntryObj = new ObjModels.Entry
+        {
+            IdInSource = newEntry.IdInSource,
+            SourceId = newEntry.SourceId,
+            CIRId = newEntry.CIRId,
+            SourceOwnerId = newEntry.SourceOwnerId,
+            Name = newEntry.Name,
+            Description = newEntry.Description,
+            Inactive = newEntry.Inactive,
+            CategoryRefId = newEntry.CategoryRefId,
+            RegistryRefId = newEntry.RegistryRefId
+        };    
         DbContext.Entry.Add(EntryObj);
         DbContext.SaveChanges();
     }

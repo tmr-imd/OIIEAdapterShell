@@ -22,14 +22,15 @@ public class PropertyServices{
         CommonServices.CheckIfCategoryExists(newProperty.CategoryRefId, DbContext);
         CommonServices.CheckIfEntryExists(newProperty.EntryRefIdInSource, DbContext);
 
-        var PropertyObj = new ObjModels.Property{ 
-                                                    PropertyId = newProperty.PropertyId,
-                                                    PropertyValue = newProperty.PropertyValue,
-                                                    DataType = newProperty.DataType,
-                                                    CategoryRefId = newProperty.CategoryRefId,
-                                                    RegistryRefId = newProperty.RegistryRefId,
-                                                    EntryRefIdInSource = newProperty.EntryRefIdInSource
-                                                };
+        var PropertyObj = new ObjModels.Property
+        {
+            PropertyId = newProperty.PropertyId,
+            PropertyValue = newProperty.PropertyValue,
+            DataType = newProperty.DataType,
+            CategoryRefId = newProperty.CategoryRefId,
+            RegistryRefId = newProperty.RegistryRefId,
+            EntryRefIdInSource = newProperty.EntryRefIdInSource
+        };
         DbContext.Property.Add(PropertyObj);
         DbContext.SaveChanges();
         

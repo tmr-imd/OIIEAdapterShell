@@ -18,12 +18,13 @@ public class PropertyValueServices{
     }
     public void CreateNewPropertyValue( PropertyValueViewModel newProperty, CIRLibContext DbContext ){
         CommonServices.CheckIfPropertyExists(newProperty.PropertyRefId, DbContext);
-        var PropertyValueObj = new ObjModels.PropertyValue {
-                                                            Key = newProperty.Key,
-                                                            Value = newProperty.Value,
-                                                            UnitOfMeasure = newProperty.UnitOfMeasure,
-                                                            PropertyRefId = newProperty.PropertyRefId
-                                                            };
+        var PropertyValueObj = new ObjModels.PropertyValue
+        {
+            Key = newProperty.Key,
+            Value = newProperty.Value,
+            UnitOfMeasure = newProperty.UnitOfMeasure,
+            PropertyRefId = newProperty.PropertyRefId
+        };
         DbContext.PropertyValue.Add(PropertyValueObj);
         DbContext.SaveChanges();
     }

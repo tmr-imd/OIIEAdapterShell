@@ -17,9 +17,11 @@ public class RegistryServices{
         return DbContext.Registry.Where(item => item.Id.Equals(Id)).First(); 
     }
     public void CreateNewRegistry( RegistryViewModel newRegistry, CIRLibContext DbContext ){
-        var RegistryObj = new ObjModels.Registry { RegistryId = newRegistry.RegistryId,
-                                                   Description = newRegistry.Description
-                                                    };
+        var RegistryObj = new ObjModels.Registry
+        {
+            RegistryId = newRegistry.RegistryId,
+            Description = newRegistry.Description
+        };
         DbContext.Registry.Add(RegistryObj);
         DbContext.SaveChanges();
     }

@@ -18,11 +18,6 @@ namespace CIRLIB.UI.Pages
         public string RegistryRefId { get; set; } = "";        
         public string EntryRefIdInSource { get; set; } = "";
 
-        public PropertyViewModel(){
-            PropertyId ="";
-            PropertyValue ="";
-            DataType ="";
-        }
 
     }
 }

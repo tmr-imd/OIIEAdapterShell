@@ -17,10 +17,13 @@ public class CategoryServices{
     }
     public void CreateNewCategory(CategoryViewModel NewCategory, CIRLibContext DbContext ){
         CommonServices.CheckIfRegistryExists(NewCategory.RegistryRefId, DbContext);
-        var CategoryObj = new ObjModels.Category { CategoryId = NewCategory.CategoryId,       
-                                                   SourceId = NewCategory.SourceId,
-                                                   RegistryRefId = NewCategory.RegistryRefId,
-                                                   Description = NewCategory.Description};
+        var CategoryObj = new ObjModels.Category
+        {
+            CategoryId = NewCategory.CategoryId,       
+            SourceId = NewCategory.SourceId,
+            RegistryRefId = NewCategory.RegistryRefId,
+            Description = NewCategory.Description
+        };
         DbContext.Category.Add(CategoryObj);
         DbContext.SaveChanges();
     }
