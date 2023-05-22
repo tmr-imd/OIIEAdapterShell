@@ -1,3 +1,4 @@
+using AdapterServer.Data;
 using CommonBOD;
 
 namespace StructureExample.Test;

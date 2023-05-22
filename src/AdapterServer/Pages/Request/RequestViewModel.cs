@@ -34,7 +34,6 @@ public class RequestViewModel
     public string FilterCondition { get; set; } = "";
     public string FilterInspector { get; set; } = "";
 
-    public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
     public IEnumerable<TaskModels.Request> Requests { get; set; } = Enumerable.Empty<TaskModels.Request>();
 
     private readonly SettingsService settings;
@@ -71,11 +70,6 @@ public class RequestViewModel
     public async Task Load(IJobContext context)
     {
         Requests = await RequestService.ListRequests(context);
-    }
-
-    public void Clear()
-    {
-        StructureAssets = Enumerable.Empty<StructureAsset>();
     }
 
     public void Request()

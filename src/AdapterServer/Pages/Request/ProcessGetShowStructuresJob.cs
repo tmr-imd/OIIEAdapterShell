@@ -16,6 +16,8 @@ using System.Xml.Serialization;
 using AdapterServer.Data;
 using AdapterServer.Extensions;
 using System.Text.Json;
+using System.ComponentModel;
+using AdapterServer.Extensions;
 
 namespace AdapterServer.Pages.Request;
 
@@ -28,13 +30,26 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
     {
     }
 
-    protected override async Task<XDocument> process(XDocument getBod, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
+    protected override Task<XDocument> process(XDocument getBod, RequestMessage request, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
     {
         if (_filter is null) throw new Exception("Unexpected null StructureAssetsFilter in process GetStructuresJob.");
 
-        var structures = StructureAssetService.GetStructures(_filter);
-        var requestStructures = new RequestStructures(structures, structures.Length);
-        return await Task.FromResult(requestStructures.ToShowStructureAssetsBOD());
+        //var converter = TypeDescriptor.GetConverter( typeof(StructureAsset) );
+
+        // The followning will check for the TypeConverter attribute first, then look for TypeConverterSelector attribute(s) if it does not exist
+        var converter = TypeDescriptorExtensions.SelectConverter(typeof(StructureAsset), typeof(Ccom.Asset));
+        //var converter = TypeDescriptorExtensions.SelectConverter(typeof(StructureAsset), typeof(JsonDocument));
+
+        var assets = StructureAssetService.GetStructures(_filter).Select(x => {
+            var asset = converter.ConvertTo( x, typeof(Ccom.Asset) );
+
+            if ( asset is null ) throw new InvalidOperationException("Problem converting StructureAsset to Ccom.Asset");
+
+            return (Ccom.Asset)asset;
+        })
+        .ToList();
+
+        return Task.FromResult( assets.ToShowStructureAssetsBOD() );
     }
 
     protected override async Task<bool> process(XDocument content, ResponseMessage response, IJobContext context, ValidationDelegate<RequestMessage> errorCallback)
@@ -92,10 +107,10 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
             return await Task.FromResult(false); // No need to continue with processing
         }
 
-        var bod = _bodReader.AsBod<GenericBodType<ShowType, List<RequestStructures>>>();
-        var requestStructures = bod?.DataArea.Noun.FirstOrDefault();
+        var bod = _bodReader.AsBod<GenericBodType<ShowType, List<Ccom.Asset>>>();
+        var assets = bod?.DataArea.Noun;
 
-        return await validateStructures(requestStructures ?? new RequestStructures(), response, context, errorCallback);
+        return await validateStructures(assets ?? new List<Ccom.Asset>(), response, context, errorCallback);
     }
 
     // Simple example of overriding the error handler. Preserves default behaviour and writes to console.
@@ -174,9 +189,9 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
         }
     }
 
-    private async Task<bool> validateStructures(RequestStructures requestStructures, ResponseMessage response, IJobContext context, ValidationDelegate<ResponseMessage> errorCallback)
+    private async Task<bool> validateStructures(List<Ccom.Asset> assets, ResponseMessage response, IJobContext context, ValidationDelegate<ResponseMessage> errorCallback)
     {
-        if (requestStructures.StructureAssets.Any()) return await Task.FromResult(true);
+        if (assets.Any()) return await Task.FromResult(true);
 
         var error = new MessageError(ErrorSeverity.Error, "No Structures were found!");
         errorCallback(error, response, context);

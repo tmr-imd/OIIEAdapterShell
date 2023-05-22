@@ -6,6 +6,7 @@ using Oagis.CodeLists;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using AdapterServer.Data;
 
 namespace AdapterServer.Pages.Publication;
 

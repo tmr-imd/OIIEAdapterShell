@@ -1,19 +1,19 @@
 using CsvHelper;
 using System.Globalization;
 
-namespace TaskQueueing.Data;
+namespace AdapterServer.Data;
 
 public class StructureAssetService
 {
-    public static StructureAsset[] GetStructures( StructureAssetsFilter filter )
+    public static StructureAsset[] GetStructures(StructureAssetsFilter filter)
     {
-        using var reader = new StreamReader( "./Data/Structure Assets.csv" );
+        using var reader = new StreamReader("./Data/Structure Assets.csv");
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
 
         var records = csv.GetRecords<StructureAsset>();
 
-        if ( filter.FilterCode != "" )
-            records = records.Where( x => x.Code.ToLower().Contains(filter.FilterCode.ToLower()) );
+        if (filter.FilterCode != "")
+            records = records.Where(x => x.Code.ToLower().Contains(filter.FilterCode.ToLower()));
 
         if (filter.FilterType != "")
             records = records.Where(x => x.Type.ToLower().Contains(filter.FilterType.ToLower()));
