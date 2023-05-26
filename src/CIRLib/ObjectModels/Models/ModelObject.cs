@@ -5,7 +5,7 @@ namespace CIRLib.ObjectModel.Models;
 [DebuggerDisplay("{Id}")]
 public abstract record ModelObject
 {
-    public Guid Id { get; set; } 
+    public Guid Id { get; set; }
 
     public string CreatedBy { get; set; } = "authUser";
     public DateTime DateCreated { get; set; }

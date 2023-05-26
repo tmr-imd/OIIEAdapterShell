@@ -1,4 +1,4 @@
-@page "/registry-view"
+@page "/RegistryView"
 
 @using ObjModels = CIRLib.ObjectModel.Models;
 @using CIRLib.Persistence;
@@ -9,13 +9,12 @@
 @inject NavigationManager NavigationManager
 @inject CIRLibContextFactory Factory
 
-<div class="panel-heading alert-primary">
-    <h3 class="panel-title" align="justify"> Registry          
-        <button class="btn btn-primary" @onclick="(() => AddRegistry())" style="float: right;">
-            <i class="oi oi-pencil"></i> Add Registry
-        </button> 
-    </h3> 
-</div>
+<div class="panel panel-default border">
+    <div class="panel-heading alert-primary">
+        <h3 class="panel-title" align="justify"> Registry 
+        </h3> 
+    </div> 
+        
 <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
     <thead class="bg-gray-100">
         <tr>
@@ -48,47 +47,30 @@
         } 
     </tbody>
 </table>
+</div>
+
 
 @code {
-    [Parameter]
-    public string SearchFilterReg { get; set;} = "";
-    [Parameter]
-    public string SearchFilterCat { get; set;} = "";
-    [Parameter]
-    public string SearchFilterEntry { get; set;} = "";
-    [Parameter]
-    public string SearchFilterProperty { get; set;} = "";
-    [Parameter]
-    public string SearchFilterPropertyValue { get; set;} = "";
+
     public List<ObjModels.Registry> RegistryList{ get; set; } = new List<ObjModels.Registry>();
 
     protected override async Task OnParametersSetAsync()
-    {   
-        await SearchForRegistry();
+    {
         await base.OnParametersSetAsync();
     }
 
     protected override async Task OnInitializedAsync()
     {
+        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
+        RegistryList = Services.GetAllRegistries(Context);
         await base.OnInitializedAsync();
     }
     
-    void EditRegistry(Guid Id)
-    {
-        NavigationManager.NavigateTo($"/edit-registry/{Id}");
+    void EditRegistry(Guid Id){
+        NavigationManager.NavigateTo($"/EditRegistry/{Id}");
     }
 
-    void AddRegistry()
-    {
-        NavigationManager.NavigateTo("/edit-registry");
-    }   
-
-    async Task SearchForRegistry()
-    {
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
-        RegistryList = Services.GetRegistryFromFilters(SearchFilterEntry, SearchFilterReg,
-            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue ,Context.Result);
-
-    }
-
+    void AddRegistry(){
+        NavigationManager.NavigateTo("/EditRegistry");
+    }    
 }

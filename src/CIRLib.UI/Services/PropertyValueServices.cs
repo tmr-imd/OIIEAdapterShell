@@ -16,19 +16,82 @@ public class PropertyValueServices{
     {     
         return DbContext.PropertyValue.Where(item => item.Id.Equals(Id)).First(); 
     }
-    public void CreateNewPropertyValue( PropertyValueViewModel newProperty, CIRLibContext DbContext ){
+
+    public List<ObjModels.PropertyValue> GetPropertyValuesFromFilters(string RegistryId, string CategoryId, string EntryId,
+        string PropertyId, string PropertyValueKey, CIRLibContext DbContext)
+    {     
+        IQueryable<ObjModels.PropertyValue> Query = DbContext.PropertyValue;
+        
+        if( !string.IsNullOrWhiteSpace(RegistryId) || !string.IsNullOrWhiteSpace(CategoryId) ||
+            !string.IsNullOrWhiteSpace(EntryId) || !string.IsNullOrWhiteSpace(PropertyId))
+        {
+            var GroupQuery = Query.Join(
+                DbContext.Property, 
+                pv => pv.PropertyRefId,
+                p => p.PropertyId,
+                (pv,p) => new 
+                {
+                    PropertyValue = pv,
+                    Property = p
+                }
+                );
+        
+            if(!string.IsNullOrWhiteSpace(RegistryId))
+            {
+                GroupQuery = GroupQuery.Where(
+                    joinResult => joinResult.Property.RegistryRefId == RegistryId
+                    );
+            }
+
+            if(!string.IsNullOrWhiteSpace(CategoryId))
+            {
+                GroupQuery = GroupQuery.Where(
+                    joinResult => joinResult.Property.CategoryRefId == CategoryId
+                    );
+            }
+
+            if(!string.IsNullOrWhiteSpace(EntryId))
+            {
+                GroupQuery = GroupQuery.Where(
+                    joinResult => joinResult.Property.EntryRefIdInSource == EntryId
+                    );
+            }
+
+            if(!string.IsNullOrWhiteSpace(PropertyId))
+            {
+                GroupQuery = GroupQuery.Where(
+                    Result => Result.Property.PropertyId == PropertyId
+                    );
+            }
+            
+            Query = GroupQuery.Select(joinResult => joinResult.PropertyValue);
+        }
+
+        if(!string.IsNullOrWhiteSpace(PropertyValueKey))
+        {
+            Query = Query.Where(
+                joinResult => joinResult.Key == PropertyValueKey
+                );
+        }
+        return Query.ToList();
+    
+    }
+    public void CreateNewPropertyValue( PropertyValueViewModel newProperty, CIRLibContext DbContext )
+    {
         CommonServices.CheckIfPropertyExists(newProperty.PropertyRefId, DbContext);
         var PropertyValueObj = new ObjModels.PropertyValue
         {
             Key = newProperty.Key,
             Value = newProperty.Value,
             UnitOfMeasure = newProperty.UnitOfMeasure,
-            PropertyRefId = newProperty.PropertyRefId
+            PropertyRefId = newProperty.PropertyRefId,
+            Id = Guid.NewGuid()
         };
         DbContext.PropertyValue.Add(PropertyValueObj);
         DbContext.SaveChanges();
     }
-    public void UpdatePropertyValue(Guid Id, PropertyValueViewModel updateProperty, CIRLibContext DbContext ){        
+    public void UpdatePropertyValue(Guid Id, PropertyValueViewModel updateProperty, CIRLibContext DbContext )
+    {        
         CommonServices.CheckIfPropertyExists(updateProperty.PropertyRefId, DbContext);
 
         var PropertyValueObj = DbContext.PropertyValue.Where(item => item.Id.Equals(Id)).First();

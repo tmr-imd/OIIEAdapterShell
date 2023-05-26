@@ -16,9 +16,139 @@ public class EntryServices{
     {     
         return DbContext.Entry.Where(item => item.Id.Equals(Id)).First(); 
     }
-    public void CreateNewEntry( EntryViewModel newEntry, CIRLibContext DbContext ){
+    public List<ObjModels.Entry> GetEntriesFromFilters(string RegistryId, string CategoryId, string EntryId,
+        string PropertyId, string PropertyValueKey, CIRLibContext DbContext)
+    {     
+       IQueryable<ObjModels.Entry> Query = DbContext.Entry;
+
+        if(!string.IsNullOrWhiteSpace(RegistryId))
+        {
+            Query = Query.Join(
+                DbContext.Registry, 
+                e => e.RegistryRefId,                
+                r => r.RegistryId,
+                (e,r) => new 
+                {
+                    Entry = e,
+                    Registry = r
+                }
+                ).Where(
+                    joinResult => joinResult.Registry.RegistryId == RegistryId
+                )
+                .Select(
+                    joinResult => joinResult.Entry
+                );
+        }
+
+        if(!string.IsNullOrWhiteSpace(CategoryId))
+        {
+            Query = Query.Join(
+                DbContext.Category,                
+                e => e.CategoryRefId,
+                c => c.CategoryId,
+                (e,c) => new 
+                {                    
+                    Entry = e,
+                    Category = c
+                }
+                ).Where(
+                    joinResult => joinResult.Category.CategoryId == CategoryId
+                ).Select(
+                    joinResult => joinResult.Entry
+                );
+        }        
+
+        if(!string.IsNullOrWhiteSpace(PropertyId))
+        {
+            if(string.IsNullOrWhiteSpace(PropertyValueKey))
+            {
+                Query = Query.Join(
+                    DbContext.Property, 
+                    e => e.IdInSource,
+                    p => p.EntryRefIdInSource,
+                    (e,p) => new 
+                    {
+                        Entry = e,
+                        Property = p
+                    }
+                    ).Where(
+                        joinResult => joinResult.Property.PropertyId == PropertyId
+                    ).Select(
+                        joinResult => joinResult.Entry
+                    ); 
+            }
+            else
+            {
+                Query = Query.Join(
+                    DbContext.Property, 
+                    e => e.IdInSource,
+                    p => p.EntryRefIdInSource,
+                    (e,p) => new 
+                    {
+                        Entry = e,
+                        Property = p
+                    }
+                    ).Join(
+                        DbContext.PropertyValue, 
+                        p => p.Property.PropertyId,
+                        pv => pv.PropertyRefId,
+                        (p,pv) => new 
+                        {
+                            Entry = p.Entry,
+                            Property = p.Property,
+                            PropertyValue = pv
+                        }
+                    ).Where(
+                        joinResult => joinResult.PropertyValue.Key == PropertyValueKey
+                    ).Where(
+                        joinResult => joinResult.Property.PropertyId == PropertyId
+                    ).Select(
+                        joinResult => joinResult.Entry
+                    );           
+            }
+        }
+        else if(string.IsNullOrWhiteSpace(PropertyId) && !string.IsNullOrWhiteSpace(PropertyValueKey))
+        {
+            Query = Query.Join(
+                    DbContext.Property, 
+                    e => e.IdInSource,
+                    p => p.EntryRefIdInSource,
+                    (e,p) => new 
+                    {
+                        Entry = e,
+                        Property = p
+                    }
+                ).Join(
+                    DbContext.PropertyValue, 
+                    p => p.Property.PropertyId,
+                    pv => pv.PropertyRefId,
+                    (p,pv) => new 
+                    {
+                        Entry = p.Entry,
+                        Property = p.Property,
+                        PropertyValue = pv
+                    }
+                ).Where(
+                    joinResult => joinResult.PropertyValue.Key == PropertyValueKey
+                ).Select(
+                    joinResult => joinResult.Entry
+                );           
+        }
+        
+        if(!string.IsNullOrWhiteSpace(EntryId))
+        {
+            Query = Query.Where(
+                joinResult => joinResult.IdInSource == EntryId
+                );
+        }
+        return Query.ToList();
+        
+    }
+    public void CreateNewEntry( EntryViewModel newEntry, CIRLibContext DbContext )
+    {
         CommonServices.CheckIfRegistryExists(newEntry.RegistryRefId, DbContext);
         CommonServices.CheckIfCategoryExists(newEntry.CategoryRefId, DbContext);
+
         var EntryObj = new ObjModels.Entry
         {
             IdInSource = newEntry.IdInSource,
@@ -29,14 +159,15 @@ public class EntryServices{
             Description = newEntry.Description,
             Inactive = newEntry.Inactive,
             CategoryRefId = newEntry.CategoryRefId,
-            RegistryRefId = newEntry.RegistryRefId
+            RegistryRefId = newEntry.RegistryRefId,
+            Id = Guid.NewGuid()
         };    
         DbContext.Entry.Add(EntryObj);
         DbContext.SaveChanges();
     }
         
-    public void UpdateEntry(Guid Id, EntryViewModel updateEntry, CIRLibContext DbContext ){
-        
+    public void UpdateEntry(Guid Id, EntryViewModel updateEntry, CIRLibContext DbContext )
+    {
         CommonServices.CheckIfRegistryExists(updateEntry.RegistryRefId, DbContext);
         CommonServices.CheckIfCategoryExists(updateEntry.CategoryRefId, DbContext);
 

@@ -7,18 +7,70 @@
 @using CIRLib.UI.Pages.Entry;
 @using CIRLib.UI.Pages.Property;
 @using CIRLib.UI.Pages.PropertyValue;
+
+@inject CIRLibContextFactory Factory
+
 <PageTitle>Common Interoperability Registry</PageTitle>
 <h1>Common Interoperability Registry Library</h1>
+<h1>Find your Mapping</h1>
 
 <p>
     Library View of mappings.
     Operations allowed : Add, Update or Delete Mappings.
 </p>
+<input @bind-value="SearchRegistryFilter" @bind-value:event="onchange" placeholder="Search for Registry" class="p-3">
+<input @bind-value="SearchCategoryFilter" @bind-value:event="onchange" placeholder="Search for Category" class="p-3">
+<input @bind-value="SearchEntryFilter" @bind-value:event="onchange" placeholder="Search for Entry" class="p-3">
+<input @bind-value="SearchPropertyFilter" @bind-value:event="onchange" placeholder="Search for Property" class="p-3">
+<input @bind-value="SearchPropertyValueFilter" @bind-value:event="onchange" placeholder="Search for PropertyValue" class="p-3">
+
 <div class="grid gap-4">
-    <RegistryView />
-    <CategoryView />
-    <EntryView />
-    <PropertyView />
-    <PropertyValueView />
+    <RegistryView SearchFilterReg=@SearchRegistryFilter SearchFilterCat=@SearchCategoryFilter
+            SearchFilterEntry=@SearchEntryFilter SearchFilterProperty=@SearchPropertyFilter 
+            SearchFilterPropertyValue=@SearchPropertyValueFilter/>
+
+    <CategoryView SearchFilterReg=@SearchRegistryFilter SearchFilterCat=@SearchCategoryFilter
+            SearchFilterEntry=@SearchEntryFilter SearchFilterProperty=@SearchPropertyFilter 
+            SearchFilterPropertyValue=@SearchPropertyValueFilter/>
+
+    <EntryView SearchFilterReg=@SearchRegistryFilter SearchFilterCat=@SearchCategoryFilter
+            SearchFilterEntry=@SearchEntryFilter SearchFilterProperty=@SearchPropertyFilter 
+            SearchFilterPropertyValue=@SearchPropertyValueFilter/>
+
+    <PropertyView SearchFilterReg=@SearchRegistryFilter SearchFilterCat=@SearchCategoryFilter
+            SearchFilterEntry=@SearchEntryFilter SearchFilterProperty=@SearchPropertyFilter 
+            SearchFilterPropertyValue=@SearchPropertyValueFilter/>
+            
+    <PropertyValueView SearchFilterReg=@SearchRegistryFilter SearchFilterCat=@SearchCategoryFilter
+            SearchFilterEntry=@SearchEntryFilter SearchFilterProperty=@SearchPropertyFilter 
+            SearchFilterPropertyValue=@SearchPropertyValueFilter/>
 </div>
 
+@code{
+    public string SearchRegistryFilter {get; set;} = "";
+    public string SearchCategoryFilter {get; set;} = "";
+    public string SearchEntryFilter {get; set;} = "";
+    public string SearchPropertyFilter {get; set;} = "";
+    public string SearchPropertyValueFilter {get; set;} = "";
+    void SearchForRegistry(ChangeEventArgs Args)
+    {
+        SearchRegistryFilter = (string) Args.Value;
+    }
+    void SearchForCategory(ChangeEventArgs Args)
+    {
+        SearchCategoryFilter = (string) Args.Value;
+    }
+    void SearchForEntry(ChangeEventArgs Args)
+    {
+        SearchEntryFilter = (string) Args.Value;
+    }
+    void SearchForProperty(ChangeEventArgs Args)
+    {
+        SearchPropertyFilter = (string) Args.Value;
+    }
+    void SearchForPropertyValue(ChangeEventArgs Args)
+    {
+        SearchPropertyValueFilter = (string) Args.Value;
+    }
+    
+}

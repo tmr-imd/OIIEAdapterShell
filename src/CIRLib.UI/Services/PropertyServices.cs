@@ -16,6 +16,58 @@ public class PropertyServices{
     {     
         return DbContext.Property.Where(item => item.Id.Equals(Id)).First(); 
     }
+    public List<ObjModels.Property> GetPropertiesFromFilters(string RegistryId, string CategoryId, string EntryId,
+        string PropertyId, string PropertyValueKey, CIRLibContext DbContext)
+    {     
+       IQueryable<ObjModels.Property> Query = DbContext.Property;
+
+        if(!string.IsNullOrWhiteSpace(RegistryId))
+        {
+            Query = Query.Where(
+                    Result => Result.RegistryRefId == RegistryId
+                );
+        }
+
+        if(!string.IsNullOrWhiteSpace(CategoryId))
+        {
+            Query = Query.Where(
+                    Result => Result.CategoryRefId == CategoryId
+                );
+        }
+
+        if(!string.IsNullOrWhiteSpace(EntryId))
+        {
+            Query = Query.Where(
+                    Result => Result.EntryRefIdInSource == EntryId
+                );
+        }
+
+        if(!string.IsNullOrWhiteSpace(PropertyValueKey))
+        {
+            Query = Query.Join(
+                    DbContext.PropertyValue, 
+                    p => p.PropertyId,
+                    pv => pv.PropertyRefId,
+                    (p,pv) => new 
+                    {
+                        Property = p,
+                        PropertyValue = pv
+                    }
+                ).Where(
+                    joinResult => joinResult.PropertyValue.Key == PropertyValueKey
+                ).Select(
+                    joinResult => joinResult.Property
+                );
+        }
+
+        if(!string.IsNullOrWhiteSpace(PropertyId))
+        {
+            Query = Query.Where(
+                Result => Result.PropertyId == PropertyId
+            );
+        }
+        return Query.ToList();
+    }
     public void CreateNewProperty( PropertyViewModel newProperty, CIRLibContext DbContext ){
         
         CommonServices.CheckIfRegistryExists(newProperty.RegistryRefId, DbContext);
@@ -29,7 +81,8 @@ public class PropertyServices{
             DataType = newProperty.DataType,
             CategoryRefId = newProperty.CategoryRefId,
             RegistryRefId = newProperty.RegistryRefId,
-            EntryRefIdInSource = newProperty.EntryRefIdInSource
+            EntryRefIdInSource = newProperty.EntryRefIdInSource,
+            Id = Guid.NewGuid()
         };
         DbContext.Property.Add(PropertyObj);
         DbContext.SaveChanges();
