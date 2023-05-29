@@ -104,4 +104,63 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
 
         return lastResponseRead;
     }
+
+    public async Task<string> CheckForResponse(string sessionId, string messageId)
+    {
+        using var context = await factory.CreateDbContext(principal);
+
+        var openRequests = await RequestConsumerService.OpenRequests(context);
+        var lastResponseRead = "";
+
+        foreach (var openRequest in openRequests)
+        {
+            try
+            {
+                lastResponseRead = await readRemove(sessionId, messageId, openRequest, context);
+            }
+            catch (IsbmFault)
+            {
+                // TODO: appropriate error handling, e.g., may need to close the request
+                // Some needs to be inside this loop, others outside the loop, such as session failure.
+            }
+        }
+
+        return lastResponseRead;
+    }
+
+    private async Task<string> readRemove(string sessionId, string messageId, Request openRequest, JobContext context)
+    {
+        var lastResponseRead = "";
+
+        for (var responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId);
+            responseMessage is not null;
+            responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId))
+        {
+            if (responseMessage.Id != messageId) continue;
+
+            var response = new Response
+            {
+                State = MessageState.Received,
+                ResponseId = responseMessage.Id,
+                RequestId = openRequest.RequestId,
+                Request = openRequest,
+                MediaType = responseMessage.MessageContent.MediaType,
+                ContentEncoding = responseMessage.MessageContent.ContentEncoding,
+                Content = responseMessage.MessageContent.Content
+            };
+
+            context.Responses.Add(response);
+            await context.SaveChangesAsync();
+
+            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
+            response.JobId = jobId;
+            await context.SaveChangesAsync();
+
+            await consumer.RemoveResponse(sessionId, openRequest.RequestId);
+
+            lastResponseRead = responseMessage.Id;
+        }
+
+        return lastResponseRead;
+    }
 }

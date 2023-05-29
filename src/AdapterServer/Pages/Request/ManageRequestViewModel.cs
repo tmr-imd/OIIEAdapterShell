@@ -2,6 +2,7 @@
 using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using Microsoft.AspNetCore.Components;
 using System.Xml.Linq;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
@@ -24,6 +25,13 @@ public class ManageRequestViewModel
     public string ProviderSessionId { get; set; } = "";
 
     public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
+
+    private readonly NavigationManager navigation;
+
+    public ManageRequestViewModel( NavigationManager navigation )
+    {
+        this.navigation = navigation;
+    }
 
     public async Task Load(SettingsService settings, string channelName)
     {
@@ -73,29 +81,49 @@ public class ManageRequestViewModel
             await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
         }
 
-        var consumerSession = await consumer.OpenSession(ChannelUri);
+        var consumerListenerUri = MessageType switch
+        {
+            MessageTypes.JSON => navigation.ToAbsoluteUri("/api/request/consumer/json/notifications").AbsoluteUri,
+            MessageTypes.ExampleBOD => navigation.ToAbsoluteUri("/api/request/consumer/examplebod/notifications").AbsoluteUri,
+            _ => throw new Exception("Not yet implemented")
+        };
+
+        var providerListenerUri = MessageType switch
+        {
+            MessageTypes.JSON => navigation.ToAbsoluteUri("/api/request/provider/json/notifications").AbsoluteUri,
+            MessageTypes.ExampleBOD => navigation.ToAbsoluteUri("/api/request/provider/examplebod/notifications").AbsoluteUri,
+            _ => throw new Exception("Not yet implemented")
+        };
+
+        #if DEBUG
+            // Not great, but okay for now...
+            consumerListenerUri = consumerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/" );
+            providerListenerUri = providerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/" );
+        #endif
+
+        var consumerSession = await consumer.OpenSession(ChannelUri, consumerListenerUri);
         ConsumerSessionId = consumerSession.Id;
 
         // We're cheating for the demo
-        var providerSession = await provider.OpenSession(ChannelUri, Topic);
+        var providerSession = await provider.OpenSession(ChannelUri, Topic, providerListenerUri);
         ProviderSessionId = providerSession.Id;
 
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        switch (MessageType)
-        {
-            case MessageTypes.JSON:
-                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
-                break;
-            case MessageTypes.ExampleBOD:
-                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
-                break;
-            case MessageTypes.CCOM:
-                throw new Exception("Not yet implemented");
-        }
+        //switch (MessageType)
+        //{
+        //    case MessageTypes.JSON:
+        //        RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
+        //        RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
+        //        break;
+        //    case MessageTypes.ExampleBOD:
+        //        RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
+        //        RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
+        //        break;
+        //    case MessageTypes.CCOM:
+        //        throw new Exception("Not yet implemented");
+        //}
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)

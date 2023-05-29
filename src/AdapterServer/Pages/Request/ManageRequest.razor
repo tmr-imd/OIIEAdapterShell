@@ -18,6 +18,7 @@
 @inject IJSRuntime JS
 @inject ClaimsPrincipal principal
 @inject JobContextFactory factory
+@inject ManageRequestViewModel viewModel
 
 <PageTitle>Manage Request Channel - Adapter Shell</PageTitle>
 
@@ -91,8 +92,6 @@
 
     [Parameter]
     public string BackTo { get; set; } = null!;
-
-    private ManageRequestViewModel viewModel = new ManageRequestViewModel();
 
     protected override async Task OnInitializedAsync()
     {

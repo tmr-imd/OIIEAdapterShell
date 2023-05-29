@@ -6,9 +6,11 @@ using AdapterServer.Pages.Request;
 using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
-using TaskQueueing.Data;
 using CIRLib.Persistence;
 using CIRLib.UI.Services;
+using TaskQueueing.Jobs;
+using TaskQueueing.Data;
+using System.Xml.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +39,7 @@ builder.Services.AddIsbmRestClient(isbmSection);
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<StructureAssetService>();
 builder.Services.AddScoped<RequestViewModel>();
+builder.Services.AddScoped<ManageRequestViewModel>();
 builder.Services.AddScoped<ResponseViewModel>();
 builder.Services.AddScoped<PublicationService>();
 builder.Services.AddScoped<PublicationDetailViewModel>();
@@ -58,9 +61,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-}
 
-app.UseHttpsRedirection();
+    // In dev plain http helps us avoid certificate issues with the 
+    app.UseHttpsRedirection();
+}
 
 app.UseStaticFiles();
 
@@ -70,5 +74,33 @@ app.UseHangfireDashboard();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
+
+app.MapPut("/api/request/consumer/json/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+{
+    BackgroundJob.Enqueue<RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>>(x => x.CheckForResponse(sessionId, messageId));
+
+    return Results.NoContent();
+});
+
+app.MapPut("/api/request/provider/json/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+{
+    BackgroundJob.Enqueue<RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>>(x => x.CheckForRequest(sessionId, messageId));
+
+    return Results.NoContent();
+});
+
+app.MapPut("/api/request/consumer/examplebod/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+{
+    BackgroundJob.Enqueue<RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>>(x => x.CheckForResponse(sessionId, messageId));
+
+    return Results.NoContent();
+});
+
+app.MapPut("/api/request/provider/examplebod/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+{
+    BackgroundJob.Enqueue<RequestProviderJob<ProcessGetShowStructuresJob, XDocument, XDocument>>(x => x.CheckForRequest(sessionId, messageId));
+
+    return Results.NoContent();
+});
 
 app.Run();
