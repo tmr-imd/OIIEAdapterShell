@@ -6,8 +6,7 @@ using Oagis;
 using CIR.Serialization;
 
 namespace CIR.Serialization;
-
-public partial class GetEquivalentEntriesBOD : BusinessObjectDocumentType {
+public partial class ShowEquivalentEntriesBOD : BusinessObjectDocumentType {
 
     [JsonIgnore]
     [XmlIgnore]
