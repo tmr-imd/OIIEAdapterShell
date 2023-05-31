@@ -3,12 +3,12 @@ using Oagis;
 using System.Xml;
 using System.Xml.Linq;
 using CIRLib.Test.Fixture;
-using CIRNamespace = CIR.Serialization;
+using CIR.Serialization;
 using Ccom;
 
 namespace CIRLib.Test.XMLTests;
 
-public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
+public class ProcesRegistryBODTest : IClassFixture<BODTestSamples>
 {
     BODTestSamples examples;
     const string BASE_SCHEMA_PATH = "./XSD";
@@ -18,7 +18,7 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
         SchemaPath = BASE_SCHEMA_PATH
     };
 
-    public GetEquivalentEntriesBODTest(BODTestSamples fixture)
+    public ProcesRegistryBODTest(BODTestSamples fixture)
     {
         this.examples = fixture;
     }
@@ -27,8 +27,8 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
     public void SerializeToDocumentTest()
     {
         var (bodId, senderId, creationDateTime) = examples.GenerateApplicationAreaFields();
-        var expected = XDocument.Parse(examples.GetEquivalentEntriesBOD(bodId, senderId, creationDateTime));
-        var bod = examples.GetEquivalentEntries(bodId, senderId, creationDateTime);
+        var expected = XDocument.Parse(examples.ProcessRegistryBOD(bodId, senderId, creationDateTime));
+        var bod = examples.ProcessRegistry(bodId, senderId, creationDateTime);
         Assert.Equal(expected, bod.SerializeToDocument(), new XNodeEqualityComparer());
     }
 
@@ -36,8 +36,8 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
     public void SerializeToStringTest()
     {
         var (bodId, senderId, creationDateTime) = examples.GenerateApplicationAreaFields();
-        var expected = examples.GetEquivalentEntriesBOD(bodId, senderId, creationDateTime);
-        var bod = examples.GetEquivalentEntries(bodId, senderId, creationDateTime);
+        var expected = examples.ProcessRegistryBOD(bodId, senderId, creationDateTime);
+        var bod = examples.ProcessRegistry(bodId, senderId, creationDateTime);
         Assert.Equal(expected, bod.SerializeToString());
     }
 
@@ -45,13 +45,9 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
     public void DeserializeTest()
     {
         var (bodId, senderId, creationDateTime) = examples.GenerateApplicationAreaFields();
-        var source = new StringReader(examples.GetEquivalentEntriesBOD(bodId, senderId, creationDateTime));
-        BODReader reader = new BODReader(source, "", settings);
-        Assert.True(reader.IsValid);
+        var expected = XDocument.Parse(examples.ProcessRegistryBOD(bodId, senderId, creationDateTime));
+        var deserialized = ProcessRegistryBOD.Deserialize<ProcessRegistryBOD>(expected);
 
-        var bod = reader.AsBod<CIR.Serialization.GetEquivalentEntriesBOD>();
-        Assert.NotNull(bod);
-        Assert.Equal("Enterprise", bod.DataArea.GetEquivalentEntries.EntryIdentifier.First().RegistryID.Value);
+        Assert.Equal("Global Corporate Registry", deserialized.DataArea.CreateRegistry.Registry.First().ID.Value);
     }
-    
 }

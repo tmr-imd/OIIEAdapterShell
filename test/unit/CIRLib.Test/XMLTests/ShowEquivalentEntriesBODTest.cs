@@ -8,9 +8,9 @@ using Ccom;
 
 namespace CIRLib.Test.XMLTests;
 
-public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
+public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
 {
-    BODTestExamples examples;
+    BODTestSamples examples;
     const string BASE_SCHEMA_PATH = "./XSD";
 
     readonly BODReaderSettings settings = new BODReaderSettings()
@@ -18,7 +18,7 @@ public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
         SchemaPath = BASE_SCHEMA_PATH
     };
 
-    public ShowEquivalentEntriesBODTest(BODTestExamples fixture)
+    public ShowEquivalentEntriesBODTest(BODTestSamples fixture)
     {
         this.examples = fixture;
     }
