@@ -1,10 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using CIRLib.Persistence;
-using CIRLIB.UI.Pages;
 using ObjModels = CIRLib.ObjectModel.Models;
 using System.Security.Claims;
 
-namespace CIRLib.UI.Services{
+namespace CIRServices{
 public class RegistryServices{
    
     public ObjModels.Registry GetRegistryById(Guid Id, CIRLibContext DbContext)
@@ -143,18 +142,12 @@ public class RegistryServices{
         return Query.ToList();
     }
 
-    public void CreateNewRegistry( RegistryViewModel newRegistry, CIRLibContext DbContext )
-    {
-        var RegistryObj = new ObjModels.Registry 
-        { 
-            RegistryId = newRegistry.RegistryId,
-            Description = newRegistry.Description,
-            Id = Guid.NewGuid()
-        };
+    public void CreateNewRegistry(ObjModels.Registry RegistryObj, CIRLibContext DbContext )
+    {        
         DbContext.Registry.Add(RegistryObj);
         DbContext.SaveChanges();
     }
-    public void UpdateRegistry(Guid Id, RegistryViewModel updateRegistry, CIRLibContext DbContext )
+    public void UpdateRegistry(Guid Id, ObjModels.Registry updateRegistry, CIRLibContext DbContext )
     {
         var RegObj = DbContext.Registry.Where(item => item.Id.Equals(Id)).First();
         RegObj.Description = updateRegistry.Description;

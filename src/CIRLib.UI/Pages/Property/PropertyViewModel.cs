@@ -18,6 +18,19 @@ namespace CIRLIB.UI.Pages
         public string RegistryRefId { get; set; } = "";        
         public string EntryRefIdInSource { get; set; } = "";
 
+        public static implicit operator ObjModels.Property(PropertyViewModel viewModel)
+        {
+            return new ObjModels.Property
+            {
+                PropertyId = viewModel.PropertyId,
+                PropertyValue = viewModel.PropertyValue,
+                DataType = viewModel.DataType,
+                CategoryRefId = viewModel.CategoryRefId,
+                RegistryRefId = viewModel.RegistryRefId,
+                EntryRefIdInSource = viewModel.EntryRefIdInSource,
+                Id = Guid.NewGuid()
+            };
+        }
 
     }
 }

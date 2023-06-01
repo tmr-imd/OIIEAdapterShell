@@ -8,7 +8,7 @@ using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Data;
 using CIRLib.Persistence;
-using CIRLib.UI.Services;
+using CIRServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
