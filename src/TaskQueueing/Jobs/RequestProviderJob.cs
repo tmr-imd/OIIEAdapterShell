@@ -2,6 +2,7 @@
 using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using Isbm2RestClient.Model;
 using System.Security.Claims;
 using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
@@ -73,57 +74,6 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         return lastReadRequest;
     }
 
-    public async Task<string> CheckForRequest(string sessionId, string messageId)
-    {
-        try
-        {
-            return await ReadRemove(sessionId, messageId);
-        }
-        catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.SessionFault)
-        {
-            // Do nothing
-        }
-
-        return "";
-    }
-
-    private async Task<string> ReadRemove(string sessionId, string messageId)
-    {
-        var context = await factory.CreateDbContext(principal);
-        var lastReadRequest = "";
-
-        for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
-        {
-            var content = requestMessage.MessageContent.Deserialise<TRequest>();
-
-            if ( requestMessage.Id != messageId )
-                continue;
-
-            var request = new Request
-            {
-                State = MessageState.Received,
-                RequestId = requestMessage.Id,
-                Topic = requestMessage.Topics.FirstOrDefault() ?? "",
-                MediaType = requestMessage.MessageContent.MediaType,
-                ContentEncoding = requestMessage.MessageContent.ContentEncoding,
-                Content = requestMessage.MessageContent.Content
-            };
-
-            context.Requests.Add(request);
-            await context.SaveChangesAsync();
-
-            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
-            request.JobId = jobId;
-            await context.SaveChangesAsync();
-
-            await provider.RemoveRequest(sessionId);
-
-            lastReadRequest = requestMessage.Id;
-        }
-
-        return lastReadRequest;
-    }
-
     public async Task<string> PostResponse(string sessionId, string requestId, TResponse content, PerformContext ctx)
     {
         var response = await provider.PostResponse(sessionId, requestId, content);
@@ -136,7 +86,6 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         var storedResponse = new Response()
         {
             JobId = ctx.BackgroundJob.Id,
-            SessionId = sessionId,
             State = MessageState.Posted,
             ResponseId = response.Id,
             RequestId = requestId,

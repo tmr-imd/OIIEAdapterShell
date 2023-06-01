@@ -52,7 +52,6 @@ public class PubSubConsumerJob<TProcessJob, TContent>
             var storedPublication = new Publication()
             {
                 JobId = ctx.BackgroundJob.Id,
-                SessionId = sessionId,
                 State = MessageState.Received,
                 MessageId = publication.Id,
                 Topics = publication.Topics,

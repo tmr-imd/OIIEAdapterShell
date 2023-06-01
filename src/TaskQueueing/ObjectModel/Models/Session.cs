@@ -1,4 +1,4 @@
 ﻿namespace TaskQueueing.ObjectModel.Models;
 
 // JobName is scheduled task to trigger...
-public record class Session( string SessionId, string JobName ) : ModelObject;
+public record class Session( string SessionId, string RecurringJobId ) : ModelObject;

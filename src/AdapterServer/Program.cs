@@ -9,8 +9,6 @@ using TaskQueueing.Persistence;
 using CIRLib.Persistence;
 using CIRLib.UI.Services;
 using TaskQueueing.Jobs;
-using TaskQueueing.Data;
-using System.Xml.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,31 +73,12 @@ app.UseHangfireDashboard();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-app.MapPut("/api/request/consumer/json/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+app.MapPut("/api/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
 {
-    BackgroundJob.Enqueue<RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>>(x => x.CheckForResponse(sessionId, messageId));
+    // Queue job (complete with DI)...
+    BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId));
 
-    return Results.NoContent();
-});
-
-app.MapPut("/api/request/provider/json/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
-{
-    BackgroundJob.Enqueue<RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>>(x => x.CheckForRequest(sessionId, messageId));
-
-    return Results.NoContent();
-});
-
-app.MapPut("/api/request/consumer/examplebod/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
-{
-    BackgroundJob.Enqueue<RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>>(x => x.CheckForResponse(sessionId, messageId));
-
-    return Results.NoContent();
-});
-
-app.MapPut("/api/request/provider/examplebod/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
-{
-    BackgroundJob.Enqueue<RequestProviderJob<ProcessGetShowStructuresJob, XDocument, XDocument>>(x => x.CheckForRequest(sessionId, messageId));
-
+    // ...and return immediately!
     return Results.NoContent();
 });
 

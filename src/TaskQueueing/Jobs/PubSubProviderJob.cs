@@ -27,7 +27,6 @@ public class PubSubProviderJob<T> where T : notnull
         var storedPublication = new Publication
         {
             JobId = ctx.BackgroundJob.Id,
-            SessionId = sessionId,
             State = MessageState.Posted | MessageState.Processed,
             MessageId = publication.Id,
             Topics = new[] { topic },

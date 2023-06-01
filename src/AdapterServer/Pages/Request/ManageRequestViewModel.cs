@@ -42,7 +42,7 @@ public class ManageRequestViewModel
 
     private async Task AddOrUpdateStoredSession()
     {
-        var context = await factory.CreateDbContext(principal);
+        using var context = await factory.CreateDbContext(principal);
 
         var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
         var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
@@ -54,17 +54,17 @@ public class ManageRequestViewModel
         }
         else
         {
-            storedConsumerSession = storedConsumerSession with { JobName = "CheckForResponses" };
+            storedConsumerSession = storedConsumerSession with { RecurringJobId = "CheckForResponses" };
         }
 
         if (storedProviderSession is null)
         {
             storedProviderSession = new TaskQueueing.ObjectModel.Models.Session(ProviderSessionId, "CheckForRequests");
-            context.Sessions.Add(storedConsumerSession);
+            context.Sessions.Add(storedProviderSession);
         }
         else
         {
-            storedProviderSession = storedProviderSession with { JobName = "CheckForRequests" };
+            storedProviderSession = storedProviderSession with { RecurringJobId = "CheckForRequests" };
         }
 
         await context.SaveChangesAsync();
@@ -72,10 +72,10 @@ public class ManageRequestViewModel
 
     private async Task DeleteStoredSession()
     {
-        var context = await factory.CreateDbContext(principal);
+        using var context = await factory.CreateDbContext(principal);
 
         var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
-        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
+        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
 
         if (storedConsumerSession is not null)
         {
@@ -138,31 +138,18 @@ public class ManageRequestViewModel
             await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
         }
 
-        var consumerListenerUri = MessageType switch
-        {
-            MessageTypes.JSON => navigation.ToAbsoluteUri("/api/request/consumer/json/notifications").AbsoluteUri,
-            MessageTypes.ExampleBOD => navigation.ToAbsoluteUri("/api/request/consumer/examplebod/notifications").AbsoluteUri,
-            _ => throw new Exception("Not yet implemented")
-        };
+        var listenerUrl = navigation.ToAbsoluteUri("/api/notifications").AbsoluteUri;
 
-        var providerListenerUri = MessageType switch
-        {
-            MessageTypes.JSON => navigation.ToAbsoluteUri("/api/request/provider/json/notifications").AbsoluteUri,
-            MessageTypes.ExampleBOD => navigation.ToAbsoluteUri("/api/request/provider/examplebod/notifications").AbsoluteUri,
-            _ => throw new Exception("Not yet implemented")
-        };
+        #if DEBUG
+            // Not great, but okay for now...
+            listenerUrl = listenerUrl.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
+        #endif
 
-#if DEBUG
-        // Not great, but okay for now...
-        consumerListenerUri = consumerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
-        providerListenerUri = providerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
-#endif
-
-        var consumerSession = await consumer.OpenSession(ChannelUri, consumerListenerUri);
+        var consumerSession = await consumer.OpenSession(ChannelUri, listenerUrl);
         ConsumerSessionId = consumerSession.Id;
 
         // We're cheating for the demo
-        var providerSession = await provider.OpenSession(ChannelUri, Topic, providerListenerUri);
+        var providerSession = await provider.OpenSession(ChannelUri, Topic, listenerUrl);
         ProviderSessionId = providerSession.Id;
 
         await SaveSettings(settings, channelName);
