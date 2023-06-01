@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
 using TaskModels = TaskQueueing.ObjectModel.Models;
+using TaskEnums = TaskQueueing.ObjectModel.Enums;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -72,8 +73,8 @@ public class PublicationViewModel
         IEnumerable<TaskModels.Publication> publications = await service.ListPublications(context);
 
         PostedAssets = publications
-            .Where( x => (x.State & TaskModels.MessageState.Received) == TaskModels.MessageState.Received )
-            .Where( x => (x.State & TaskModels.MessageState.Processed) == TaskModels.MessageState.Processed )
+            .Where( x => (x.State & TaskEnums.MessageState.Received) == TaskEnums.MessageState.Received )
+            .Where( x => (x.State & TaskEnums.MessageState.Processed) == TaskEnums.MessageState.Processed )
             .Where( x => x.Topics.Contains(Topic) )
             .Select( x => Deserialize(x) )
             .Where( x => x != null )

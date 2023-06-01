@@ -1,5 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-using TaskQueueing.ObjectModel;
+using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
 
 namespace TaskQueueing.Jobs;
