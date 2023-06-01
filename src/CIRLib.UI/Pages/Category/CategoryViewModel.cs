@@ -18,12 +18,24 @@ namespace CIRLIB.UI.Pages
         
         public string Description { get; set; } = "";
 
-        public CategoryViewModel(){
-            CategoryId ="";
+        public CategoryViewModel()
+        {
+            CategoryId = "";
             SourceId = "";
             RegistryRefId = "";
-            Description ="";
+            Description = "";
         }
 
+        public static implicit operator ObjModels.Category(CategoryViewModel viewModel)
+        {
+            return new ObjModels.Category
+            {
+                CategoryId = viewModel.CategoryId,
+                SourceId = viewModel.SourceId,
+                RegistryRefId = viewModel.RegistryRefId,
+                Description = viewModel.Description,
+                Id = Guid.NewGuid()
+            };
+        }
     }
 }

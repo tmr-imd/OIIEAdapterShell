@@ -1,11 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using CIRLib.Persistence;
-using CIRLIB.UI.Pages;
 using ObjModels = CIRLib.ObjectModel.Models;
 using System.Security.Claims;
 
 
-namespace CIRLib.UI.Services{
+namespace CIRServices{
 public class PropertyValueServices{
     
     public List<ObjModels.PropertyValue> GetAllPropertyValues(CIRLibContext DbContext)
@@ -76,21 +75,14 @@ public class PropertyValueServices{
         return Query.ToList();
     
     }
-    public void CreateNewPropertyValue( PropertyValueViewModel newProperty, CIRLibContext DbContext )
+    public void CreateNewPropertyValue(ObjModels.PropertyValue PropertyValueObj, CIRLibContext DbContext )
     {
-        CommonServices.CheckIfPropertyExists(newProperty.PropertyRefId, DbContext);
-        var PropertyValueObj = new ObjModels.PropertyValue
-        {
-            Key = newProperty.Key,
-            Value = newProperty.Value,
-            UnitOfMeasure = newProperty.UnitOfMeasure,
-            PropertyRefId = newProperty.PropertyRefId,
-            Id = Guid.NewGuid()
-        };
+        CommonServices.CheckIfPropertyExists(PropertyValueObj.PropertyRefId, DbContext);
+        
         DbContext.PropertyValue.Add(PropertyValueObj);
         DbContext.SaveChanges();
     }
-    public void UpdatePropertyValue(Guid Id, PropertyValueViewModel updateProperty, CIRLibContext DbContext )
+    public void UpdatePropertyValue(Guid Id, ObjModels.PropertyValue updateProperty, CIRLibContext DbContext )
     {        
         CommonServices.CheckIfPropertyExists(updateProperty.PropertyRefId, DbContext);
 

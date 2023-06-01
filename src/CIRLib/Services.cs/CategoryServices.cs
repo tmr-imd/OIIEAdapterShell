@@ -1,13 +1,12 @@
 
 using Microsoft.EntityFrameworkCore;
 using CIRLib.Persistence;
-using CIRLIB.UI.Pages;
 using ObjModels = CIRLib.ObjectModel.Models;
 using System;
 using System.Security.Claims;
 using Microsoft.Data.Sqlite;
 
-namespace CIRLib.UI.Services;
+namespace CIRServices;
 public class CategoryServices{
 
     public List<ObjModels.Category> GetAllCategories(CIRLibContext DbContext)
@@ -149,21 +148,14 @@ public class CategoryServices{
         return Query.ToList();
     }
 
-    public void CreateNewCategory(CategoryViewModel NewCategory, CIRLibContext DbContext )
+    public void CreateNewCategory(ObjModels.Category NewCategory, CIRLibContext DbContext )
     {
         CommonServices.CheckIfRegistryExists(NewCategory.RegistryRefId, DbContext);
-        var CategoryObj = new ObjModels.Category
-        {
-            CategoryId = NewCategory.CategoryId,       
-            SourceId = NewCategory.SourceId,
-            RegistryRefId = NewCategory.RegistryRefId,
-            Description = NewCategory.Description,
-            Id = Guid.NewGuid()
-        };
-        DbContext.Category.Add(CategoryObj);
+        
+        DbContext.Category.Add(NewCategory);
         DbContext.SaveChanges();
     }
-    public void UpdateCategory(Guid Id, CategoryViewModel UpdateCategory, CIRLibContext DbContext )
+    public void UpdateCategory(Guid Id, ObjModels.Category UpdateCategory, CIRLibContext DbContext )
     {
         var CategoryObj = DbContext.Category.Where(item => item.Id.Equals(Id)).First();
         CommonServices.CheckIfRegistryExists(UpdateCategory.RegistryRefId,DbContext);                   

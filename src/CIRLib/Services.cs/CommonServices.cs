@@ -1,6 +1,6 @@
 using CIRLib.Persistence;
 
-namespace CIRLib.UI.Services;
+namespace CIRServices;
 public static class CommonServices{
     public static void CheckIfRegistryExists(string RegistryId, CIRLibContext DbContext){
         try{

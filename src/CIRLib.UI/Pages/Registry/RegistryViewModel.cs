@@ -17,5 +17,15 @@ namespace CIRLIB.UI.Pages
             Description ="";
         }
 
+        public static implicit operator ObjModels.Registry(RegistryViewModel viewModel)
+        {
+            return new ObjModels.Registry 
+            { 
+                RegistryId = viewModel.RegistryId,
+                Description = viewModel.Description,
+                Id = Guid.NewGuid()
+            };
+        }
+
     }
 }
