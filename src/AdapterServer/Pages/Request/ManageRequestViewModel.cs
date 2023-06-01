@@ -3,9 +3,12 @@ using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Xml.Linq;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
+using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Request;
 
@@ -27,13 +30,67 @@ public class ManageRequestViewModel
     public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
     private readonly NavigationManager navigation;
+    private readonly JobContextFactory factory;
+    private readonly ClaimsPrincipal principal;
 
-    public ManageRequestViewModel( NavigationManager navigation )
+    public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal )
     {
         this.navigation = navigation;
+        this.factory = factory;
+        this.principal = principal;
     }
 
-    public async Task Load(SettingsService settings, string channelName)
+    private async Task AddOrUpdateStoredSession()
+    {
+        var context = await factory.CreateDbContext(principal);
+
+        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
+        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
+
+        if (storedConsumerSession is null)
+        {
+            storedConsumerSession = new TaskQueueing.ObjectModel.Models.Session(ConsumerSessionId, "CheckForResponses");
+            context.Sessions.Add(storedConsumerSession);
+        }
+        else
+        {
+            storedConsumerSession = storedConsumerSession with { JobName = "CheckForResponses" };
+        }
+
+        if (storedProviderSession is null)
+        {
+            storedProviderSession = new TaskQueueing.ObjectModel.Models.Session(ProviderSessionId, "CheckForRequests");
+            context.Sessions.Add(storedConsumerSession);
+        }
+        else
+        {
+            storedProviderSession = storedProviderSession with { JobName = "CheckForRequests" };
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    private async Task DeleteStoredSession()
+    {
+        var context = await factory.CreateDbContext(principal);
+
+        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
+        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
+
+        if (storedConsumerSession is not null)
+        {
+            context.Sessions.Remove(storedConsumerSession);
+        }
+
+        if (storedProviderSession is not null)
+        {
+            context.Sessions.Remove(storedProviderSession);
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task LoadSettings(SettingsService settings, string channelName)
     {
         try
         {
@@ -56,7 +113,7 @@ public class ManageRequestViewModel
         }
     }
 
-    public async Task Save(SettingsService settings, string channelName)
+    public async Task SaveSettings(SettingsService settings, string channelName)
     {
         var channelSettings = new ChannelSettings
         {
@@ -95,11 +152,11 @@ public class ManageRequestViewModel
             _ => throw new Exception("Not yet implemented")
         };
 
-        #if DEBUG
-            // Not great, but okay for now...
-            consumerListenerUri = consumerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/" );
-            providerListenerUri = providerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/" );
-        #endif
+#if DEBUG
+        // Not great, but okay for now...
+        consumerListenerUri = consumerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
+        providerListenerUri = providerListenerUri.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
+#endif
 
         var consumerSession = await consumer.OpenSession(ChannelUri, consumerListenerUri);
         ConsumerSessionId = consumerSession.Id;
@@ -108,22 +165,24 @@ public class ManageRequestViewModel
         var providerSession = await provider.OpenSession(ChannelUri, Topic, providerListenerUri);
         ProviderSessionId = providerSession.Id;
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
-        //switch (MessageType)
-        //{
-        //    case MessageTypes.JSON:
-        //        RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
-        //        RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
-        //        break;
-        //    case MessageTypes.ExampleBOD:
-        //        RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
-        //        RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
-        //        break;
-        //    case MessageTypes.CCOM:
-        //        throw new Exception("Not yet implemented");
-        //}
+        switch (MessageType)
+        {
+            case MessageTypes.JSON:
+                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
+                break;
+            case MessageTypes.ExampleBOD:
+                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
+                break;
+            case MessageTypes.CCOM:
+                throw new Exception("Not yet implemented");
+        }
+
+        await AddOrUpdateStoredSession();
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
@@ -143,10 +202,12 @@ public class ManageRequestViewModel
         {
         }
 
+        await DeleteStoredSession();
+
         ConsumerSessionId = "";
         ProviderSessionId = "";
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
@@ -162,9 +223,11 @@ public class ManageRequestViewModel
         {
         }
 
+        await DeleteStoredSession();
+
         ConsumerSessionId = "";
         ProviderSessionId = "";
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
     }
 }

@@ -13,6 +13,7 @@ namespace TaskQueueing.Persistence
     {
         private readonly string who;
 
+        public DbSet<Session> Sessions { get; set; } = null!;
         public DbSet<Request> Requests { get; set; } = null!;
         public DbSet<Response> Responses { get; set; } = null!;
         public DbSet<Publication> Publications { get; set; } = null!;

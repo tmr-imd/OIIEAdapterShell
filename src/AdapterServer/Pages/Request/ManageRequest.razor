@@ -97,7 +97,7 @@
     {
         viewModel.Endpoint = clientConfig.Value.EndPoint;
 
-        await viewModel.Load( settings, ChannelName );
+        await viewModel.LoadSettings( settings, ChannelName );
 
         await base.OnInitializedAsync();
     }

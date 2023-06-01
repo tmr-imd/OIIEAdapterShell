@@ -7,6 +7,7 @@ namespace TaskQueueing.ObjectModel.Models;
 public abstract record AbstractMessage : ModelObject
 {
     public string JobId { get; set; } = "";
+    public string SessionId { get; set; } = "";
     public MessageState State { get; set; } = MessageState.Undefined;
     public string MediaType { get; set; } = System.Net.Mime.MediaTypeNames.Application.Json;
     public string? ContentEncoding { get; set; } = null;

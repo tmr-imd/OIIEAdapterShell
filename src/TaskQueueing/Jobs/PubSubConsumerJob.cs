@@ -3,6 +3,7 @@ using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using System.Security.Claims;
+using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
@@ -51,6 +52,7 @@ public class PubSubConsumerJob<TProcessJob, TContent>
             var storedPublication = new Publication()
             {
                 JobId = ctx.BackgroundJob.Id,
+                SessionId = sessionId,
                 State = MessageState.Received,
                 MessageId = publication.Id,
                 Topics = publication.Topics,
