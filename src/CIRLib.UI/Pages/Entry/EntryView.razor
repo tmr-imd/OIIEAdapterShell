@@ -98,7 +98,8 @@
     async Task SearchForEntry()
     {
         var Context = Factory.CreateDbContext(new ClaimsPrincipal());
-        EntryList = Services.GetEntriesFromFilters(SearchFilterReg,
-            SearchFilterCat, SearchFilterEntry, SearchFilterProperty, SearchFilterPropertyValue, Context.Result);      
+        EntryList = Services.GetEntriesFromFilters(entryId:SearchFilterEntry, 
+        registryId:SearchFilterReg, categoryId:SearchFilterCat, propertyId:SearchFilterProperty,
+        propertyValueKey: SearchFilterPropertyValue,dbContext:Context.Result);      
     }
 }

@@ -7,7 +7,7 @@ using System.Security.Claims;
 using Microsoft.Data.Sqlite;
 
 namespace CIRServices;
-public class CategoryServices{
+public class CategoryServices : CommonServices{
 
     public List<ObjModels.Category> GetAllCategories(CIRLibContext DbContext)
     {     
@@ -150,16 +150,16 @@ public class CategoryServices{
 
     public void CreateNewCategory(ObjModels.Category NewCategory, CIRLibContext DbContext )
     {
-        CommonServices.CheckIfRegistryExists(NewCategory.RegistryRefId, DbContext);
-        
+        CheckIfRegistryExists(NewCategory.RegistryRefId, DbContext);
+        NewCategory.Id = new Guid();
         DbContext.Category.Add(NewCategory);
         DbContext.SaveChanges();
     }
     public void UpdateCategory(Guid Id, ObjModels.Category UpdateCategory, CIRLibContext DbContext )
     {
         var CategoryObj = DbContext.Category.Where(item => item.Id.Equals(Id)).First();
-        CommonServices.CheckIfRegistryExists(UpdateCategory.RegistryRefId,DbContext);                   
-        CategoryObj.SourceId = UpdateCategory.SourceId;
+        CheckIfRegistryExists(UpdateCategory.RegistryRefId,DbContext);                   
+        CategoryObj.CategorySourceId = UpdateCategory.CategorySourceId;
         CategoryObj.RegistryRefId = UpdateCategory.RegistryRefId;
         CategoryObj.Description = UpdateCategory.Description;
         DbContext.SaveChanges();

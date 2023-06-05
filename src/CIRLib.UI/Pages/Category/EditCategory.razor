@@ -54,7 +54,7 @@
                 <div>
                     <label>
                         <h3>Source Id</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.SourceId"
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.CategorySourceId"
                             placeholder="Enter Source Id" />
                     </label>
                 </div>
@@ -97,7 +97,7 @@
             CategoryObj = Services.GetCategoryById((Guid)Id, Context);
             if (CategoryObj is not null){
                 viewModel.CategoryId = CategoryObj.CategoryId;
-                viewModel.SourceId = CategoryObj.SourceId;
+                viewModel.CategorySourceId = CategoryObj.CategorySourceId;
                 viewModel.RegistryRefId = CategoryObj.RegistryRefId;
                 viewModel.Description = CategoryObj.Description;
             }else{                

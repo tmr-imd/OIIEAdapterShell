@@ -5,8 +5,8 @@ using System.Security.Claims;
 
 
 namespace CIRServices{
-public class PropertyServices{
-    
+public class PropertyServices : CommonServices
+{
     public List<ObjModels.Property> GetAllProperties(CIRLibContext DbContext)
     {     
         return DbContext.Property.OrderByDescending(x => x.DateCreated).ToList();
@@ -69,17 +69,18 @@ public class PropertyServices{
     }
         public void CreateNewProperty(ObjModels.Property newProperty, CIRLibContext DbContext)
         {
-            CommonServices.CheckIfRegistryExists(newProperty.RegistryRefId, DbContext);
-            CommonServices.CheckIfCategoryExists(newProperty.CategoryRefId, DbContext);
-            CommonServices.CheckIfEntryExists(newProperty.EntryRefIdInSource, DbContext);
+            CheckIfRegistryExists(newProperty.RegistryRefId, DbContext);
+            CheckIfCategoryExists(newProperty.CategoryRefId, DbContext);
+            CheckIfEntryExists(newProperty.EntryRefIdInSource, DbContext);
+            newProperty.Id = new Guid();
             DbContext.Property.Add(newProperty);
             DbContext.SaveChanges();
         }
         public void UpdateProperty(Guid Id, ObjModels.Property updateProperty, CIRLibContext DbContext)
         {
-            CommonServices.CheckIfRegistryExists(updateProperty.RegistryRefId, DbContext);
-            CommonServices.CheckIfCategoryExists(updateProperty.CategoryRefId, DbContext);
-            CommonServices.CheckIfEntryExists(updateProperty.EntryRefIdInSource, DbContext);
+            CheckIfRegistryExists(updateProperty.RegistryRefId, DbContext);
+            CheckIfCategoryExists(updateProperty.CategoryRefId, DbContext);
+            CheckIfEntryExists(updateProperty.EntryRefIdInSource, DbContext);
 
             var PropertyObj = DbContext.Property.Where(item => item.Id.Equals(Id)).First();
             PropertyObj.PropertyId = updateProperty.PropertyId;
