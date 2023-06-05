@@ -64,6 +64,7 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
     public void AddAndGetEquivalentEntriesTest()
     {
         //GetEquivalentEntriesTest gets invoked inside AddEntriesTest
+        //ModifyEntriesTest inside GetEquivalentEntriesTest.
         AddEntriesTest();
     }
     
@@ -77,6 +78,8 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
         var ListOfEntries = CIRManager.GetEquivalentEntries(details,dBContext);
         
         Assert.Equal("Bridge", ListOfEntries.First().RegistryRefId);
+
+        ModifyEntriesTest(dBContext);
     }
 
     
@@ -105,17 +108,18 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
         GetEquivalentEntriesTest(dbContext);
     }
 
-    [Fact]
-    public void ModifyEntries()
+    public void ModifyEntriesTest(CIRLibContext dBContext)
     {
-        bool AddToLocalCacheOnly;
-        var updateEntry= new ObjModels.Entry();
-        var EService = new EntryServices();
-        var DbContext = new CIRLibContextFactory().CreateDbContext(new ClaimsPrincipal()).Result;
-        EService.UpdateEntry(updateEntry.Id, updateEntry, DbContext);
+        var details = new
+        {
+            IdInSource = "Network1",
+            SourceId = "NetworkCat",
+            EntryDescription = "Updated",
+            Inactive = true
+        };
+        CIRManager.ModifyEntryDetails(details, dBContext);
 
-        var AssertEntryObj = DbContext.Entry.Where(item => item.Id.Equals(updateEntry.Id)).First();
-        Assert.Equal(AssertEntryObj.Id,updateEntry.Id);
-
+        var AssertEntryObj = dBContext.Entry.Where(item => item.IdInSource.Equals("Network1")).First();
+        Assert.Equal("Updated", AssertEntryObj.EntryDescription);
     }
 }

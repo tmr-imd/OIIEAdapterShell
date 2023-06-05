@@ -185,42 +185,13 @@ namespace CIRServices
 
         public void UpdateEntry(Guid Id, ObjModels.Entry updateEntry, CIRLibContext DbContext)
         {
-            CheckIfRegistryExists(updateEntry.RegistryRefId, DbContext);
-            CheckIfCategoryExists(updateEntry.CategoryRefId, DbContext);
-
             var EntryObj = DbContext.Entry.Where(item => item.Id.Equals(Id)).First();
             //TO DO : Have to update only those fields that were modified not all.
-            EntryObj.IdInSource = updateEntry.IdInSource;
-            EntryObj.SourceId = updateEntry.SourceId;
-            EntryObj.CIRId = updateEntry.CIRId;
-            EntryObj.SourceOwnerId = updateEntry.SourceOwnerId;
             EntryObj.Name = updateEntry.Name;
-            EntryObj.Description = updateEntry.Description;
+            EntryObj.EntryDescription = updateEntry.EntryDescription;
             EntryObj.Inactive = updateEntry.Inactive;
-            EntryObj.CategoryRefId = updateEntry.CategoryRefId;
-            EntryObj.RegistryRefId = updateEntry.RegistryRefId;
             DbContext.SaveChanges();
         }
-        // public void UpdateEntryByIdInSource(string IdInSource, CIRLibContext DbContext,
-        //  Dictionary<string,string> EntryValues)
-        // {
-            
-        //     CheckIfRegistryExists(updateEntry.RegistryRefId, DbContext);
-        //     CheckIfCategoryExists(updateEntry.CategoryRefId, DbContext);
-
-        //     var EntryObj = DbContext.Entry.Where(item => item.Id.Equals(IdInSource)).First();
-        //     //TO DO : Have to update only those fields that were modified not all.
-        //     EntryObj.IdInSource = updateEntry.IdInSource;
-        //     EntryObj.SourceId = updateEntry.SourceId;
-        //     EntryObj.CIRId = updateEntry.CIRId;
-        //     EntryObj.SourceOwnerId = updateEntry.SourceOwnerId;
-        //     EntryObj.Name = updateEntry.Name;
-        //     EntryObj.Description = updateEntry.Description;
-        //     EntryObj.Inactive = updateEntry.Inactive;
-        //     EntryObj.CategoryRefId = updateEntry.CategoryRefId;
-        //     EntryObj.RegistryRefId = updateEntry.RegistryRefId;
-        //     DbContext.SaveChanges();
-        // }
         public void DeleteEntryById(Guid Id, CIRLibContext DbContext)
         {
             var DelRegObj = DbContext.Entry.Where(item => item.Id.Equals(Id)).First();
