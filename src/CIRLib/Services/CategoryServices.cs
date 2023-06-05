@@ -161,7 +161,7 @@ public class CategoryServices : CommonServices{
         CheckIfRegistryExists(UpdateCategory.RegistryRefId,DbContext);                   
         CategoryObj.CategorySourceId = UpdateCategory.CategorySourceId;
         CategoryObj.RegistryRefId = UpdateCategory.RegistryRefId;
-        CategoryObj.Description = UpdateCategory.Description;
+        CategoryObj.CategoryDescription = UpdateCategory.CategoryDescription;
         DbContext.SaveChanges();
 
     }

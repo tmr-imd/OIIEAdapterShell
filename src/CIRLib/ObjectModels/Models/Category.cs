@@ -10,7 +10,8 @@ public record class Category : ModelObject
     public Registry Registry { get; set; } = null!;
     [Column("SourceId")]
     public string CategorySourceId { get; set; } = "";
-    public string Description { get; set; } = "";
+    [Column("Description")]
+    public string CategoryDescription { get; set; } = "";
 
     public ICollection<Entry> Entries {get; set;} = new List<Entry>();
     public ICollection<Property> Properties {get; set;} = new List<Property>();

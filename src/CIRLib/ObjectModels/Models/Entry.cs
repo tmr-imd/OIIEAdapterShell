@@ -7,7 +7,9 @@ public record class Entry : ModelObject
     public string CIRId { get; set; } = "";
     public string SourceOwnerId { get; set; } = "";
     public string Name { get; set; } = "";
-    public string Description { get; set; } = "";
+
+    [Column("Description")]
+    public string EntryDescription { get; set; } = "";
     public bool Inactive { get; set; }
     // Decided to keep direct FK's to below tables
     // due to functional reasons where comparison with Id would be sufficient

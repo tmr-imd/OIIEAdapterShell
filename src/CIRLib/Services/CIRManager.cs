@@ -51,8 +51,7 @@ public class CIRManager
         return (newRegObj, newCatObj, newEntryObj);
     }
 
-    public static void checkMandatoryPropertiesPassed(ObjModels.Registry newRegObj, 
-        ObjModels.Category newCatObj, ObjModels.Entry newEntryObj)
+    public static void checkMandatoryPropertiesPassed(ObjModels.Entry newEntryObj = null)
     {
         if(string.IsNullOrWhiteSpace(newEntryObj.IdInSource) || string.IsNullOrWhiteSpace(newEntryObj.SourceId))
         {
@@ -65,7 +64,7 @@ public class CIRManager
         var eService = new EntryServices();
         (ObjModels.Registry newRegObj, ObjModels.Category newCatObj, ObjModels.Entry newEntryObj) = 
             CreateObjectsFromProperties(details);
-        checkMandatoryPropertiesPassed(newRegObj, newCatObj, newEntryObj);
+        checkMandatoryPropertiesPassed(newEntryObj = newEntryObj);
 
         if (dbContext is null)
         {
@@ -125,5 +124,13 @@ public class CIRManager
             }
             eService.CreateNewEntry(newEntryObj, dbContext);
         }
+    }
+
+    public static void ModifyEntryDetails(object details, CIRLibContext dbContext)
+    {
+        (_,_,ObjModels.Entry updateEntryObj) = CreateObjectsFromProperties(details);
+        checkMandatoryPropertiesPassed(updateEntryObj);
+        var eService = new EntryServices();
+        eService.UpdateEntry(updateEntryObj.Id, updateEntryObj, dbContext);
     }
 }
