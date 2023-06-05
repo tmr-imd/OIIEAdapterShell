@@ -15,6 +15,6 @@ public record class Property : ModelObject
     public string EntryRefIdInSource { get; set; } = "";
     [ForeignKey("EntryRefIdInSource")]
     public Entry Entry {get; set; } = null!;
-    public ICollection<PropertyValue> PropertyValues {get; set;}
+    public ICollection<PropertyValue> PropertyValues {get; set;} = new List<PropertyValue>();
 
 }

@@ -14,14 +14,14 @@ namespace CIRLIB.UI.Pages
 
         [Required(AllowEmptyStrings = false)]
         [Display(Name = "SourceId")]
-        public string SourceId { get; set; } = "";
+        public string CategorySourceId { get; set; } = "";
         
         public string Description { get; set; } = "";
 
         public CategoryViewModel()
         {
             CategoryId = "";
-            SourceId = "";
+            CategorySourceId = "";
             RegistryRefId = "";
             Description = "";
         }
@@ -31,7 +31,7 @@ namespace CIRLIB.UI.Pages
             return new ObjModels.Category
             {
                 CategoryId = viewModel.CategoryId,
-                SourceId = viewModel.SourceId,
+                CategorySourceId = viewModel.CategorySourceId,
                 RegistryRefId = viewModel.RegistryRefId,
                 Description = viewModel.Description,
                 Id = Guid.NewGuid()

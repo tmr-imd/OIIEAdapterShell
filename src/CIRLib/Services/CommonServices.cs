@@ -1,7 +1,8 @@
 using CIRLib.Persistence;
+using System.Security.Claims;
 
 namespace CIRServices;
-public static class CommonServices{
+public class CommonServices{
     public static void CheckIfRegistryExists(string RegistryId, CIRLibContext DbContext){
         try{
             var RegObj = DbContext.Registry.Where(item => item.RegistryId.Equals(RegistryId)).First();
@@ -10,7 +11,7 @@ public static class CommonServices{
             }
         }
         catch(Exception ex){
-            throw new Exception("Please enter a valid Registry Id.");
+            throw new Exception("Please enter a valid Registry Id. "+ex);
         }
     }
     public static void CheckIfCategoryExists(string CategoryId, CIRLibContext DbContext){
@@ -21,7 +22,7 @@ public static class CommonServices{
             }
         }
         catch(Exception ex){
-            throw new Exception("Please enter a valid Category Id.");
+            throw new Exception("Please enter a valid Category Id. "+ex);
         }
     }
     public static void CheckIfEntryExists(string IdInSource, CIRLibContext DbContext){
@@ -32,7 +33,7 @@ public static class CommonServices{
             }
         }
         catch(Exception ex){
-            throw new Exception("Please enter a valid Entry Id.");
+            throw new Exception("Please enter a valid Entry Id. "+ex);
         }
     }
 
@@ -44,7 +45,7 @@ public static class CommonServices{
             }
         }
         catch(Exception ex){
-            throw new Exception("Please enter a valid Property Id.");
+            throw new Exception("Please enter a valid Property Id. "+ex);
         }
     }
 }

@@ -18,6 +18,6 @@ public record class Entry : ModelObject
     public string RegistryRefId { get; set; } = "";
     [ForeignKey("RegistryRefId")]
     public Registry Registry {get; set; } = null!;
-    public ICollection<Property> Property {get; set;}
+    public ICollection<Property> Property {get; set;} = null!;
 
 }

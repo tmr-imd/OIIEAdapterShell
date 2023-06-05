@@ -24,7 +24,7 @@ public class CRUDModelOperationsTest
         var registryObj = new Registry{ RegistryId = "Registration Server A", Description ="Registration Server A description"};
         var categoryObj = new Category{ 
                                         CategoryId = "Asset", RegistryRefId = "Registration Server A", 
-                                        SourceId = "MIMOSA OSA-EAI V3", Description = "MIMOSA OSA-EAI V3 description"
+                                        CategorySourceId = "MIMOSA OSA-EAI V3", Description = "MIMOSA OSA-EAI V3 description"
                                     };
         var entryObj = new Entry{  
                                     IdInSource ="A101", CategoryRefId = "Asset", RegistryRefId = "Registration Server A", 

@@ -5,8 +5,8 @@ using System.Security.Claims;
 
 
 namespace CIRServices{
-public class PropertyValueServices{
-    
+public class PropertyValueServices : CommonServices
+{
     public List<ObjModels.PropertyValue> GetAllPropertyValues(CIRLibContext DbContext)
     {     
         return DbContext.PropertyValue.OrderByDescending(x => x.DateCreated).ToList();
@@ -77,14 +77,14 @@ public class PropertyValueServices{
     }
     public void CreateNewPropertyValue(ObjModels.PropertyValue PropertyValueObj, CIRLibContext DbContext )
     {
-        CommonServices.CheckIfPropertyExists(PropertyValueObj.PropertyRefId, DbContext);
-        
+        CheckIfPropertyExists(PropertyValueObj.PropertyRefId, DbContext);
+        PropertyValueObj.Id = new Guid();
         DbContext.PropertyValue.Add(PropertyValueObj);
         DbContext.SaveChanges();
     }
     public void UpdatePropertyValue(Guid Id, ObjModels.PropertyValue updateProperty, CIRLibContext DbContext )
     {        
-        CommonServices.CheckIfPropertyExists(updateProperty.PropertyRefId, DbContext);
+        CheckIfPropertyExists(updateProperty.PropertyRefId, DbContext);
 
         var PropertyValueObj = DbContext.PropertyValue.Where(item => item.Id.Equals(Id)).First();
         PropertyValueObj.Key = updateProperty.Key;

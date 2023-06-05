@@ -3,9 +3,15 @@ using Oagis;
 using System.Xml;
 using System.Xml.Linq;
 using CIRLib.Test.Fixture;
-using CIRNamespace = CIR.Serialization;
 using Ccom;
-
+using CIR.Serialization;
+using CIRLib.Persistence;
+using System.Security.Claims;
+using CIRServices;
+using ObjModels = CIRLib.ObjectModel.Models;
+using Microsoft.Extensions.Configuration;
+using CIRLib.Test;
+using CIRLib.Test.Fixture;
 namespace CIRLib.Test.XMLTests;
 
 public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
@@ -49,9 +55,67 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
         BODReader reader = new BODReader(source, "", settings);
         Assert.True(reader.IsValid);
 
-        var bod = reader.AsBod<CIR.Serialization.GetEquivalentEntriesBOD>();
+        var bod = reader.AsBod<GetEquivalentEntriesBOD>();
         Assert.NotNull(bod);
         Assert.Equal("Enterprise", bod.DataArea.GetEquivalentEntries.EntryIdentifier.First().RegistryID.Value);
     }
+
+    [Fact]
+    public void AddAndGetEquivalentEntriesTest()
+    {
+        //GetEquivalentEntriesTest gets invoked inside AddEntriesTest
+        AddEntriesTest();
+    }
     
+    public void GetEquivalentEntriesTest(CIRLibContext dBContext)
+    {   
+        var details = new
+        {
+            IdInSource = "Network1",
+            SourceId = "NetworkCat"
+        };
+        var ListOfEntries = CIRManager.GetEquivalentEntries(details,dBContext);
+        
+        Assert.Equal("Bridge", ListOfEntries.First().RegistryRefId);
+    }
+
+    
+    public void AddEntriesTest()
+    {   
+        var rService = new RegistryServices();
+        var cService = new CategoryServices();
+        var eService = new EntryServices();
+        var dbContext = new MockContextFactory().GetDbContext();
+
+        var details = new
+        {
+            RegistryId = "Bridge",
+            CategoryId = "CatOfBridges",
+            RegistryRefId = "Bridge",
+            IdInSource = "Network1",
+            SourceId = "NetworkCat",
+            CategoryRefId = "CatOfBridges"
+        };
+        CIRManager.AddEntries(details, dbContext);
+
+        var AssertEntryObj = dbContext.Entry.Where(item => item.IdInSource.Equals("Network1")).First();
+        Assert.Equal("Network1", AssertEntryObj.IdInSource);
+        
+        //Testing the below with the above data.
+        GetEquivalentEntriesTest(dbContext);
+    }
+
+    [Fact]
+    public void ModifyEntries()
+    {
+        bool AddToLocalCacheOnly;
+        var updateEntry= new ObjModels.Entry();
+        var EService = new EntryServices();
+        var DbContext = new CIRLibContextFactory().CreateDbContext(new ClaimsPrincipal()).Result;
+        EService.UpdateEntry(updateEntry.Id, updateEntry, DbContext);
+
+        var AssertEntryObj = DbContext.Entry.Where(item => item.Id.Equals(updateEntry.Id)).First();
+        Assert.Equal(AssertEntryObj.Id,updateEntry.Id);
+
+    }
 }

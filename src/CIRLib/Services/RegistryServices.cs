@@ -4,7 +4,7 @@ using ObjModels = CIRLib.ObjectModel.Models;
 using System.Security.Claims;
 
 namespace CIRServices{
-public class RegistryServices{
+public class RegistryServices: CommonServices{
    
     public ObjModels.Registry GetRegistryById(Guid Id, CIRLibContext DbContext)
     {     
@@ -143,7 +143,8 @@ public class RegistryServices{
     }
 
     public void CreateNewRegistry(ObjModels.Registry RegistryObj, CIRLibContext DbContext )
-    {        
+    {   
+        RegistryObj.Id = new Guid();
         DbContext.Registry.Add(RegistryObj);
         DbContext.SaveChanges();
     }

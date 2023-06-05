@@ -111,7 +111,7 @@
 @code {
     [Parameter]
     public Guid? Id { get; set; }
-    public ObjModels.Entry EntryObj;
+    public ObjModels.Entry EntryObj = null!;
     public EntryViewModel viewModel = new EntryViewModel();
     public string error { get; set; } ="";
 
