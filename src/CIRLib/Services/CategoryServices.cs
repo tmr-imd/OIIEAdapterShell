@@ -7,8 +7,8 @@ using System.Security.Claims;
 using Microsoft.Data.Sqlite;
 
 namespace CIRServices;
-public class CategoryServices : CommonServices{
-
+public class CategoryServices : CommonServices
+{
     public List<ObjModels.Category> GetAllCategories(CIRLibContext DbContext)
     {     
         return DbContext.Category.OrderByDescending(x => x.DateCreated).ToList();
@@ -150,26 +150,35 @@ public class CategoryServices : CommonServices{
 
     public void CreateNewCategory(ObjModels.Category NewCategory, CIRLibContext DbContext )
     {
-        CheckIfRegistryExists(NewCategory.RegistryRefId, DbContext);
-        NewCategory.Id = new Guid();
+        var registryExists = CheckIfRegistryExists(NewCategory.RegistryRefId, DbContext, "create");
+        if(!registryExists)
+        {
+            //If Registry does not exists, we create one
+            var regObj = new ObjModels.Registry()
+            {
+                RegistryId = NewCategory.RegistryRefId,
+                Id = Guid.NewGuid()
+            };
+            DbContext.Registry.Add(regObj);
+            DbContext.SaveChanges();
+        }
+
+        NewCategory.Id = Guid.NewGuid();
         DbContext.Category.Add(NewCategory);
         DbContext.SaveChanges();
     }
-    public void UpdateCategory(Guid Id, ObjModels.Category UpdateCategory, CIRLibContext DbContext )
+    public void UpdateCategory(Guid id, ObjModels.Category updateCategory, CIRLibContext dbContext )
     {
-        var CategoryObj = DbContext.Category.Where(item => item.Id.Equals(Id)).First();
-        CheckIfRegistryExists(UpdateCategory.RegistryRefId,DbContext);                   
-        CategoryObj.CategorySourceId = UpdateCategory.CategorySourceId;
-        CategoryObj.RegistryRefId = UpdateCategory.RegistryRefId;
-        CategoryObj.CategoryDescription = UpdateCategory.CategoryDescription;
-        DbContext.SaveChanges();
+        var CategoryObj = dbContext.Category.Where(item => item.Id.Equals(id)).First();
+        CategoryObj.Description = updateCategory.Description;
+        dbContext.SaveChanges();
 
     }
-    public void DeleteCategoryById(Guid Id, CIRLibContext DbContext)
+    public void DeleteCategoryById(Guid id, CIRLibContext dbContext)
     {    
-       var DelCategoryObj = DbContext.Category.Where(item => item.Id.Equals(Id)).First(); 
-       DbContext.Category.Remove(DelCategoryObj);
-       DbContext.SaveChanges();
+       var DelCategoryObj = dbContext.Category.Where(item => item.Id.Equals(id)).First(); 
+       dbContext.Category.Remove(DelCategoryObj);
+       dbContext.SaveChanges();
     }
 
 }

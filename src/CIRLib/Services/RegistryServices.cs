@@ -4,7 +4,8 @@ using ObjModels = CIRLib.ObjectModel.Models;
 using System.Security.Claims;
 
 namespace CIRServices{
-public class RegistryServices: CommonServices{
+public class RegistryServices: CommonServices
+{
    
     public ObjModels.Registry GetRegistryById(Guid Id, CIRLibContext DbContext)
     {     
@@ -142,11 +143,19 @@ public class RegistryServices: CommonServices{
         return Query.ToList();
     }
 
-    public void CreateNewRegistry(ObjModels.Registry RegistryObj, CIRLibContext DbContext )
+    public void CreateNewRegistry(ObjModels.Registry RegistryObj, CIRLibContext dbContext )
     {   
-        RegistryObj.Id = new Guid();
-        DbContext.Registry.Add(RegistryObj);
-        DbContext.SaveChanges();
+        var registryExists = CheckIfRegistryExists(RegistryObj.RegistryId, dbContext, "create");
+        if(registryExists)
+        {
+            throw new Exception("Registry exists in CIR Cache.");
+        }
+        else
+        {
+            RegistryObj.Id = Guid.NewGuid();
+            dbContext.Registry.Add(RegistryObj);
+            dbContext.SaveChanges();
+        }
     }
     public void UpdateRegistry(Guid Id, ObjModels.Registry updateRegistry, CIRLibContext DbContext )
     {

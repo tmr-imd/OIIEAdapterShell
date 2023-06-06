@@ -9,7 +9,7 @@ public record class Entry : ModelObject
     public string Name { get; set; } = "";
 
     [Column("Description")]
-    public string EntryDescription { get; set; } = "";
+    public string Description { get; set; } = "";
     public bool Inactive { get; set; }
     // Decided to keep direct FK's to below tables
     // due to functional reasons where comparison with Id would be sufficient

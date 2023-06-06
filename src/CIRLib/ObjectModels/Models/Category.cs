@@ -11,7 +11,7 @@ public record class Category : ModelObject
     [Column("SourceId")]
     public string CategorySourceId { get; set; } = "";
     [Column("Description")]
-    public string CategoryDescription { get; set; } = "";
+    public string Description { get; set; } = "";
 
     public ICollection<Entry> Entries {get; set;} = new List<Entry>();
     public ICollection<Property> Properties {get; set;} = new List<Property>();

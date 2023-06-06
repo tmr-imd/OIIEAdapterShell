@@ -78,7 +78,7 @@ public class PropertyValueServices : CommonServices
     public void CreateNewPropertyValue(ObjModels.PropertyValue PropertyValueObj, CIRLibContext DbContext )
     {
         CheckIfPropertyExists(PropertyValueObj.PropertyRefId, DbContext);
-        PropertyValueObj.Id = new Guid();
+        PropertyValueObj.Id = Guid.NewGuid();
         DbContext.PropertyValue.Add(PropertyValueObj);
         DbContext.SaveChanges();
     }

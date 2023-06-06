@@ -99,7 +99,7 @@
                 viewModel.CategoryId = CategoryObj.CategoryId;
                 viewModel.CategorySourceId = CategoryObj.CategorySourceId;
                 viewModel.RegistryRefId = CategoryObj.RegistryRefId;
-                viewModel.Description = CategoryObj.CategoryDescription;
+                viewModel.Description = CategoryObj.Description;
             }else{                
                 NavigationManager.NavigateTo("/cir-library");
             }
@@ -110,9 +110,12 @@
         try
         {
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-            if( Id is null){
+            if( Id is null)
+            {
                 Services.CreateNewCategory(viewModel, Context);
-            }else{
+            }
+            else
+            {
                 Services.UpdateCategory((Guid)Id, viewModel ,Context);            
             }
             NavigationManager.NavigateTo("/cir-library");
