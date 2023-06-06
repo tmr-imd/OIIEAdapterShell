@@ -172,15 +172,38 @@ namespace CIRServices
             }
             return Query.ToList();
         }
-        public void CreateNewEntry(ObjModels.Entry newEntry, CIRLibContext DbContext)
+        public void CreateNewEntry(ObjModels.Entry newEntry, CIRLibContext dbContext)
         {
-            CheckIfRegistryExists(newEntry.RegistryRefId, DbContext);
-            CheckIfCategoryExists(newEntry.CategoryRefId, DbContext);
-            //This should ideally auto increment within Sqlite.
-            //But since GUID is stored as text we generate it here.
-            newEntry.Id = new Guid();
-            DbContext.Entry.Add(newEntry);
-            DbContext.SaveChanges();
+            var registryExists = CheckIfRegistryExists(newEntry.RegistryRefId, dbContext, "create");
+            if(!registryExists)
+            {
+                //If Registry does not exists, we create one.
+                var regObj = new ObjModels.Registry()
+                {
+                    RegistryId = newEntry.RegistryRefId,
+                    Id = Guid.NewGuid()
+                };
+                dbContext.Registry.Add(regObj);
+                dbContext.SaveChanges();
+            }
+
+            var categoryExists = CheckIfCategoryExists(newEntry.CategoryRefId, dbContext, "create");
+            if(!categoryExists)
+            {
+                //If Category does not exists, we create one.
+                var catObj = new ObjModels.Category()
+                {
+                    CategoryId = newEntry.CategoryRefId,
+                    RegistryRefId = newEntry.RegistryRefId,
+                    Id = Guid.NewGuid()
+                };
+                dbContext.Category.Add(catObj);
+                dbContext.SaveChanges();
+            }
+            
+            newEntry.Id = Guid.NewGuid();
+            dbContext.Entry.Add(newEntry);
+            dbContext.SaveChanges();
         }
 
         public void UpdateEntry(Guid Id, ObjModels.Entry updateEntry, CIRLibContext DbContext)
@@ -188,7 +211,7 @@ namespace CIRServices
             var EntryObj = DbContext.Entry.Where(item => item.Id.Equals(Id)).First();
             //TO DO : Have to update only those fields that were modified not all.
             EntryObj.Name = updateEntry.Name;
-            EntryObj.EntryDescription = updateEntry.EntryDescription;
+            EntryObj.Description = updateEntry.Description;
             EntryObj.Inactive = updateEntry.Inactive;
             DbContext.SaveChanges();
         }

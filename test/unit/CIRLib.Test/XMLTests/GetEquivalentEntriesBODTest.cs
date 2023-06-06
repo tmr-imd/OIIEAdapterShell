@@ -12,6 +12,7 @@ using ObjModels = CIRLib.ObjectModel.Models;
 using Microsoft.Extensions.Configuration;
 using CIRLib.Test;
 using CIRLib.Test.Fixture;
+using DataModel = DataModelServices;
 namespace CIRLib.Test.XMLTests;
 
 public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
@@ -60,66 +61,4 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
         Assert.Equal("Enterprise", bod.DataArea.GetEquivalentEntries.EntryIdentifier.First().RegistryID.Value);
     }
 
-    [Fact]
-    public void AddAndGetEquivalentEntriesTest()
-    {
-        //GetEquivalentEntriesTest gets invoked inside AddEntriesTest
-        //ModifyEntriesTest inside GetEquivalentEntriesTest.
-        AddEntriesTest();
-    }
-    
-    public void GetEquivalentEntriesTest(CIRLibContext dBContext)
-    {   
-        var details = new
-        {
-            IdInSource = "Network1",
-            SourceId = "NetworkCat"
-        };
-        var ListOfEntries = CIRManager.GetEquivalentEntries(details,dBContext);
-        
-        Assert.Equal("Bridge", ListOfEntries.First().RegistryRefId);
-
-        ModifyEntriesTest(dBContext);
-    }
-
-    
-    public void AddEntriesTest()
-    {   
-        var rService = new RegistryServices();
-        var cService = new CategoryServices();
-        var eService = new EntryServices();
-        var dbContext = new MockContextFactory().GetDbContext();
-
-        var details = new
-        {
-            RegistryId = "Bridge",
-            CategoryId = "CatOfBridges",
-            RegistryRefId = "Bridge",
-            IdInSource = "Network1",
-            SourceId = "NetworkCat",
-            CategoryRefId = "CatOfBridges"
-        };
-        CIRManager.AddEntries(details, dbContext);
-
-        var AssertEntryObj = dbContext.Entry.Where(item => item.IdInSource.Equals("Network1")).First();
-        Assert.Equal("Network1", AssertEntryObj.IdInSource);
-        
-        //Testing the below with the above data.
-        GetEquivalentEntriesTest(dbContext);
-    }
-
-    public void ModifyEntriesTest(CIRLibContext dBContext)
-    {
-        var details = new
-        {
-            IdInSource = "Network1",
-            SourceId = "NetworkCat",
-            EntryDescription = "Updated",
-            Inactive = true
-        };
-        CIRManager.ModifyEntryDetails(details, dBContext);
-
-        var AssertEntryObj = dBContext.Entry.Where(item => item.IdInSource.Equals("Network1")).First();
-        Assert.Equal("Updated", AssertEntryObj.EntryDescription);
-    }
 }

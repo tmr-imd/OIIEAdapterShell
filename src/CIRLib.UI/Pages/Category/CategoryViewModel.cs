@@ -33,7 +33,7 @@ namespace CIRLIB.UI.Pages
                 CategoryId = viewModel.CategoryId,
                 CategorySourceId = viewModel.CategorySourceId,
                 RegistryRefId = viewModel.RegistryRefId,
-                CategoryDescription = viewModel.Description,
+                Description = viewModel.Description,
                 Id = Guid.NewGuid()
             };
         }

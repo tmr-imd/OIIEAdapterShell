@@ -24,7 +24,7 @@ namespace CIRLIB.UI.Pages
                 CIRId = viewModel.CIRId,
                 SourceOwnerId = viewModel.SourceOwnerId,
                 Name = viewModel.Name,
-                EntryDescription = viewModel.Description,
+                Description = viewModel.Description,
                 Inactive = viewModel.Inactive,
                 CategoryRefId = viewModel.CategoryRefId,
                 RegistryRefId = viewModel.RegistryRefId,
