@@ -184,7 +184,6 @@ namespace CIRServices
                     Id = Guid.NewGuid()
                 };
                 dbContext.Registry.Add(regObj);
-                dbContext.SaveChanges();
             }
 
             var categoryExists = CheckIfCategoryExists(newEntry.CategoryRefId, dbContext, "create");
@@ -198,7 +197,6 @@ namespace CIRServices
                     Id = Guid.NewGuid()
                 };
                 dbContext.Category.Add(catObj);
-                dbContext.SaveChanges();
             }
             
             newEntry.Id = Guid.NewGuid();
@@ -209,7 +207,7 @@ namespace CIRServices
         public void UpdateEntry(Guid Id, ObjModels.Entry updateEntry, CIRLibContext DbContext)
         {
             var EntryObj = DbContext.Entry.Where(item => item.Id.Equals(Id)).First();
-            //TO DO : Have to update only those fields that were modified not all.
+            
             EntryObj.Name = updateEntry.Name;
             EntryObj.Description = updateEntry.Description;
             EntryObj.Inactive = updateEntry.Inactive;

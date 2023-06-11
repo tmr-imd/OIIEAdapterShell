@@ -1,6 +1,7 @@
 using CIRLib.Persistence;
 using System.Security.Claims;
 using DataModel = DataModelServices;
+using ObjModels = CIRLib.ObjectModel.Models;
 namespace CIRServices;
 public class CommonServices
 {
@@ -20,7 +21,7 @@ public class CommonServices
                 string.IsNullOrWhiteSpace(newEntryObj.CategoryRefId))
                 )
             {
-                throw new Exception("Mandatory Entry Identifiers not provided. ");
+                throw new Exception("Mandatory Entry Reference Identifiers not provided. ");
             }
         }
     }
@@ -29,6 +30,10 @@ public class CommonServices
     {
         try
         {
+            if(string.IsNullOrWhiteSpace(registryId))
+            {
+                throw new Exception("Please provide a valid RegistryId.");
+            }
             var regObj = dbContext.Registry.Where(item => item.RegistryId.Equals(registryId)).Count();
             if(regObj == 0)
             {
@@ -52,8 +57,12 @@ public class CommonServices
     {
         try
         {
-            var catObj = dbContext.Category.Where(item => item.CategoryId.Equals(categoryId)).First();
-            if(catObj == null)
+            if(string.IsNullOrWhiteSpace(categoryId))
+            {
+                throw new Exception("Please provide a valid CategoryId.");
+            }
+            var catObj = dbContext.Category.Where(item => item.CategoryId.Equals(categoryId)).Count();
+            if(catObj == 0)
             {
                 if(action == "update")
                 {
@@ -68,38 +77,67 @@ public class CommonServices
         }
         catch(Exception ex)
         {
-            throw new Exception("Please enter a valid Category Id. "+ ex);
+            throw new Exception("Exception: "+ ex);
         }
     }
-    public static void CheckIfEntryExists(string IdInSource, CIRLibContext DbContext)
+    public static ObjModels.Entry CheckIfEntryExists(string idInSource, CIRLibContext dbContext, string action="")
     {
         try
         {
-            var EntryObj = DbContext.Entry.Where(item => item.IdInSource.Equals(IdInSource)).First();
-            if( EntryObj == null)
+            if(string.IsNullOrWhiteSpace(idInSource))
             {
-                throw new Exception("Please enter a valid Entry Id.");
+                throw new Exception("Please provide a valid EntryId.");
             }
+
+            var entryObj = dbContext.Entry.Where(item => item.IdInSource.Equals(idInSource)).ToList();
+            if(entryObj.Count() == 0)
+            {
+                if(action == "update")
+                {
+                    throw new Exception("Please provide a valid EntryId.");
+                }
+                else if(action == "create")
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return entryObj.First();
+            }
+            return null;
         }
         catch(Exception ex)
         {
-            throw new Exception("Please enter a valid Entry Id. "+ ex);
+            throw new Exception("Exception: "+ ex);
         }
     }
 
-    public static void CheckIfPropertyExists(string PropertyId, CIRLibContext DbContext)
+    public static bool CheckIfPropertyExists(string propertyId, CIRLibContext dbContext, string action="")
     {
         try
         {
-            var PropertyObj = DbContext.Property.Where(item => item.PropertyId.Equals(PropertyId)).First();
-            if( PropertyObj == null)
+            if(string.IsNullOrWhiteSpace(propertyId))
             {
-                throw new Exception("Please enter a valid Property Id.");
+                throw new Exception("Please provide a valid PropertyId.");
             }
+            var propertyObj = dbContext.Property.Where(item => item.PropertyId.Equals(propertyId)).Count();
+            if(propertyObj == 0)
+            {
+                if(action == "update")
+                {
+                    throw new Exception("Please provide a valid EntryId.");
+                }
+                else if(action == "create")
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         catch(Exception ex)
         {
-            throw new Exception("Please enter a valid Property Id. "+ex);
+            throw new Exception("Exception: "+ex);
         }
     }
 }

@@ -75,12 +75,38 @@ public class PropertyValueServices : CommonServices
         return Query.ToList();
     
     }
-    public void CreateNewPropertyValue(ObjModels.PropertyValue PropertyValueObj, CIRLibContext DbContext )
+    public void CreateNewPropertyValue(ObjModels.PropertyValue propertyValueObj, 
+        ObjModels.Property propertyObj=null, CIRLibContext dbContext=null)
     {
-        CheckIfPropertyExists(PropertyValueObj.PropertyRefId, DbContext);
-        PropertyValueObj.Id = Guid.NewGuid();
-        DbContext.PropertyValue.Add(PropertyValueObj);
-        DbContext.SaveChanges();
+        if(propertyObj != null)
+        {
+            var entryExists = CheckIfEntryExists(propertyObj.EntryRefIdInSource, dbContext);
+            if(entryExists == null)
+            {
+                var entryObject = new ObjModels.Entry()
+                {
+                    IdInSource = propertyObj.EntryRefIdInSource
+                };
+                dbContext.Entry.Add(entryObject);
+            }
+            else
+            {
+                //Use Existing Entry details to Populate Property.
+                //These details are essential but not visible through the interface.
+                propertyObj.CategoryRefId = entryExists.CategoryRefId;
+                propertyObj.RegistryRefId = entryExists.RegistryRefId;
+            }
+        }
+        
+        var propertyExists = CheckIfPropertyExists(propertyValueObj.PropertyRefId, dbContext, "create");
+        if(!propertyExists)
+        {   
+            propertyObj.Id = Guid.NewGuid();
+            dbContext.Property.Add(propertyObj);
+        }
+        propertyValueObj.Id = Guid.NewGuid();
+        dbContext.PropertyValue.Add(propertyValueObj);
+        dbContext.SaveChanges();
     }
     public void UpdatePropertyValue(Guid Id, ObjModels.PropertyValue updateProperty, CIRLibContext DbContext )
     {        
