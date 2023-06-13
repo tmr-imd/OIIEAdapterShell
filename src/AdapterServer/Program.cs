@@ -10,6 +10,7 @@ using TaskQueueing.Data;
 using CIRLib.Persistence;
 using CIRServices;
 using CIRLib.Extensions;
+using Oiie.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 

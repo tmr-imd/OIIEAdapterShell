@@ -1,4 +1,5 @@
 using AdapterServer.Data;
+using Oiie.Settings;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
 using System.Text.Json;

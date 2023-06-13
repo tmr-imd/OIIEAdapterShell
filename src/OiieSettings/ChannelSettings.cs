@@ -1,4 +1,4 @@
-﻿namespace AdapterServer.Data
+namespace Oiie.Settings
 {
     public class ChannelSettings
     {
@@ -7,5 +7,6 @@
         public string ConsumerSessionId { get; set; } = "";
         public string ProviderSessionId { get; set; } = "";
         public string MessageType { get; set; } = "";
+
     }
 }
