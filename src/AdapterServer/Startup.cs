@@ -48,16 +48,30 @@ public class Startup
         routes.MapBlazorHub();
         routes.MapFallbackToPage("/_Host");
 
-        routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request) =>
+        routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request, ILogger<Program> log) =>
         {
-            using StreamReader reader = new(request.Body, Encoding.UTF8, true, 1024, true);
-            var content = await reader.ReadToEndAsync();
-
-            var notifyBody = JsonSerializer.Deserialize<NotifyBody>(content);
-
-            if (notifyBody is not null)
+            try
             {
-                BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId, notifyBody.requestMessageId));
+                log.LogInformation($"sessionId: {sessionId}, messageId: {messageId} - Notification received");
+
+                using StreamReader reader = new(request.Body, Encoding.UTF8, true, 1024, true);
+                var content = await reader.ReadToEndAsync();
+
+                log.LogInformation($"sessionId: {sessionId}, messageId: {messageId} - {content}");
+
+                var notifyBody = JsonSerializer.Deserialize<NotifyBody>(content);
+
+                if (notifyBody is not null)
+                {
+                    var jobId = BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId, notifyBody.requestMessageId));
+
+                    log.LogInformation($"sessionId: {sessionId}, messageId: {messageId} - NotificationJob {jobId} enqueued");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, $"sessionId: {sessionId}, messageId: {messageId} - Error processing notification");
             }
 
             return Results.NoContent();
