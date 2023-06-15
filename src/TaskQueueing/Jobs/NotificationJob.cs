@@ -34,7 +34,7 @@ public class NotificationJob
         {
             // Keep things simple. If there is a lastJobId, then schedule FirstCheck to run afterwards. It doesn't
             // matter if the job is currently running
-            BackgroundJob.ContinueJobWith<NotificationJob>(lastJobId, x => x.FirstCheck(sessionId, messageId));
+            BackgroundJob.ContinueJobWith<NotificationJob>(lastJobId, x => x.FirstCheck(sessionId, messageId, requestMessageId), JobContinuationOptions.OnAnyFinishedState);
         }
         else
         {
@@ -70,7 +70,7 @@ public class NotificationJob
             return;
 
         var jobId = RecurringJob.TriggerJob(recurringJobId);
-        BackgroundJob.ContinueJobWith<NotificationJob>(jobId, x => x.SecondCheck(messageId, requestMessageId));
+        BackgroundJob.ContinueJobWith<NotificationJob>(jobId, x => x.SecondCheck(messageId, requestMessageId), JobContinuationOptions.OnAnyFinishedState);
     }
 
     public async Task SecondCheck(string messageId, string requestMessageId)

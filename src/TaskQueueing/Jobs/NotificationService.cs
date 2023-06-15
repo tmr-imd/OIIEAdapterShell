@@ -26,28 +26,6 @@ public class NotificationService
         return recurringJobs.Select(x => x.LastJobId).FirstOrDefault();
     }
 
-    public static bool RecurringJobIsRunning(string jobId)
-    {
-        using var connection = JobStorage.Current.GetConnection();
-
-        string lastRunResult = string.Empty;
-        var recurringJobs = connection.GetRecurringJobs(new[] { jobId });
-
-        try
-        {
-            var jobState = connection.GetStateData(jobId);
-            lastRunResult = jobState.Name; // For Example: "Succeeded", "Processing", "Deleted"
-
-            return jobState.Name == "Processing";
-        }
-        catch
-        {
-            //job has not been run by the scheduler yet, swallow error
-        }
-
-        return false;
-    }
-
     public static async Task<AbstractMessage?> GetMessage(string messageId, JobContext context)
     {
         var request = await context.Requests.Where(x => x.RequestId == messageId).FirstOrDefaultAsync();
