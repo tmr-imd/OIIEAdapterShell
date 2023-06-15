@@ -15,12 +15,17 @@ namespace CIRLib.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "7.0.4");
+            modelBuilder.HasAnnotation("ProductVersion", "7.0.5");
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.Category", b =>
                 {
                     b.Property<string>("CategoryId")
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("CategorySourceId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("SourceId");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -34,7 +39,8 @@ namespace CIRLib.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Description");
 
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
@@ -44,10 +50,6 @@ namespace CIRLib.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RegistryRefId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SourceId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -83,9 +85,10 @@ namespace CIRLib.Migrations
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("EntryDescription")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Description");
 
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
@@ -214,6 +217,8 @@ namespace CIRLib.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Key");
+
+                    b.HasIndex("Key");
 
                     b.HasIndex("PropertyRefId");
 

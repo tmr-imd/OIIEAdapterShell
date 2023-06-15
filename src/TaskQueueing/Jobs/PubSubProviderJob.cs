@@ -1,6 +1,7 @@
 ﻿using Hangfire.Server;
 using Isbm2Client.Interface;
 using System.Security.Claims;
+using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 

@@ -1,5 +1,6 @@
 using CommonBOD;
 using Oagis;
+using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
 
 namespace AdapterServer.Extensions;

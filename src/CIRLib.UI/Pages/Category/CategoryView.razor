@@ -4,20 +4,18 @@
 @using CIRLib.Persistence;
 @using System.Security.Claims;
 @using CIRLib.UI.Pages.Category;
-@using CIRLib.UI.Services;
+@using CIRServices;
 
 @inject CategoryServices Services
 @inject NavigationManager NavigationManager
 @inject CIRLibContextFactory Factory
 
-<div class="panel panel-default border"> @(Collapsed? " ": "" )
-    <div class="panel-heading alert-primary">
-        <h3 class="panel-title">Category
-            <button class="btn btn-primary" @onclick="(() => AddCategory())" style="float: right;">
-                <i class="oi oi-pencil"></i> Add Category
-            </button> 
-        </h3>
-        
+<div class="panel-heading alert-primary">
+    <h3 class="panel-title">Category
+        <button class="btn btn-primary" @onclick="(() => AddCategory())" style="float: right;">
+            <i class="oi oi-pencil"></i> Add Category
+        </button> 
+    </h3>
     
 <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
     <thead class="bg-gray-100">
@@ -38,7 +36,7 @@
         {
             <tr>
                 <td>@Category.CategoryId</td>
-                <td>@Category.SourceId</td>
+                <td>@Category.CategorySourceId</td>
                 <td>@Category.RegistryRefId</td>
                 <td>@Category.Description</td>
                 <td>@Category.CreatedBy</td>
@@ -55,22 +53,29 @@
     </tbody>
 </table>
 </div>
-</div>
-
 
 @code {
-    public bool Collapsed{get;set;}= true; // hide by default
+    [Parameter]
+    public string SearchFilterCat { get; set;} = "";
+    [Parameter]
+    public string SearchFilterReg { get; set;} = "";
+    [Parameter]
+    public string SearchFilterEntry { get; set;} = "";
+    [Parameter]
+    public string SearchFilterProperty { get; set;} = "";
+    [Parameter]
+    public string SearchFilterPropertyValue { get; set;} = "";
+    
     public List<ObjModels.Category> CategoryList{ get; set; } = new List<ObjModels.Category>();
 
     protected override async Task OnParametersSetAsync()
     {
+        await SearchForCategory();
         await base.OnParametersSetAsync();
     }
 
     protected override async Task OnInitializedAsync()
     {
-        using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-        CategoryList = Services.GetAllCategories(Context);
         await base.OnInitializedAsync();
     }
 
@@ -78,7 +83,15 @@
     {
         NavigationManager.NavigateTo($"/edit-category/{Id}");
     }
-    void AddCategory(){
+    void AddCategory()
+    {
         NavigationManager.NavigateTo("/edit-category");
     } 
+    async Task SearchForCategory()
+    {
+        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        CategoryList = Services.GetCategoryFromFilters(SearchFilterEntry, SearchFilterReg,
+            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue, Context.Result);
+    }
+
 }

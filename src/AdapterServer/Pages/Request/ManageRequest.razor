@@ -1,5 +1,6 @@
 ﻿@using AdapterServer.Components
 @using AdapterServer.Data;
+@using Oiie.Settings;
 @using Isbm2Client.Interface;
 @using Isbm2Client.Model;
 @using Microsoft.Extensions.Options;
@@ -18,6 +19,7 @@
 @inject IJSRuntime JS
 @inject ClaimsPrincipal principal
 @inject JobContextFactory factory
+@inject ManageRequestViewModel viewModel
 
 <PageTitle>Manage Request Channel - Adapter Shell</PageTitle>
 
@@ -92,13 +94,11 @@
     [Parameter]
     public string BackTo { get; set; } = null!;
 
-    private ManageRequestViewModel viewModel = new ManageRequestViewModel();
-
     protected override async Task OnInitializedAsync()
     {
         viewModel.Endpoint = clientConfig.Value.EndPoint;
 
-        await viewModel.Load( settings, ChannelName );
+        await viewModel.LoadSettings( settings, ChannelName );
 
         await base.OnInitializedAsync();
     }

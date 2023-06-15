@@ -1,4 +1,4 @@
-﻿namespace AdapterServer.Data
+namespace Oiie.Settings
 {
     public class ChannelSettings
     {

@@ -19,4 +19,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Lib\CCOM.Net\src\CCOM.Net\CCOM.net.csproj" />
+  </ItemGroup>
+
 </Project>

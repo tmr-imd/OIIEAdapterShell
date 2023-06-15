@@ -1,3 +1,5 @@
+using TaskQueueing.ObjectModel.Enums;
+
 namespace TaskQueueing.Test;
 
 public record class TestMessage : AbstractMessage { }

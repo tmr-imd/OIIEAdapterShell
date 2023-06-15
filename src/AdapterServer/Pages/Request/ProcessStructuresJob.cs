@@ -10,9 +10,8 @@ using ResponseMessage = TaskQueueing.ObjectModel.Models.Response;
 
 using CommonBOD;
 using Oagis;
-using System.Xml;
-using System.Xml.Serialization;
 using AdapterServer.Data;
+using Oiie.Settings;
 using AdapterServer.Extensions;
 using System.Text.Json;
 

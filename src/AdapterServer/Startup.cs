@@ -6,9 +6,11 @@ using AdapterServer.Pages.Request;
 using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
-using TaskQueueing.Data;
+using TaskQueueing.Jobs;
 using CIRLib.Persistence;
-using CIRLib.UI.Services;
+using CIRServices;
+using CIRLib.Extensions;
+using Oiie.Settings;
 
 namespace AdapterServer;
 
@@ -29,9 +31,10 @@ public class Startup
             app.UseExceptionHandler("/Error");
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
-        }
 
-        app.UseHttpsRedirection();
+            // In dev plain http helps us avoid certificate issues with the 
+            app.UseHttpsRedirection();
+        }
 
         app.UseStaticFiles();
 
@@ -41,6 +44,15 @@ public class Startup
 
         routes.MapBlazorHub();
         routes.MapFallbackToPage("/_Host");
+
+        routes.MapPut("/api/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+        {
+            // Queue job (complete with DI)...
+            BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId));
+
+            // ...and return immediately!
+            return Results.NoContent();
+        });
     }
 
     public virtual void ConfigureServices(IServiceCollection services)
@@ -57,7 +69,6 @@ public class Startup
 
         services.AddScoped(x => JobContextHelper.PrincipalFromString("AdapterServer"));
         services.AddSingleton(new JobContextFactory(Configuration));
-        services.AddSingleton(new CIRLibContextFactory(Configuration));
 
         // Add services to the container.
         services.AddRazorPages();
@@ -67,19 +78,18 @@ public class Startup
         services.Configure<ClientConfig>(isbmSection);
         services.AddIsbmRestClient(isbmSection);
 
+        //CIR Config
+        services.AddCIRServices(Configuration);
+
         services.AddScoped<SettingsService>();
         services.AddScoped<StructureAssetService>();
         services.AddScoped<RequestViewModel>();
+        services.AddScoped<ManageRequestViewModel>();
         services.AddScoped<ResponseViewModel>();
         services.AddScoped<PublicationService>();
         services.AddScoped<PublicationDetailViewModel>();
         services.AddScoped<PublicationListViewModel>();
         services.AddScoped<PublicationViewModel>();
         services.AddScoped<ConfirmBODConfigViewModel>();
-        services.AddScoped<RegistryServices>();
-        services.AddScoped<CategoryServices>();
-        services.AddScoped<EntryServices>();
-        services.AddScoped<PropertyServices>();
-        services.AddScoped<PropertyValueServices>();
     }
 }

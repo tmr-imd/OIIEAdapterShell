@@ -13,6 +13,7 @@ using Oagis;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using AdapterServer.Data;
+using Oiie.Settings;
 using AdapterServer.Extensions;
 using System.Text.Json;
 using Transformation;

@@ -15,5 +15,17 @@ namespace CIRLIB.UI.Pages
         [Required(AllowEmptyStrings = false)]
         public string UnitOfMeasure { get; set; } = "";
         public string PropertyRefId { get; set; } = "";
+
+        public static implicit operator ObjModels.PropertyValue(PropertyValueViewModel viewModel)
+        {
+            return new ObjModels.PropertyValue
+            {
+                Key = viewModel.Key,
+                Value = viewModel.Value,
+                UnitOfMeasure = viewModel.UnitOfMeasure,
+                PropertyRefId = viewModel.PropertyRefId,
+                Id = Guid.NewGuid()
+            };
+        }
     }
 }
