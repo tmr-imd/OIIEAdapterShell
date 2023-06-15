@@ -6,7 +6,7 @@
 @using System.Security.Claims;
 @using Microsoft.AspNetCore.Components.Forms
 @using ObjModels = CIRLib.ObjectModel.Models;
-@using CIRLib.UI.Services;
+@using CIRServices;
 
 @inject CategoryServices Services
 @inject NavigationManager NavigationManager
@@ -54,7 +54,7 @@
                 <div>
                     <label>
                         <h3>Source Id</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.SourceId"
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.CategorySourceId"
                             placeholder="Enter Source Id" />
                     </label>
                 </div>
@@ -97,7 +97,7 @@
             CategoryObj = Services.GetCategoryById((Guid)Id, Context);
             if (CategoryObj is not null){
                 viewModel.CategoryId = CategoryObj.CategoryId;
-                viewModel.SourceId = CategoryObj.SourceId;
+                viewModel.CategorySourceId = CategoryObj.CategorySourceId;
                 viewModel.RegistryRefId = CategoryObj.RegistryRefId;
                 viewModel.Description = CategoryObj.Description;
             }else{                
@@ -110,9 +110,12 @@
         try
         {
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-            if( Id is null){
+            if( Id is null)
+            {
                 Services.CreateNewCategory(viewModel, Context);
-            }else{
+            }
+            else
+            {
                 Services.UpdateCategory((Guid)Id, viewModel ,Context);            
             }
             NavigationManager.NavigateTo("/cir-library");

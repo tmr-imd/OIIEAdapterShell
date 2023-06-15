@@ -28,8 +28,8 @@ namespace CIRLib.Persistence
                 //Implicitly fetching the db provider for migrations.
 
                 IConfigurationRoot configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                                                                                .AddJsonFile("appsettings.json")
-                                                                                .Build();
+                    .AddJsonFile("appsettings.json")
+                    .Build();
                 var defaultConnection = configuration.GetConnectionString("CIRLibConnection");
                 optionsBuilder.UseSqlite($"Filename={defaultConnection}");
             }
@@ -54,7 +54,6 @@ namespace CIRLib.Persistence
             modelBuilder.Entity<Entry>().HasIndex(t => t.IdInSource);
             modelBuilder.Entity<Property>().HasIndex(t => t.PropertyId);
             modelBuilder.Entity<PropertyValue>().HasIndex(t => t.Key);
-
         }
 
         private void SetAuditFields()
