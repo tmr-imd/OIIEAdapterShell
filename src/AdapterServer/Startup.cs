@@ -11,6 +11,9 @@ using CIRLib.Persistence;
 using CIRServices;
 using CIRLib.Extensions;
 using Oiie.Settings;
+using System.Text;
+using System.Text.Json;
+using TaskQueueing.ObjectModel.Models;
 
 namespace AdapterServer;
 
@@ -45,12 +48,18 @@ public class Startup
         routes.MapBlazorHub();
         routes.MapFallbackToPage("/_Host");
 
-        routes.MapPut("/api/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+        routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request) =>
         {
-            // Queue job (complete with DI)...
-            BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId));
+            using StreamReader reader = new(request.Body, Encoding.UTF8, true, 1024, true);
+            var content = await reader.ReadToEndAsync();
 
-            // ...and return immediately!
+            var notifyBody = JsonSerializer.Deserialize<NotifyBody>(content);
+
+            if (notifyBody is not null)
+            {
+                BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId, notifyBody.requestMessageId));
+            }
+
             return Results.NoContent();
         });
     }
