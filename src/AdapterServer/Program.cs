@@ -6,8 +6,8 @@ using AdapterServer.Pages.Request;
 using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
-using TaskQueueing.Data;
 using CIRLib.Persistence;
+using TaskQueueing.Jobs;
 using CIRServices;
 using CIRLib.Extensions;
 using Oiie.Settings;
@@ -41,6 +41,7 @@ builder.Services.AddCIRServices(builder.Configuration);
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<StructureAssetService>();
 builder.Services.AddScoped<RequestViewModel>();
+builder.Services.AddScoped<ManageRequestViewModel>();
 builder.Services.AddScoped<ResponseViewModel>();
 builder.Services.AddScoped<PublicationService>();
 builder.Services.AddScoped<PublicationDetailViewModel>();
@@ -56,9 +57,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-}
 
-app.UseHttpsRedirection();
+    // In dev plain http helps us avoid certificate issues with the 
+    app.UseHttpsRedirection();
+}
 
 app.UseStaticFiles();
 
@@ -68,5 +70,14 @@ app.UseHangfireDashboard();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
+
+app.MapPut("/api/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+{
+    // Queue job (complete with DI)...
+    BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId));
+
+    // ...and return immediately!
+    return Results.NoContent();
+});
 
 app.Run();

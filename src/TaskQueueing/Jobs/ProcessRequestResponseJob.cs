@@ -1,6 +1,5 @@
 using Hangfire;
 using Hangfire.Server;
-using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using System.Security.Claims;
 using System.Text.Json;

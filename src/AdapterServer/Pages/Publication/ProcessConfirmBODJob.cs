@@ -1,7 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
-using Hangfire;
-using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.Persistence;
 using TaskQueueing.ObjectModel;
@@ -10,7 +7,6 @@ using PubMessage = TaskQueueing.ObjectModel.Models.Publication;
 
 using CommonBOD;
 using Oagis;
-using System.Xml;
 using System.Xml.Serialization;
 using AdapterServer.Data;
 using Oiie.Settings;

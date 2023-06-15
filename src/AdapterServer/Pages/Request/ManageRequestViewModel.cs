@@ -3,9 +3,13 @@ using Oiie.Settings;
 using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Xml.Linq;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
+using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Request;
 
@@ -26,7 +30,68 @@ public class ManageRequestViewModel
 
     public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
-    public async Task Load(SettingsService settings, string channelName)
+    private readonly NavigationManager navigation;
+    private readonly JobContextFactory factory;
+    private readonly ClaimsPrincipal principal;
+
+    public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal )
+    {
+        this.navigation = navigation;
+        this.factory = factory;
+        this.principal = principal;
+    }
+
+    private async Task AddOrUpdateStoredSession()
+    {
+        using var context = await factory.CreateDbContext(principal);
+
+        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
+        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
+
+        if (storedConsumerSession is null)
+        {
+            storedConsumerSession = new TaskQueueing.ObjectModel.Models.Session(ConsumerSessionId, "CheckForResponses");
+            context.Sessions.Add(storedConsumerSession);
+        }
+        else
+        {
+            storedConsumerSession = storedConsumerSession with { RecurringJobId = "CheckForResponses" };
+        }
+
+        if (storedProviderSession is null)
+        {
+            storedProviderSession = new TaskQueueing.ObjectModel.Models.Session(ProviderSessionId, "CheckForRequests");
+            context.Sessions.Add(storedProviderSession);
+        }
+        else
+        {
+            storedProviderSession = storedProviderSession with { RecurringJobId = "CheckForRequests" };
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    private async Task DeleteStoredSession()
+    {
+        using var context = await factory.CreateDbContext(principal);
+
+        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
+        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
+
+        if (storedConsumerSession is not null)
+        {
+            context.Sessions.Remove(storedConsumerSession);
+        }
+
+        if (storedProviderSession is not null)
+        {
+            context.Sessions.Remove(storedProviderSession);
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task LoadSettings(SettingsService settings, string channelName)
     {
         try
         {
@@ -49,7 +114,7 @@ public class ManageRequestViewModel
         }
     }
 
-    public async Task Save(SettingsService settings, string channelName)
+    public async Task SaveSettings(SettingsService settings, string channelName)
     {
         var channelSettings = new ChannelSettings
         {
@@ -74,29 +139,38 @@ public class ManageRequestViewModel
             await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
         }
 
-        var consumerSession = await consumer.OpenSession(ChannelUri);
+        var listenerUrl = navigation.ToAbsoluteUri("/api/notifications").AbsoluteUri;
+
+        #if DEBUG
+            // Not great, but okay for now...
+            listenerUrl = listenerUrl.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
+        #endif
+
+        var consumerSession = await consumer.OpenSession(ChannelUri, listenerUrl);
         ConsumerSessionId = consumerSession.Id;
 
         // We're cheating for the demo
-        var providerSession = await provider.OpenSession(ChannelUri, Topic);
+        var providerSession = await provider.OpenSession(ChannelUri, Topic, listenerUrl);
         ProviderSessionId = providerSession.Id;
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
         switch (MessageType)
         {
             case MessageTypes.JSON:
-                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
                 break;
             case MessageTypes.ExampleBOD:
-                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Minutely);
-                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Minutely);
+                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
                 break;
             case MessageTypes.CCOM:
                 throw new Exception("Not yet implemented");
         }
+
+        await AddOrUpdateStoredSession();
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
@@ -116,10 +190,12 @@ public class ManageRequestViewModel
         {
         }
 
+        await DeleteStoredSession();
+
         ConsumerSessionId = "";
         ProviderSessionId = "";
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
@@ -135,9 +211,11 @@ public class ManageRequestViewModel
         {
         }
 
+        await DeleteStoredSession();
+
         ConsumerSessionId = "";
         ProviderSessionId = "";
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
     }
 }
