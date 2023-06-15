@@ -14,16 +14,28 @@ namespace CIRLIB.UI.Pages
 
         [Required(AllowEmptyStrings = false)]
         [Display(Name = "SourceId")]
-        public string SourceId { get; set; } = "";
+        public string CategorySourceId { get; set; } = "";
         
         public string Description { get; set; } = "";
 
-        public CategoryViewModel(){
-            CategoryId ="";
-            SourceId = "";
+        public CategoryViewModel()
+        {
+            CategoryId = "";
+            CategorySourceId = "";
             RegistryRefId = "";
-            Description ="";
+            Description = "";
         }
 
+        public static implicit operator ObjModels.Category(CategoryViewModel viewModel)
+        {
+            return new ObjModels.Category
+            {
+                CategoryId = viewModel.CategoryId,
+                CategorySourceId = viewModel.CategorySourceId,
+                RegistryRefId = viewModel.RegistryRefId,
+                Description = viewModel.Description,
+                Id = Guid.NewGuid()
+            };
+        }
     }
 }

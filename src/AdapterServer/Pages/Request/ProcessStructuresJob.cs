@@ -11,6 +11,7 @@ using ResponseMessage = TaskQueueing.ObjectModel.Models.Response;
 using CommonBOD;
 using Oagis;
 using AdapterServer.Data;
+using Oiie.Settings;
 using AdapterServer.Extensions;
 using System.Text.Json;
 

@@ -4,33 +4,33 @@
 @using ObjModels = CIRLib.ObjectModel.Models;
 @using CIRLib.Persistence;
 @using System.Security.Claims;
-@using CIRLib.UI.Services;
+@using CIRServices;
 
 @inject EntryServices Services
 @inject NavigationManager NavigationManager
 @inject CIRLibContextFactory Factory
 
-<div class="panel panel-default border"> @(Collapsed? " ": "" )
-    <div class="panel-heading alert-primary">
-        <h3 class="panel-title" align="justify"> Entry               
-            <button class="btn btn-primary" @onclick="(() => AddEntry())" style="float: right;">
-                <i class="oi oi-pencil"></i> Add Entry
-            </button> 
-        </h3> 
-    </div> 
+
+<div class="panel-heading alert-primary">
+    <h3 class="panel-title" align="justify"> Entry               
+        <button class="btn btn-primary" @onclick="(() => AddEntry())" style="float: right;">
+            <i class="oi oi-pencil"></i> Add Entry
+        </button> 
+    </h3> 
+</div> 
         
 <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
     <thead class="bg-gray-100">
         <tr>
             <th scope="col">Entry Id</th>
-            <th scope="col">Source Id </th>
+            <th scope="col">Source Id </th>            
+            <th scope="col">Category Ref Id</th>
+            <th scope="col">Registry Ref Id</th>
             <th scope="col">CIRID </th>
             <th scope="col">SourceOwnerId </th>
             <th scope="col">Name</th>
             <th scope="col">Description</th>
             <th scope="col">Inactive </th>
-            <th scope="col">Category Ref Id</th>
-            <th scope="col">Registry Ref Id</th>
              <th></th>
         </tr>
     </thead>
@@ -40,14 +40,14 @@
         {
             <tr>
                 <td>@Entry.IdInSource</td>
-                <td>@Entry.SourceId</td>
+                <td>@Entry.SourceId</td>                
+                <td>@Entry.CategoryRefId</td>
+                <td>@Entry.RegistryRefId</td>
                 <td>@Entry.CIRId</td>
                 <td>@Entry.SourceOwnerId</td>
                 <td>@Entry.Name</td>
                 <td>@Entry.Description</td>
                 <td>@Entry.Inactive</td>
-                <td>@Entry.CategoryRefId</td>
-                <td>@Entry.RegistryRefId</td>
 
                 <td> 
                     <button class="btn btn-primary" @onclick="(() =>EditEntry(Entry.Id))">
@@ -58,16 +58,23 @@
         } 
     </tbody>
 </table>
-</div>
-
 
 @code {
-
-    public bool Collapsed{get;set;}= true; // hide by default
+    [Parameter]
+    public string SearchFilterReg { get; set;} = "";
+    [Parameter]
+    public string SearchFilterCat { get; set;} = "";
+    [Parameter]
+    public string SearchFilterEntry { get; set;} = "";
+    [Parameter]
+    public string SearchFilterProperty { get; set;} = "";
+    [Parameter]
+    public string SearchFilterPropertyValue { get; set;} = "";
     public List<ObjModels.Entry> EntryList{ get; set; } = new List<ObjModels.Entry>();
 
     protected override async Task OnParametersSetAsync()
     {
+        await SearchForEntry();
         await base.OnParametersSetAsync();
     }
 
@@ -78,11 +85,21 @@
         await base.OnInitializedAsync();
     }
     
-    void EditEntry(Guid Id){
+    void EditEntry(Guid Id)
+    {
         NavigationManager.NavigateTo($"/edit-entry/{Id}");
     }
 
-    void AddEntry(){
+    void AddEntry()
+    {
         NavigationManager.NavigateTo("/edit-entry");
     }    
+
+    async Task SearchForEntry()
+    {
+        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        EntryList = Services.GetEntriesFromFilters(entryId:SearchFilterEntry, 
+        registryId:SearchFilterReg, categoryId:SearchFilterCat, propertyId:SearchFilterProperty,
+        propertyValueKey: SearchFilterPropertyValue,dbContext:Context.Result);      
+    }
 }

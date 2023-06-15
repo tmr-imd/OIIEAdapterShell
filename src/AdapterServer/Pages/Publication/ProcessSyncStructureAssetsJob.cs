@@ -10,6 +10,7 @@ using CommonBOD;
 using Oagis;
 using System.Xml.Linq;
 using AdapterServer.Data;
+using Oiie.Settings;
 using AdapterServer.Extensions;
 
 namespace AdapterServer.Pages.Publication;
