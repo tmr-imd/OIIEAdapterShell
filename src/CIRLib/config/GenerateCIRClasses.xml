@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd xmlns="http://microsoft.com/dotnet/tools/xsd/" output="Serialization">
+  <generateClasses language="CS" namespace="CIR.Serialization" options="properties">
+    <!-- ConfirmBOD.xs includes BOD.xsd, which includes Meta.xsd, which includes Fields.xsd -->
+    <!-- The rest get imported as there are changes in namespace -->
+    <!-- Note that the single generated file is split up and put into different C# namespaces. -->
+    <schema>Schemas/bod/oagis/CodeList_LanguageCode_ISO_7_04.xsd</schema>
+    <schema>Schemas/bod/oagis/CodeList_UnitCode_UNECE_7_04.xsd</schema>
+    <schema>Schemas/bod/oagis/CodeList_CurrencyCode_ISO_7_04.xsd</schema>
+    <schema>Schemas/bod/oagis/CodeList_MIMEMediaTypeCode_IANA_7_04.xsd</schema>
+    <!-- 
+      GenSupport... provide top-level elements for each type to ensure
+      the code is generated for them and allow independent deserialisation
+      when processing BOD fragments.
+    -->
+    <schema>Schemas/bod/oagis/CodeLists.xsd</schema>
+    <schema>Schemas/bod/oagis/UnqualifiedDataTypes.xsd</schema>
+    <schema>Schemas/bod/oagis/QualifiedDataTypes.xsd</schema>
+    <schema>Schemas/bod/oagis/Meta.xsd</schema>
+    <schema>Schemas/xsd/CommonInteroperabilityRegistry.xsd</schema>
+    <schema>Schemas/xsd/CoreComponentType_2p0.xsd</schema>
+    <!-- The '.\' is a trick to ensure the output .cs file is based on only this file -->
+    <schema>.\Schemas\bod\AcknowledgeEquivalentEntries.xsd</schema>
+    <schema>.\Schemas\bod\AcknowledgeRegistry.xsd</schema>
+    <schema>.\Schemas\bod\CancelCategory.xsd</schema>
+    <schema>.\Schemas\bod\CancelEntries.xsd</schema>
+    <schema>.\Schemas\bod\CancelProperties.xsd</schema>
+    <schema>.\Schemas\bod\CancelRegistry.xsd</schema>
+    <schema>.\Schemas\bod\ChangeEntryCIRID.xsd</schema>
+    <schema>.\Schemas\bod\ChangeRegistry.xsd</schema>
+    <schema>.\Schemas\bod\GetEquivalentEntries.xsd</schema>
+    <schema>.\Schemas\bod\GetEquivalentEntriesByCIRID.xsd</schema>
+    <schema>.\Schemas\bod\GetRegistry.xsd</schema>
+    <schema>.\Schemas\bod\ProcessEquivalentEntries.xsd</schema>
+    <schema>.\Schemas\bod\ProcessRegistry.xsd</schema>
+    <schema>.\Schemas\bod\RespondRegistry.xsd</schema>
+    <schema>.\Schemas\bod\ShowEquivalentEntries.xsd</schema>
+    <schema>.\Schemas\bod\ShowEquivalentEntriesByCIRID.xsd</schema>
+    <schema>.\Schemas\bod\ShowRegistry.xsd</schema>
+  </generateClasses>
+</xsd>

@@ -8,10 +8,12 @@ public record class Category : ModelObject
     
     [ForeignKey("RegistryRefId")]
     public Registry Registry { get; set; } = null!;
-    public string SourceId { get; set; } = "";
+    [Column("SourceId")]
+    public string CategorySourceId { get; set; } = "";
+    [Column("Description")]
     public string Description { get; set; } = "";
 
-    public ICollection<Entry> Entries {get; set;}
-    public ICollection<Property> Properties {get; set;}
+    public ICollection<Entry> Entries {get; set;} = new List<Entry>();
+    public ICollection<Property> Properties {get; set;} = new List<Property>();
 
 }

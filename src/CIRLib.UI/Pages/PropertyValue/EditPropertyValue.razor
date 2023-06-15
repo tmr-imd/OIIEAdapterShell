@@ -6,7 +6,7 @@
 @using System.Security.Claims;
 @using Microsoft.AspNetCore.Components.Forms;
 @using ObjModels = CIRLib.ObjectModel.Models;
-@using CIRLib.UI.Services;
+@using CIRServices;
 
 @inject PropertyValueServices Services
 @inject NavigationManager NavigationManager
@@ -92,12 +92,14 @@
         if ( Id is not null){
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
             PropertyValueObj = Services.GetPropertyValueById((Guid)Id, Context);
-            if (PropertyValueObj is not null){
+            if (PropertyValueObj is not null)
+            {
                 viewModel.Key = PropertyValueObj.Key;
                 viewModel.Value = PropertyValueObj.Value;
                 viewModel.UnitOfMeasure = PropertyValueObj.UnitOfMeasure;
                 viewModel.PropertyRefId = PropertyValueObj.PropertyRefId;
-            }else{                
+            }else
+            {                
                 NavigationManager.NavigateTo("/cir-library");
             }
         } 
@@ -105,11 +107,14 @@
     private async Task HandleSubmit()
     {   
         try{
-            using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
-            if( Id is null){
-                Services.CreateNewPropertyValue(viewModel,Context);
-            }else{
-                Services.UpdatePropertyValue((Guid)Id, viewModel ,Context);            
+            using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
+            if( Id is null)
+            {
+                Services.CreateNewPropertyValue(viewModel,null,context);
+            }
+            else
+            {
+                Services.UpdatePropertyValue((Guid)Id, viewModel ,context);            
             }
             NavigationManager.NavigateTo("/cir-library");
         }
@@ -123,9 +128,10 @@
         }
     }
     
-    void DeleteProperty(Guid Id){
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
-        Services.DeletePropertyValueById(Id, Context.Result);
+    void DeleteProperty(Guid Id)
+    {
+        var context = Factory.CreateDbContext(new ClaimsPrincipal());
+        Services.DeletePropertyValueById(Id, context.Result);
         NavigationManager.NavigateTo("/cir-library");
     }
 }

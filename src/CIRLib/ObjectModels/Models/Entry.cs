@@ -7,6 +7,8 @@ public record class Entry : ModelObject
     public string CIRId { get; set; } = "";
     public string SourceOwnerId { get; set; } = "";
     public string Name { get; set; } = "";
+
+    [Column("Description")]
     public string Description { get; set; } = "";
     public bool Inactive { get; set; }
     // Decided to keep direct FK's to below tables
@@ -18,6 +20,6 @@ public record class Entry : ModelObject
     public string RegistryRefId { get; set; } = "";
     [ForeignKey("RegistryRefId")]
     public Registry Registry {get; set; } = null!;
-    public ICollection<Property> Property {get; set;}
+    public ICollection<Property> Property {get; set;} = null!;
 
 }
