@@ -75,6 +75,7 @@ public class PropertyValueServices : CommonServices
         return Query.ToList();
     
     }
+
     public void CreateNewPropertyValue(ObjModels.PropertyValue propertyValueObj, 
         ObjModels.Property propertyObj=null, CIRLibContext dbContext=null)
     {

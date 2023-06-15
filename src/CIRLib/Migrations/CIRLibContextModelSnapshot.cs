@@ -85,7 +85,7 @@ namespace CIRLib.Migrations
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("EntryDescription")
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("Description");

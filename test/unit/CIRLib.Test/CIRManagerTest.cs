@@ -89,6 +89,7 @@ public class CIRManagerTest
         var AssertEntryObj = dbContext.Entry.Where(item => item.IdInSource.Equals("Network")).First();
         Assert.Equal("Network", AssertEntryObj.IdInSource);
     }
+  
     public void GetEquivalentEntriesTest(CIRLibContext dbContext)
     {   
         var newEntryObj = new DataModel.EntryDef()

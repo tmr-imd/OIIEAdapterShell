@@ -63,8 +63,8 @@ public class CIRManager
         }
 
         return new EntryServices().GetEntriesFromFilters(entryId: newEntryObj.IdInSource, entrySourceId: newEntryObj.SourceId,
-         registryId: newEntryObj.RegistryRefId, categoryId: newEntryObj.CategoryRefId,
-         CIRId :newEntryObj.CIRId, dbContext: dbContext);        
+            registryId: newEntryObj.RegistryRefId, categoryId: newEntryObj.CategoryRefId,
+            CIRId :newEntryObj.CIRId, dbContext: dbContext);        
     }
 
     public static void AddEntries(DataModel.EntryDef newEntryObj, CIRLibContext? dbContext = null)
