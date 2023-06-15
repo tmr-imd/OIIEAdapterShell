@@ -3,6 +3,7 @@ using System;
 using CIRLib.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CIRLib.Migrations
 {
     [DbContext(typeof(CIRLibContext))]
-    partial class CIRLibContextModelSnapshot : ModelSnapshot
+    [Migration("20230609072910_CIRLibMigrations")]
+    partial class CIRLibMigrations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.5");
@@ -85,7 +88,7 @@ namespace CIRLib.Migrations
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("EntryDescription")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("Description");

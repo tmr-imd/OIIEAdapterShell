@@ -10,6 +10,9 @@ namespace DataModelServices;
 public class RegistryDef
 {
     [Required]
+    public Guid Id { get; set; }
+
+    [Required]
     public string RegistryId { get; set; } = "";
     public string Description { get; set; } = "";
 
@@ -26,6 +29,9 @@ public class RegistryDef
 
 public class CategoryDef
 {
+    [Required]
+    public Guid Id { get; set; }
+    
     [Required]
     public string CategoryId { get; set; } = "";
     public string SourceId { get; set; } = "";
@@ -47,6 +53,8 @@ public class CategoryDef
 
 public class EntryDef
 {
+    [Required]
+    public Guid Id { get; set; }
     [Required]
     public string IdInSource { get; set; } = "";
     [Required]
@@ -75,5 +83,34 @@ public class EntryDef
             RegistryRefId = viewModel.RegistryRefId,
             Id = Guid.NewGuid()
         };
+    }
+
+    public override string ToString()
+    {
+        return "EntryId: "+ IdInSource+", "+"SourceId: "+ SourceId+", "+"CIRID: "+ CIRId;
+    }
+}
+
+public class PropertyDef
+{
+    [Required]
+    public Guid Id { get; set; }
+    [Required]
+    public string PropertyId { get; set; } = "";
+    public string PropertyValue { get; set; } = "";
+    public string DataType { get; set; } = "";
+    [Required]
+    public string EntryRefIdInSource { get; set; } = "";
+    public string Key { get; set; } = "";
+
+    [Required]
+    public string Value { get; set; } = "";
+
+    [Required]
+    public string UnitOfMeasure { get; set; } = "";
+
+    public override string ToString()
+    {
+        return "PropertyId: "+ PropertyId+", "+"EntryRefId: "+ EntryRefIdInSource;
     }
 }

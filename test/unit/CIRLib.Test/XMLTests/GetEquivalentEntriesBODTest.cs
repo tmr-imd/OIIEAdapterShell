@@ -15,9 +15,9 @@ using CIRLib.Test.Fixture;
 using DataModel = DataModelServices;
 namespace CIRLib.Test.XMLTests;
 
-public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
+public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
 {
-    BODTestExamples examples;
+    BODTestSamples examples;
     const string BASE_SCHEMA_PATH = "./XSD";
 
     readonly BODReaderSettings settings = new BODReaderSettings()
@@ -25,7 +25,7 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestExamples>
         SchemaPath = BASE_SCHEMA_PATH
     };
 
-    public GetEquivalentEntriesBODTest(BODTestExamples fixture)
+    public GetEquivalentEntriesBODTest(BODTestSamples fixture)
     {
         this.examples = fixture;
     }

@@ -8,7 +8,7 @@ using Ccom;
 
 namespace CIRLib.Test.XMLTests;
 
-public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
+public class ProcesRegistryBODTest : IClassFixture<BODTestSamples>
 {
     BODTestSamples examples;
     const string BASE_SCHEMA_PATH = "./XSD";
@@ -18,7 +18,7 @@ public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
         SchemaPath = BASE_SCHEMA_PATH
     };
 
-    public ShowEquivalentEntriesBODTest(BODTestSamples fixture)
+    public ProcesRegistryBODTest(BODTestSamples fixture)
     {
         this.examples = fixture;
     }
@@ -27,8 +27,8 @@ public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
     public void SerializeToDocumentTest()
     {
         var (bodId, senderId, creationDateTime) = examples.GenerateApplicationAreaFields();
-        var expected = XDocument.Parse(examples.ShowEquivalentEntriesBOD(bodId, senderId, creationDateTime));
-        var bod = examples.ShowEquivalentEntries(bodId, senderId, creationDateTime);
+        var expected = XDocument.Parse(examples.ProcessRegistryBOD(bodId, senderId, creationDateTime));
+        var bod = examples.ProcessRegistry(bodId, senderId, creationDateTime);
         Assert.Equal(expected, bod.SerializeToDocument(), new XNodeEqualityComparer());
     }
 
@@ -36,8 +36,8 @@ public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
     public void SerializeToStringTest()
     {
         var (bodId, senderId, creationDateTime) = examples.GenerateApplicationAreaFields();
-        var expected = examples.ShowEquivalentEntriesBOD(bodId, senderId, creationDateTime);
-        var bod = examples.ShowEquivalentEntries(bodId, senderId, creationDateTime);
+        var expected = examples.ProcessRegistryBOD(bodId, senderId, creationDateTime);
+        var bod = examples.ProcessRegistry(bodId, senderId, creationDateTime);
         Assert.Equal(expected, bod.SerializeToString());
     }
 
@@ -45,10 +45,9 @@ public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
     public void DeserializeTest()
     {
         var (bodId, senderId, creationDateTime) = examples.GenerateApplicationAreaFields();
-        var expected = XDocument.Parse(examples.ShowEquivalentEntriesBOD(bodId, senderId, creationDateTime));
-        var deserialized = ShowEquivalentEntriesBOD.Deserialize<ShowEquivalentEntriesBOD>(expected);
+        var expected = XDocument.Parse(examples.ProcessRegistryBOD(bodId, senderId, creationDateTime));
+        var deserialized = ProcessRegistryBOD.Deserialize<ProcessRegistryBOD>(expected);
 
-        Assert.Equal("Global Corporate Registry", deserialized.DataArea.GetEquivalentEntriesResponse.First().ID.Value);
+        Assert.Equal("Global Corporate Registry", deserialized.DataArea.CreateRegistry.Registry.First().ID.Value);
     }
-    
 }

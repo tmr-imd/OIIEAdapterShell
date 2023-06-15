@@ -3,8 +3,8 @@ using CIRLib.Persistence;
 using ObjModels = CIRLib.ObjectModel.Models;
 using System.Security.Claims;
 
-
-namespace CIRServices{
+namespace CIRServices;
+  
 public class PropertyServices : CommonServices
 {
     public List<ObjModels.Property> GetAllProperties(CIRLibContext DbContext)
@@ -67,35 +67,38 @@ public class PropertyServices : CommonServices
         }
         return Query.ToList();
     }
-        public void CreateNewProperty(ObjModels.Property newProperty, CIRLibContext dbContext)
-        {
-            _ = CheckIfRegistryExists(newProperty.RegistryRefId, dbContext, "create");
-            _ = CheckIfCategoryExists(newProperty.CategoryRefId, dbContext, "create");
-            CheckIfEntryExists(newProperty.EntryRefIdInSource, dbContext);
-            newProperty.Id = Guid.NewGuid();
-            dbContext.Property.Add(newProperty);
-            dbContext.SaveChanges();
-        }
-        public void UpdateProperty(Guid Id, ObjModels.Property updateProperty, CIRLibContext dbContext)
-        {
-            _ = CheckIfRegistryExists(updateProperty.RegistryRefId, dbContext, "update");
-            _ = CheckIfCategoryExists(updateProperty.CategoryRefId, dbContext, "update");
-            CheckIfEntryExists(updateProperty.EntryRefIdInSource, dbContext);
 
-            var PropertyObj = dbContext.Property.Where(item => item.Id.Equals(Id)).First();
-            PropertyObj.PropertyId = updateProperty.PropertyId;
-            PropertyObj.PropertyValue = updateProperty.PropertyValue;
-            PropertyObj.DataType = updateProperty.DataType;
-            PropertyObj.CategoryRefId = updateProperty.CategoryRefId;
-            PropertyObj.RegistryRefId = updateProperty.RegistryRefId;
-            PropertyObj.EntryRefIdInSource = updateProperty.EntryRefIdInSource;
-            dbContext.SaveChanges();
-        }
-        public void DeletePropertyById(Guid Id, CIRLibContext DbContext)
+    public void CreateNewProperty(ObjModels.Property newProperty, CIRLibContext dbContext)
+    {            
+        var entryExists = CheckIfEntryExists(newProperty.EntryRefIdInSource, dbContext, "create");
+        if(entryExists == null)
         {
-            var DelPropertyObj = DbContext.Property.Where(item => item.Id.Equals(Id)).First();
-            DbContext.Property.Remove(DelPropertyObj);
-            DbContext.SaveChanges();
+            var entryObj = new ObjModels.Entry()
+            {
+                IdInSource = newProperty.EntryRefIdInSource
+            };
+            dbContext.Entry.Add(entryObj);
         }
-}
+        
+        newProperty.Id = Guid.NewGuid();
+        dbContext.Property.Add(newProperty);
+        dbContext.SaveChanges();
+    }
+    public void UpdateProperty(Guid Id, ObjModels.Property updateProperty, CIRLibContext dbContext)
+    {
+        _ = CheckIfRegistryExists(updateProperty.RegistryRefId, dbContext, "update");
+        _ = CheckIfCategoryExists(updateProperty.CategoryRefId, dbContext, "update");
+        var entryExists = CheckIfEntryExists(updateProperty.EntryRefIdInSource, dbContext, "update");
+
+        var PropertyObj = dbContext.Property.Where(item => item.Id.Equals(Id)).First();
+        PropertyObj.PropertyValue = updateProperty.PropertyValue;
+        PropertyObj.DataType = updateProperty.DataType;
+        dbContext.SaveChanges();
+    }
+    public void DeletePropertyById(Guid Id, CIRLibContext DbContext)
+    {
+        var DelPropertyObj = DbContext.Property.Where(item => item.Id.Equals(Id)).First();
+        DbContext.Property.Remove(DelPropertyObj);
+        DbContext.SaveChanges();
+    }
 }

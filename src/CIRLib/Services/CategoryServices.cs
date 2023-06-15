@@ -160,7 +160,6 @@ public class CategoryServices : CommonServices
                 Id = Guid.NewGuid()
             };
             DbContext.Registry.Add(regObj);
-            DbContext.SaveChanges();
         }
 
         NewCategory.Id = Guid.NewGuid();
