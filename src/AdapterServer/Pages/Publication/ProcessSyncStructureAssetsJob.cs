@@ -14,6 +14,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using AdapterServer.Data;
+using Oiie.Settings;
 using AdapterServer.Extensions;
 
 namespace AdapterServer.Pages.Publication;

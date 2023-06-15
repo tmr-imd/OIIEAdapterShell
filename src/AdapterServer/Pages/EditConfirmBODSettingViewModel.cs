@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using AdapterServer.Data;
+using Oiie.Settings;
 
 namespace AdapterServer.Pages
 {

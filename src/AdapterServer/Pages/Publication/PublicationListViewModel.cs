@@ -1,4 +1,5 @@
 ﻿using AdapterServer.Data;
+using Oiie.Settings;
 using AdapterServer.Pages.Request;
 using Hangfire;
 using Isbm2Client.Model;
