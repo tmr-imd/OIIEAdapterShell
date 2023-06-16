@@ -2,6 +2,7 @@
 using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
@@ -49,6 +50,9 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         return request.Id;
     }
 
+    #if DEBUG
+    [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
+    #endif
     public async Task<string> CheckForResponses( string sessionId )
     {
         using var context = await factory.CreateDbContext(principal);
@@ -80,6 +84,9 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
             responseMessage is not null; 
             responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId))
         {
+            var exists = await context.Responses.AnyAsync(x => x.ResponseId.ToLower() == responseMessage.Id.ToLower());
+            if ( exists ) continue;
+
             var response = new Response
             {
                 State = MessageState.Received,
@@ -90,13 +97,11 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
                 ContentEncoding = responseMessage.MessageContent.ContentEncoding,
                 Content = responseMessage.MessageContent.Content
             };
-            
+
             context.Responses.Add(response);
             await context.SaveChangesAsync();
 
-            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
-            response.JobId = jobId;
-            await context.SaveChangesAsync();
+            response.JobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
 
             await consumer.RemoveResponse(sessionId, openRequest.RequestId);
 

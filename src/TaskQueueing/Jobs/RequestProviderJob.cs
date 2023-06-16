@@ -3,6 +3,7 @@ using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Isbm2RestClient.Model;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
@@ -26,6 +27,9 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         this.principal = principal;
     }
 
+    #if DEBUG
+    [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
+    #endif
     public async Task<string> CheckForRequests( string sessionId )
     {
         try
@@ -47,6 +51,9 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
 
         for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
         {
+            var exists = await context.Requests.AnyAsync(x => x.RequestId.ToLower() == requestMessage.Id.ToLower());
+            if (exists) continue;
+
             var content = requestMessage.MessageContent.Deserialise<TRequest>();
 
             var request = new Request
