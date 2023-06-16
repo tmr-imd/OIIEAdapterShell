@@ -7,8 +7,6 @@ using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Jobs;
-using CIRLib.Persistence;
-using CIRServices;
 using CIRLib.Extensions;
 using Oiie.Settings;
 using System.Text;
@@ -48,7 +46,7 @@ public class Startup
         routes.MapBlazorHub();
         routes.MapFallbackToPage("/_Host");
 
-        routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request, ILogger<Program> log) =>
+        routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request, ILogger<Startup> log) =>
         {
             try
             {
@@ -109,10 +107,11 @@ public class Startup
         services.AddScoped<RequestViewModel>();
         services.AddScoped<ManageRequestViewModel>();
         services.AddScoped<ResponseViewModel>();
-        services.AddScoped<PublicationService>();
+        services.AddScoped<ManagePublicationViewModel>();
         services.AddScoped<PublicationDetailViewModel>();
         services.AddScoped<PublicationListViewModel>();
         services.AddScoped<PublicationViewModel>();
+        services.AddScoped<PublicationService>();
         services.AddScoped<ConfirmBODConfigViewModel>();
     }
 }
