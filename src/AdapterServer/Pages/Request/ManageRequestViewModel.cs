@@ -109,12 +109,12 @@ public class ManageRequestViewModel
         switch (MessageType)
         {
             case MessageTypes.JSON:
-                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
+                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id, null!), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id, null!), Cron.Hourly);
                 break;
             case MessageTypes.ExampleBOD:
-                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
+                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id, null!), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id, null!), Cron.Hourly);
                 break;
             case MessageTypes.CCOM:
                 throw new Exception("Not yet implemented");

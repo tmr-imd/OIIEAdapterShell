@@ -53,7 +53,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
     #if DEBUG
     [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
     #endif
-    public async Task<string> CheckForResponses( string sessionId )
+    public async Task<string> CheckForResponses( string sessionId, PerformContext ctx)
     {
         using var context = await factory.CreateDbContext(principal);
 
@@ -64,7 +64,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         {
             try
             {
-                lastResponseRead = await readRemoveAll(sessionId, openRequest, context);
+                lastResponseRead = await readRemoveAll(sessionId, openRequest, context, ctx);
             }
             catch (IsbmFault)
             {
@@ -76,7 +76,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         return lastResponseRead;
     }
 
-    private async Task<string> readRemoveAll(string sessionId, Request openRequest, JobContext context)
+    private async Task<string> readRemoveAll(string sessionId, Request openRequest, JobContext context, PerformContext ctx)
     {
         var lastResponseRead = "";
 
@@ -89,6 +89,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
 
             var response = new Response
             {
+                JobId = ctx.BackgroundJob.Id,
                 State = MessageState.Received,
                 ResponseId = responseMessage.Id,
                 RequestId = openRequest.RequestId,
@@ -101,8 +102,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
             context.Responses.Add(response);
             await context.SaveChangesAsync();
 
-            response.JobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
-
+            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
             await consumer.RemoveResponse(sessionId, openRequest.RequestId);
 
             lastResponseRead = responseMessage.Id;

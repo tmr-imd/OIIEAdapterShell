@@ -30,11 +30,11 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
     #if DEBUG
     [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
     #endif
-    public async Task<string> CheckForRequests( string sessionId )
+    public async Task<string> CheckForRequests( string sessionId, PerformContext ctx)
     {
         try
         {
-            return await ReadRemoveAll(sessionId);
+            return await ReadRemoveAll(sessionId, ctx);
         }
         catch ( IsbmFault ex ) when ( ex.FaultType == IsbmFaultType.SessionFault )
         {
@@ -44,7 +44,7 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
         return "";
     }
 
-    private async Task<string> ReadRemoveAll(string sessionId)
+    private async Task<string> ReadRemoveAll(string sessionId, PerformContext ctx)
     {
         var context = await factory.CreateDbContext(principal);
         var lastReadRequest = "";
@@ -58,6 +58,7 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
 
             var request = new Request
             {
+                JobId = ctx.BackgroundJob.Id,
                 State = MessageState.Received,
                 RequestId = requestMessage.Id,
                 Topic = requestMessage.Topics.FirstOrDefault() ?? "",
@@ -69,10 +70,7 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
             context.Requests.Add(request);
             await context.SaveChangesAsync();
 
-            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
-            request.JobId = jobId;
-            await context.SaveChangesAsync();
-
+            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessRequest(sessionId, requestMessage.Id, content, null!));
             await provider.RemoveRequest(sessionId);
 
             lastReadRequest = requestMessage.Id;
