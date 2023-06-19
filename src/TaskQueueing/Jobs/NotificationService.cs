@@ -39,7 +39,10 @@ public class NotificationService
         if (response is not null)
             return response;
 
-        var publication = await context.Publications.Where(x => x.MessageId == messageId && (x.State & MessageState.Received) == MessageState.Received).FirstOrDefaultAsync();
+        var publication = await context.Publications
+            .WhereReceived()
+            .Where(x => x.MessageId == messageId)
+            .FirstOrDefaultAsync();
 
         return publication;
     }

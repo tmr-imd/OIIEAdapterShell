@@ -61,7 +61,7 @@ public class Startup
 
                 if (notifyBody is not null)
                 {
-                    var jobId = BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId, notifyBody.requestMessageId));
+                    var jobId = BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId, notifyBody));
 
                     log.LogInformation($"sessionId: {sessionId}, messageId: {messageId} - NotificationJob {jobId} enqueued");
                 }

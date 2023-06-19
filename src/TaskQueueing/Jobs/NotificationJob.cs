@@ -1,5 +1,6 @@
 using Hangfire;
 using System.Security.Claims;
+using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
 namespace TaskQueueing.Jobs;
@@ -15,7 +16,7 @@ public class NotificationJob
         this.principal = principal;
     }
 
-    public async Task Notify(string sessionId, string messageId, string requestMessageId)
+    public async Task Notify(string sessionId, string messageId, NotifyBody body)
     {
         using var context = await factory.CreateDbContext(principal);
 
@@ -34,35 +35,33 @@ public class NotificationJob
         {
             // Keep things simple. If there is a lastJobId, then schedule FirstCheck to run afterwards. It doesn't
             // matter if the job is currently running
-            BackgroundJob.ContinueJobWith<NotificationJob>(lastJobId, x => x.FirstCheck(sessionId, messageId, requestMessageId), JobContinuationOptions.OnAnyFinishedState);
+            BackgroundJob.ContinueJobWith<NotificationJob>(lastJobId, x => x.FirstCheck(sessionId, messageId, body), JobContinuationOptions.OnAnyFinishedState);
         }
         else
         {
             // The recurring task has never been run, so run FirstCheck now
-            await FirstCheck(sessionId, messageId, requestMessageId);
+            await FirstCheck(sessionId, messageId, body);
         }
     }
 
-    public async Task FirstCheck(string sessionId, string messageId, string requestMessageId)
+    public async Task FirstCheck(string sessionId, string messageId, NotifyBody body)
     {
         using var context = await factory.CreateDbContext(principal);
 
-        // Stop processing if the request message has been abandoned
-        if (!string.IsNullOrEmpty(requestMessageId))
+        // Must be a Response, stop processing if the corresponding Request has been abandoned
+        if (!string.IsNullOrEmpty(body.requestMessageId))
         {
-            var requestMessage = await NotificationService.GetMessage(requestMessageId, context);
+            var requestMessage = await NotificationService.GetMessage(body.requestMessageId, context);
 
             // TODO: Add check for expiry
-            if (requestMessage is not null && requestMessage.Processed)
+            if (requestMessage is null || requestMessage.Processed)
                 return;
         }
-        else
-        {
-            var message = await NotificationService.GetMessage(messageId, context);
 
-            if (message is not null && message.Processed)
-                return;
-        }
+        var message = await NotificationService.GetMessage(messageId, context);
+
+        if (message is not null && message.Processed)
+            return;
 
         var recurringJobId = await NotificationService.JobIdFromSession(sessionId, context);
 
@@ -70,17 +69,17 @@ public class NotificationJob
             return;
 
         var jobId = RecurringJob.TriggerJob(recurringJobId);
-        BackgroundJob.ContinueJobWith<NotificationJob>(jobId, x => x.SecondCheck(messageId, requestMessageId), JobContinuationOptions.OnAnyFinishedState);
+        BackgroundJob.ContinueJobWith<NotificationJob>(jobId, x => x.SecondCheck(messageId, body), JobContinuationOptions.OnAnyFinishedState);
     }
 
-    public async Task SecondCheck(string messageId, string requestMessageId)
+    public async Task SecondCheck(string messageId, NotifyBody body)
     {
         using var context = await factory.CreateDbContext(principal);
 
         // Stop processing if the request message has been abandoned/processed
-        if (!string.IsNullOrEmpty(requestMessageId))
+        if (!string.IsNullOrEmpty(body.requestMessageId))
         {
-            var requestMessage = await NotificationService.GetMessage(requestMessageId, context);
+            var requestMessage = await NotificationService.GetMessage(body.requestMessageId, context);
 
             if (requestMessage is null || requestMessage.Processed)
                 return;
