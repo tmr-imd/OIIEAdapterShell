@@ -13,7 +13,7 @@ public class MockContextFactory
         var builder = new DbContextOptionsBuilder<CIRLibContext>();
         var defaultConnection = "CIRLib.db";
         builder.UseSqlite($"Filename={defaultConnection}");
-        var context = new CIRLibContext(builder.Options, "tester");
+        using var context = new CIRLibContext(builder.Options, "tester");
         var task = context.Database.EnsureDeletedAsync();
         task.Wait();
         var secondTask = context.Database.MigrateAsync();

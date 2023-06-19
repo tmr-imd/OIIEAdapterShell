@@ -46,7 +46,7 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
 
     private async Task<string> ReadRemoveAll(string sessionId, PerformContext ctx)
     {
-        var context = await factory.CreateDbContext(principal);
+        using var context = await factory.CreateDbContext(principal);
         var lastReadRequest = "";
 
         for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
