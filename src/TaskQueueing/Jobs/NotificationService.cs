@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Storage;
 using Microsoft.EntityFrameworkCore;
+using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
@@ -38,7 +39,7 @@ public class NotificationService
         if (response is not null)
             return response;
 
-        var publication = await context.Publications.Where(x => x.MessageId == messageId).FirstOrDefaultAsync();
+        var publication = await context.Publications.Where(x => x.MessageId == messageId && (x.State & MessageState.Received) == MessageState.Received).FirstOrDefaultAsync();
 
         return publication;
     }

@@ -53,14 +53,14 @@ public class NotificationJob
             var requestMessage = await NotificationService.GetMessage(requestMessageId, context);
 
             // TODO: Add check for expiry
-            if (requestMessage is null || requestMessage.Processed)
+            if (requestMessage is not null && requestMessage.Processed)
                 return;
         }
         else
         {
             var message = await NotificationService.GetMessage(messageId, context);
 
-            if (message is null || message.Processed)
+            if (message is not null && message.Processed)
                 return;
         }
 
