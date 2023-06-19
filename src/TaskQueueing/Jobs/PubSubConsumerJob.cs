@@ -53,7 +53,10 @@ public class PubSubConsumerJob<TProcessJob, TContent>
         {
             using var context = await factory.CreateDbContext(principal);
 
-            var exists = await context.Publications.AnyAsync(x => x.MessageId.ToLower() == publication.Id.ToLower() && (x.State & MessageState.Received) == MessageState.Received );
+            var exists = await context.Publications
+                .WhereReceived()
+                .AnyAsync(x => x.MessageId == publication.Id );
+
             if (exists) continue;
 
             var storedPublication = new Publication()

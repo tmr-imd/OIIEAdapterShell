@@ -84,7 +84,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
             responseMessage is not null; 
             responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId))
         {
-            var exists = await context.Responses.AnyAsync(x => x.ResponseId.ToLower() == responseMessage.Id.ToLower());
+            var exists = await context.Responses.AnyAsync(x => x.ResponseId == responseMessage.Id);
             if ( exists ) continue;
 
             var response = new Response
