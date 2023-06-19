@@ -40,12 +40,13 @@ public class ManagePublicationViewModel
     {
         try
         {
-            var channelSettings = await settings.LoadSettings<ChannelSettings>(channelName);
+            var channelSettings = await settings.LoadSettings<PublicationSettings>(channelName);
 
             ChannelUri = channelSettings.ChannelUri;
             Topic = channelSettings.Topic;
             ConsumerSessionId = channelSettings.ConsumerSessionId;
             ProviderSessionId = channelSettings.ProviderSessionId;
+            ConfirmationSessionId = channelSettings.ConfirmationSessionId;
             MessageType = channelSettings.MessageType switch
             {
                 var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
@@ -61,27 +62,17 @@ public class ManagePublicationViewModel
 
     public async Task Save(SettingsService settings, string channelName)
     {
-        var channelSettings = new ChannelSettings
+        var channelSettings = new PublicationSettings
         {
             ChannelUri = ChannelUri,
             Topic = Topic,
             ConsumerSessionId = ConsumerSessionId,
             ProviderSessionId = ProviderSessionId,
+            ConfirmationSessionId = ConfirmationSessionId,
             MessageType = MessageType.ToString()
         };
 
         await settings.SaveSettings(channelSettings, channelName);
-
-        // Settings for the ConfirmBOD queue
-        var confirmationSettings = new ChannelSettings
-        {
-            ChannelUri = ChannelUri,
-            Topic = "ConfirmBOD",
-            ConsumerSessionId = ConfirmationSessionId,
-            ProviderSessionId = ProviderSessionId
-        };
-
-        await settings.SaveSettings(channelSettings, channelName + "-confirm");
     }
 
     public async Task OpenSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)
@@ -182,26 +173,26 @@ public class ManagePublicationViewModel
         using var context = await factory.CreateDbContext(principal);
 
         var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
-        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
+        var storedConfirmationSession = await context.Sessions.Where(x => x.SessionId == ConfirmationSessionId).FirstOrDefaultAsync();
 
         if (storedConsumerSession is null)
         {
-            storedConsumerSession = new TaskQueueing.ObjectModel.Models.Session(ConsumerSessionId, "CheckForResponses");
+            storedConsumerSession = new TaskQueueing.ObjectModel.Models.Session(ConsumerSessionId, "PollNewStructureAssets");
             context.Sessions.Add(storedConsumerSession);
         }
         else
         {
-            storedConsumerSession = storedConsumerSession with { RecurringJobId = "CheckForResponses" };
+            storedConsumerSession = storedConsumerSession with { RecurringJobId = "PollNewStructureAssets" };
         }
 
-        if (storedProviderSession is null)
+        if (storedConfirmationSession is null)
         {
-            storedProviderSession = new TaskQueueing.ObjectModel.Models.Session(ProviderSessionId, "CheckForRequests");
-            context.Sessions.Add(storedProviderSession);
+            storedConfirmationSession = new TaskQueueing.ObjectModel.Models.Session(ConfirmationSessionId, "PollConfirmBOD");
+            context.Sessions.Add(storedConfirmationSession);
         }
         else
         {
-            storedProviderSession = storedProviderSession with { RecurringJobId = "CheckForRequests" };
+            storedConfirmationSession = storedConfirmationSession with { RecurringJobId = "PollConfirmBOD" };
         }
 
         await context.SaveChangesAsync();
@@ -212,16 +203,16 @@ public class ManagePublicationViewModel
         using var context = await factory.CreateDbContext(principal);
 
         var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
-        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
+        var storedConfirmationSession = await context.Sessions.Where(x => x.SessionId == ConfirmationSessionId).FirstOrDefaultAsync();
 
         if (storedConsumerSession is not null)
         {
             context.Sessions.Remove(storedConsumerSession);
         }
 
-        if (storedProviderSession is not null)
+        if (storedConfirmationSession is not null)
         {
-            context.Sessions.Remove(storedProviderSession);
+            context.Sessions.Remove(storedConfirmationSession);
         }
 
         await context.SaveChangesAsync();
