@@ -64,7 +64,7 @@ public class Startup
                 using StreamReader reader = new(request.Body, Encoding.UTF8, true, 1024, true);
                 var content = await reader.ReadToEndAsync();
 
-                log.LogInformation($"sessionId: {sessionId}, messageId: {messageId} - {content}");
+                log.LogInformation("sessionId: {sessionId}, messageId: {messageId} - {content}", sessionId, messageId, content);
 
                 var notifyBody = !string.IsNullOrEmpty(content) ? JsonSerializer.Deserialize<NotifyBody>(content) : new NotifyBody();
 
