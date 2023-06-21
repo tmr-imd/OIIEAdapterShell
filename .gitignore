@@ -456,4 +456,5 @@ $RECYCLE.BIN/
 src/AdapterServer/Data/Settings
 src/AdapterServer/Data/adapter_shell.db*
 src/AdapterServer/Data/hangfire.db*
+**/*.db*
 src/CIRLib/Data/CIRLib.db*
