@@ -103,6 +103,7 @@ public class CIRManagerTest
         Assert.Single(AssertEntryObj);
         Assert.Equal("Network", AssertEntryObj.First().IdInSource);
     }
+  
     public void GetEquivalentEntriesTest(CIRLibContext dbContext)
     {   
         var newEntryObj = new DataModel.EntryDef()

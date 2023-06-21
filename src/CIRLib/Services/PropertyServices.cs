@@ -3,8 +3,8 @@ using CIRLib.Persistence;
 using ObjModels = CIRLib.ObjectModel.Models;
 using System.Security.Claims;
 
-
-namespace CIRServices{
+namespace CIRServices;
+  
 public class PropertyServices : CommonServices
 {
     public List<ObjModels.Property> GetAllProperties(CIRLibContext DbContext)
@@ -67,6 +67,7 @@ public class PropertyServices : CommonServices
         }
         return Query.ToList();
     }
+
     public void CreateNewProperty(ObjModels.Property newProperty, CIRLibContext dbContext)
     {            
         var entryObjExists = CheckIfEntryExists(newProperty.EntryIdInSource, dbContext, "create");
@@ -104,5 +105,4 @@ public class PropertyServices : CommonServices
         DbContext.Property.Remove(DelPropertyObj);
         DbContext.SaveChanges();
     }
-}
 }

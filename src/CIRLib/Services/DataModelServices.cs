@@ -106,6 +106,3 @@ public class PropertyDef
         return "PropertyId: "+ PropertyId+", "+"EntryRefId: "+ EntryIdInSource;
     }
 }
-    
-
-

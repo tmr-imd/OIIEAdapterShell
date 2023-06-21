@@ -2,7 +2,9 @@ using CIRLib.Persistence;
 using System.Security.Claims;
 using DataModel = DataModelServices;
 using ObjModels = CIRLib.ObjectModel.Models;
+
 namespace CIRServices;
+
 public class CommonServices
 {
     public static ObjModels.Registry? CheckIfRegistryExists(string registryId, CIRLibContext dbContext, string action)
