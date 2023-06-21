@@ -14,9 +14,9 @@ namespace CIRLIB.UI.Pages
 
         [Required(AllowEmptyStrings = false)]
         public string DataType { get; set; } = "";
-        public string CategoryRefId { get; set; } = "";
-        public string RegistryRefId { get; set; } = "";        
-        public string EntryRefIdInSource { get; set; } = "";
+        public string CategoryId { get; set; } = "";
+        public string RegistryId { get; set; } = "";        
+        public string EntryId { get; set; } = "";
 
         public static implicit operator ObjModels.Property(PropertyViewModel viewModel)
         {
@@ -25,10 +25,7 @@ namespace CIRLIB.UI.Pages
                 PropertyId = viewModel.PropertyId,
                 PropertyValue = viewModel.PropertyValue,
                 DataType = viewModel.DataType,
-                CategoryRefId = viewModel.CategoryRefId,
-                RegistryRefId = viewModel.RegistryRefId,
-                EntryRefIdInSource = viewModel.EntryRefIdInSource,
-                Id = Guid.NewGuid()
+                EntryIdInSource = viewModel.EntryId
             };
         }
 

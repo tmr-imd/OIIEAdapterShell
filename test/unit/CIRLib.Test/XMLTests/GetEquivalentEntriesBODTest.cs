@@ -11,7 +11,6 @@ using CIRServices;
 using ObjModels = CIRLib.ObjectModel.Models;
 using Microsoft.Extensions.Configuration;
 using CIRLib.Test;
-using CIRLib.Test.Fixture;
 using DataModel = DataModelServices;
 namespace CIRLib.Test.XMLTests;
 

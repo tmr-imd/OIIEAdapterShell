@@ -6,12 +6,12 @@ using DataModel = DataModelServices;
 namespace CIRServices;
 public class CIRManager
 {
-    public static CIRLibContextFactory? Factory {get; set;}
+    public static CIRLibContextFactory Factory {get; set;} = new CIRLibContextFactory();
 
-    public static void AddRegistries(DataModel.RegistryDef newRegObj, CIRLibContext dbContext = null)
+    public static void AddRegistries(DataModel.RegistryDef newRegObj, CIRLibContext? dbContext = null)
     {
         if(string.IsNullOrWhiteSpace(newRegObj.RegistryId)){
-            throw new Exception("Mandatory field RegistryId not provided.");
+            throw new ArgumentException("Mandatory field RegistryId not provided.");
         }
         if (dbContext is null)
         {
@@ -24,14 +24,14 @@ public class CIRManager
         rService.CreateNewRegistry(newRegObj, dbContext);
     }
 
-    public static void AddCategories(DataModel.CategoryDef newCatObj, CIRLibContext dbContext)
+    public static void AddCategories(DataModel.CategoryDef newCatObj, CIRLibContext? dbContext = null)
     {
         if(string.IsNullOrWhiteSpace(newCatObj.CategoryId)){
-            throw new Exception("Mandatory field CategoryId not provided.");
+            throw new ArgumentException("Mandatory field CategoryId not provided.");
         }
-        if(string.IsNullOrWhiteSpace(newCatObj.RegistryRefId))
+        if(string.IsNullOrWhiteSpace(newCatObj.RegistryId))
         {
-            throw new Exception("Mandatory field RegistryRefId not provided.");
+            throw new ArgumentException("Mandatory field RegistryId not provided.");
         }
         
         if (dbContext is null)
@@ -48,13 +48,6 @@ public class CIRManager
     public static IEnumerable<ObjModels.Entry> GetEquivalentEntries( DataModel.EntryDef newEntryObj,
         CIRLibContext? dbContext = null)
     {
-        if(string.IsNullOrWhiteSpace(newEntryObj.IdInSource)
-            || string.IsNullOrWhiteSpace(newEntryObj.CategoryRefId)
-            || string.IsNullOrWhiteSpace(newEntryObj.RegistryRefId))
-        {
-            throw new Exception("Entry Id, CategoryRefId and RegistryRefId are mandatory fields!");
-        }
-
         if (dbContext is null)
         {
             //This will always be null initially.
@@ -63,7 +56,7 @@ public class CIRManager
         }
 
         return new EntryServices().GetEntriesFromFilters(entryId: newEntryObj.IdInSource, entrySourceId: newEntryObj.SourceId,
-         registryId: newEntryObj.RegistryRefId, categoryId: newEntryObj.CategoryRefId,
+         registryId: newEntryObj.RegistryId, categoryId: newEntryObj.CategoryId,
          CIRId :newEntryObj.CIRId, dbContext: dbContext);        
     }
 
@@ -85,10 +78,10 @@ public class CIRManager
         foreach(DataModel.EntryDef newEntryObj in newEntryObjs)
         {
             if(string.IsNullOrWhiteSpace(newEntryObj.IdInSource)
-                || string.IsNullOrWhiteSpace(newEntryObj.CategoryRefId)
-                || string.IsNullOrWhiteSpace(newEntryObj.RegistryRefId))
+                || string.IsNullOrWhiteSpace(newEntryObj.CategoryId)
+                || string.IsNullOrWhiteSpace(newEntryObj.RegistryId))
             {
-                errorMessages.Add("Entry Id, CategoryRefId and RegistryRefId are mandatory fields!");
+                errorMessages.Add("Entry Id, CategoryId and RegistryId are mandatory fields!");
                 errorMessages.Add("Mandatory fields not provided for: "+ newEntryObj);
                 continue;
             }
@@ -98,7 +91,7 @@ public class CIRManager
         }
         if(errorMessages.Count != 0)
         {
-            throw new Exception(string.Join(" ",errorMessages));
+            throw new ArgumentException(string.Join(" ",errorMessages));
         }
     }
     
@@ -109,47 +102,78 @@ public class CIRManager
     public static void AddProperties(IEnumerable<DataModel.PropertyDef> newPropObjs, CIRLibContext? dbContext = null)
     {
         List<string> errorMessages = new List<string>();
+
+        if (dbContext is null)
+        {
+            //dbContext will always be assigned here.
+            //For Testing, dbContext will be passed from the Test function.
+            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+        }
+
         foreach(DataModel.PropertyDef newPropObj in newPropObjs)
         {
             if(string.IsNullOrWhiteSpace(newPropObj.PropertyId) ||
-            string.IsNullOrWhiteSpace(newPropObj.EntryRefIdInSource) ||
+            string.IsNullOrWhiteSpace(newPropObj.EntryIdInSource) ||
             string.IsNullOrWhiteSpace(newPropObj.Value) || string.IsNullOrWhiteSpace(newPropObj.UnitOfMeasure))
             {
-                errorMessages.Add("PropertyId, EntryRefId, Property Value, UnitOfMeasure are mandatory fields!");
+                errorMessages.Add("PropertyId, EntryIdInSource, Property Value, UnitOfMeasure are mandatory fields!");
                 errorMessages.Add("Mandatory fields not provided for: "+ newPropObj);
                 continue;
             }
 
-            //Extracting PropertyModel and PropertyValueModel from Property DataModel.
-            var propModelObj = new ObjModels.Property()
-            {
-                PropertyId = newPropObj.PropertyId,
-                EntryRefIdInSource = newPropObj.EntryRefIdInSource,
-                PropertyValue = newPropObj.PropertyValue,
-                DataType = newPropObj.DataType
-            };
+            var entryObj = dbContext.Entry.FirstOrDefault(item => item.IdInSource.Contains(newPropObj.EntryIdInSource));
 
-            var propValueModelObj = new ObjModels.PropertyValue()
+            if( entryObj == null)
             {
-                Key = newPropObj.Key,
-                Value = newPropObj.Value,
-                UnitOfMeasure = newPropObj.UnitOfMeasure,
-                PropertyRefId = newPropObj.PropertyId
-            };
+                errorMessages.Add("Enter a valid EntryIdInSource. ");
+                continue;
+            }
+            else
+            {
+                //Extracting PropertyModel and PropertyValueModel from Property DataModel.
+                var propModelObj = new ObjModels.Property()
+                {
+                    PropertyId = newPropObj.PropertyId,
+                    EntryIdInSource = newPropObj.EntryIdInSource,
+                    PropertyValue = newPropObj.PropertyValue,
+                    DataType = newPropObj.DataType
+                };
 
-            var pvService = new PropertyValueServices();       
-            pvService.CreateNewPropertyValue(propertyValueObj: propValueModelObj, propertyObj: propModelObj,
-                dbContext: dbContext);
+                var pService = new PropertyServices();       
+                pService.CreateNewProperty(newProperty: propModelObj, dbContext: dbContext);
+
+                var propValueModelObj = new ObjModels.PropertyValue()
+                {
+                    Key = newPropObj.Key,
+                    Value = newPropObj.Value,
+                    UnitOfMeasure = newPropObj.UnitOfMeasure,
+                    PropertyId = newPropObj.PropertyId,
+                    Property =  propModelObj
+                };
+
+                var pvService = new PropertyValueServices();       
+                pvService.CreateNewPropertyValue(propertyValueObj: propValueModelObj, propertyObj: propModelObj,
+                    dbContext: dbContext);
+
+            }
+            
         }
 
         if(errorMessages.Count != 0)
         {
-            throw new Exception(string.Join(" ",errorMessages));
+            throw new ArgumentException(string.Join(" ",errorMessages));
         }
     }
 
     public static void ModifyEntryDetails(DataModel.EntryDef newEntryObj, CIRLibContext? dbContext = null)
     {
+        if (dbContext is null)
+        {
+            //This will always be null initially.
+            //Added this to support dbContext passing for testing only.
+            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+        }
+        
         var entryExists = CommonServices.CheckIfEntryExists(newEntryObj.IdInSource, dbContext);
         if(entryExists != null)
         {
@@ -159,7 +183,8 @@ public class CIRManager
     }
 
     public static void ProcessRegistry(DataModel.RegistryDef regObj, DataModel.CategoryDef catObj,
-        IEnumerable<DataModel.EntryDef> entObj, IEnumerable<DataModel.PropertyDef> propObj,CIRLibContext? dbContext = null)
+        IEnumerable<DataModel.EntryDef> entObj, IEnumerable<DataModel.PropertyDef> propObj,
+        CIRLibContext? dbContext = null)
     {
         if (dbContext is null)
         {

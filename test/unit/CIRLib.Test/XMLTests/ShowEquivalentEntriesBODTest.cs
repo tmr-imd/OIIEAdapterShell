@@ -47,7 +47,6 @@ public class ShowEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
         var (bodId, senderId, creationDateTime) = examples.GenerateApplicationAreaFields();
         var expected = XDocument.Parse(examples.ShowEquivalentEntriesBOD(bodId, senderId, creationDateTime));
         var deserialized = ShowEquivalentEntriesBOD.Deserialize<ShowEquivalentEntriesBOD>(expected);
-
         Assert.Equal("Global Corporate Registry", deserialized.DataArea.GetEquivalentEntriesResponse.First().ID.Value);
     }
     

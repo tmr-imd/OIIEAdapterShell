@@ -15,7 +15,6 @@ namespace CIRLib.Persistence
         public new DbSet<Entry> Entry { get; set; } = null!;
         public DbSet<Property> Property { get; set; } = null!;
         public DbSet<PropertyValue> PropertyValue { get; set; } = null!;
-
         public CIRLibContext(DbContextOptions options, string who) : base(options)
         { 
             this.who = who;
@@ -33,7 +32,6 @@ namespace CIRLib.Persistence
                 var defaultConnection = configuration.GetConnectionString("CIRLibConnection");
                 optionsBuilder.UseSqlite($"Filename={defaultConnection}");
             }
-            
             #if DEBUG
                 optionsBuilder.EnableSensitiveDataLogging(true);
             #endif
@@ -42,12 +40,6 @@ namespace CIRLib.Persistence
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<Registry>().HasKey(t => t.RegistryId);
-            modelBuilder.Entity<Category>().HasKey(t => t.CategoryId);
-            modelBuilder.Entity<Entry>().HasKey(t => t.IdInSource);
-            modelBuilder.Entity<Property>().HasKey(t => t.PropertyId);
-            modelBuilder.Entity<PropertyValue>().HasKey(t => t.Key);
             
             modelBuilder.Entity<Registry>().HasIndex(t => t.RegistryId);
             modelBuilder.Entity<Category>().HasIndex(t => t.CategoryId);
@@ -88,8 +80,14 @@ namespace CIRLib.Persistence
         public override int SaveChanges( bool acceptAllChangesOnSuccess )
         {
             SetAuditFields();
-
-            return base.SaveChanges(acceptAllChangesOnSuccess);
+            try
+            {
+                return base.SaveChanges(acceptAllChangesOnSuccess);
+            }
+            catch(DbUpdateException ex)
+            {
+                throw ex.InnerException != null ? ex.InnerException : ex;
+            }
         }
 
         public override Task<int> SaveChangesAsync( bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default )

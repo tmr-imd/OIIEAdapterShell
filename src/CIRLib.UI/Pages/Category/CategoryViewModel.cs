@@ -9,8 +9,8 @@ namespace CIRLIB.UI.Pages
         [Display(Name = "CategoryId")]
         public string CategoryId { get; set; } = "";
         [Required(AllowEmptyStrings = false)]
-        [Display(Name = "RegistryRefId")]
-        public string RegistryRefId { get; set; } = "";
+        [Display(Name = "RegistryId")]
+        public string RegistryId { get; set; } = "";
 
         [Required(AllowEmptyStrings = false)]
         [Display(Name = "SourceId")]
@@ -22,7 +22,7 @@ namespace CIRLIB.UI.Pages
         {
             CategoryId = "";
             CategorySourceId = "";
-            RegistryRefId = "";
+            RegistryId = "";
             Description = "";
         }
 
@@ -32,9 +32,8 @@ namespace CIRLIB.UI.Pages
             {
                 CategoryId = viewModel.CategoryId,
                 CategorySourceId = viewModel.CategorySourceId,
-                RegistryRefId = viewModel.RegistryRefId,
-                Description = viewModel.Description,
-                Id = Guid.NewGuid()
+                RegistryId = viewModel.RegistryId,
+                Description = viewModel.Description
             };
         }
     }

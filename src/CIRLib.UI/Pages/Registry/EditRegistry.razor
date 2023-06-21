@@ -23,48 +23,42 @@
 }
 
 <EditForm Model="@viewModel" OnValidSubmit="@HandleSubmit">
-    <Modal Title="Registry">  
-        <ChildContent>
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-            <div class="grid gap-2">
-                <div>
-                    <label>
-                        <h3 class="col-span-2">Registry Id 
-                            @if (Id is not null ){  
-                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteRegistry((Guid)Id))">
-                                        Delete
-                                </button>
-                            }
-                        </h3>
-                        @if (Id is null ){                            
-                            <InputText type="text" @bind-Value="viewModel.RegistryId" 
-                                placeholder="Enter Registry Id" class="form-input w-full" />
-                        }else{
-                            <InputText readonly="true" type="text" @bind-Value="viewModel.RegistryId"
-                                class="form-input w-full" />
-                        }
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        <h3>Description</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.Description" />
-                    </label>
-                </div>
-            </div>
-        </ChildContent>
-        <Footer>
-            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(Id is null ? "Save New Registry" : "Update")</button>
-            <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
-        </Footer>
-    </Modal>
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="grid gap-2">
+        <div>
+            <label>
+                <h3 class="col-span-2">Registry Id 
+                    @if (Id is not null ){  
+                        <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteRegistry((Guid)Id))">
+                                Delete
+                        </button>
+                    }
+                </h3>
+                @if (Id is null ){                            
+                    <InputText type="text" @bind-Value="viewModel.RegistryId" 
+                        placeholder="Enter Registry Id" class="form-input w-full" />
+                }else{
+                    <InputText readonly="true" type="text" @bind-Value="viewModel.RegistryId"
+                        class="form-input w-full" />
+                }
+            </label>
+        </div>
+        <div>
+            <label>
+                <h3>Description</h3>
+                <InputText type="text" class="form-input w-full" @bind-Value="viewModel.Description" />
+            </label>
+        </div>
+    </div>
+    <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(Id is null ? "Save New Registry" : "Update")</button>
+    <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
 </EditForm> 
 
 @code {
     [Parameter]
     public Guid? Id { get; set; }
-    public ObjModels.Registry RegObj;
+    public ObjModels.Registry RegObj = null!;
     public RegistryViewModel viewModel = new RegistryViewModel();
 
     protected override async Task OnParametersSetAsync()

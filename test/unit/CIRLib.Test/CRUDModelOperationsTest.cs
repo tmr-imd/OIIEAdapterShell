@@ -2,17 +2,15 @@
 using Microsoft;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using CIRLib;
 using CIRLib.ObjectModel.Models;
 using CIRLib.Persistence;
-using CIRLib.Test;
-using Xunit;
 
 namespace CIRLib.Test;
 public class CRUDModelOperationsTest
 {   
     [Fact]
-    public void TestCRUDOperations(){
+    public void TestCRUDOperations()
+    {
         CIRLibContext mockDbContext = new MockContextFactory().GetDbContext();
         InsertData(mockDbContext);
         UpdateData(mockDbContext);
@@ -21,30 +19,48 @@ public class CRUDModelOperationsTest
     
     public void InsertData(CIRLibContext mockDbContext)
     {              
-        var registryObj = new Registry{ RegistryId = "Registration Server A", Description ="Registration Server A description"};
-        var categoryObj = new Category{ 
-                                        CategoryId = "Asset", RegistryRefId = "Registration Server A", 
-                                        CategorySourceId = "MIMOSA OSA-EAI V3", Description = "MIMOSA OSA-EAI V3 description"
-                                    };
-        var entryObj = new Entry{  
-                                    IdInSource ="A101", CategoryRefId = "Asset", RegistryRefId = "Registration Server A", 
-                                    SourceId ="EAM/CMMS System B", CIRId ="ISO/IEC 9834-8",
-                                    SourceOwnerId ="Oil Company A", Name ="A101", Description ="A101 desc", Inactive = false
-                                };
-        var propertyObj = new Property{    
-                                        PropertyId="c",CategoryRefId = "Asset", RegistryRefId = "Registration Server A",
-                                        EntryRefIdInSource = "A101", PropertyValue="PV101", DataType ="DT101"
-                                    };
-        var propertyValueObj = new PropertyValue{ Key="PV101", Value="PV101", UnitOfMeasure ="Units",
-                                                    PropertyRefId = "c"
-                                            };
+        var registryObj = new Registry
+            { 
+                Id = Guid.NewGuid(),
+                RegistryId = "Registration Server A",
+                Description ="Registration Server A description"
+            };
+        var categoryObj = new Category
+            { 
+                Id = Guid.NewGuid(),
+                CategoryId = "Asset", RegistryId = "Registration Server A", 
+                CategorySourceId = "MIMOSA OSA-EAI V3",
+                Registry = registryObj,
+                Description = "MIMOSA OSA-EAI V3 description"
+            };
+        var entryObj = new Entry
+            {  
+                Id = Guid.NewGuid(),
+                IdInSource ="A101", CategoryId = "Asset", RegistryId = "Registration Server A",
+                Category = categoryObj,
+                Registry = registryObj,
+                SourceId ="EAM/CMMS System B", CIRId ="ISO/IEC 9834-8",
+                SourceOwnerId ="Oil Company A", Name ="A101", Description ="A101 desc", Inactive = false
+            };
+        var propertyObj = new Property
+            {   
+                Id = Guid.NewGuid(),
+                PropertyId="c",
+                Entry = entryObj,
+                EntryIdInSource = "A101", PropertyValue="PV101", DataType ="DT101"
+            };
+        var propertyValueObj = new PropertyValue
+            {
+                Id = Guid.NewGuid(),
+                Key="PV101", Value="VV101", UnitOfMeasure ="Units",
+                Property = propertyObj
+            };
 
         mockDbContext.Registry.Add(registryObj);
         mockDbContext.Category.Add(categoryObj);
         mockDbContext.Entry.Add(entryObj);
         mockDbContext.Property.Add(propertyObj);
         mockDbContext.PropertyValue.Add(propertyValueObj);
-
         mockDbContext.SaveChanges();
 
         Assert.Equal(mockDbContext.Registry.First().RegistryId, registryObj.RegistryId);
