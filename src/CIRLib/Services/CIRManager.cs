@@ -135,7 +135,6 @@ public class CIRManager
                 {
                     PropertyId = newPropObj.PropertyId,
                     EntryIdInSource = newPropObj.EntryIdInSource,
-                    PropertyValue = newPropObj.PropertyValue,
                     DataType = newPropObj.DataType
                 };
 

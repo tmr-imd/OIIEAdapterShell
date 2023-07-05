@@ -7,8 +7,8 @@ public record class PropertyValue : ModelObject
     public string Value { get; set; } = "";
     public string UnitOfMeasure { get; set; } = "";
 
-    [ForeignKey("Property")]
-    public Guid PropertyRefId {get; set;}
+    public Guid PropertyRefId { get; set; }
+    [ForeignKey("PropertyRefId")]
     public Property Property { get; set; } = null!;
     public string PropertyId { get; set; } = "";
 

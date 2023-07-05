@@ -138,7 +138,8 @@ public class CIRManagerTest
             IdInSource = EntryIdSample
         };
         var ListOfEntries = CIRManager.GetEquivalentEntries(newEntryObj, dbContext:dbContext);
-        Assert.Equal(EntryIdSample, ListOfEntries.First().IdInSource);
+        var count = dbContext.Entry.Where(a => a.CIRId == "CIRGroup1").Count();
+        Assert.Equal(count, ListOfEntries.Count());
     }
 
     public void GetEquivalentEntriesByCIRIdTest(CIRLibContext dbContext)

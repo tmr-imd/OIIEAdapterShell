@@ -4,7 +4,6 @@ namespace CIRLib.ObjectModel.Models;
 public record class Property : ModelObject
 {
     public string PropertyId { get; set; } = "";
-    public string PropertyValue { get; set; } = "";
     public string DataType { get; set; } = "";
     
     public Guid EntryRefId {get; set;}
