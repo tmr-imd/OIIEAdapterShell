@@ -1,0 +1,70 @@
+﻿@* @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers *@
+@using System.Text.Json;
+
+@inject NavigationManager navigation
+
+@implements IAsyncDisposable
+
+<div class="my-component">
+    <p>This component is defined in the <strong>Notifications.UI</strong> library.</p>
+    <div>
+        <p>Connection Id: @ConnectionId</p>
+        <button class="btn" @onclick="Test" disabled="@(!IsConnected)">Test</button>
+        <ul>
+        @foreach (var n in notifications)
+        {
+            <li>@n</li>
+        }
+        </ul>
+    </div>
+</div>
+
+@code {
+    private HubConnection hubConnection = null!;
+
+    private string ConnectionId { get; set; } = "";
+
+    private List<string> notifications = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(navigation.ToAbsoluteUri("/app/notifications-hub"))
+            @* .WithAutomaticReconnect() *@
+            .Build();
+        
+        hubConnection.On<string>("SyncConnectionId", async (connectionId) => {
+            ConnectionId = connectionId;
+            if (hubConnection.ConnectionId != ConnectionId) notifications.Add("Conn IDs do not match for some reason");
+            await InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<string, JsonDocument>("Notify", async (topic, message) =>
+        {
+            @* using var context = await factory.CreateDbContext( principal ); *@
+            @* await viewModel.Load(context); *@
+            notifications.Add(message.Deserialize<string>() ?? "Unknown message");
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task Test()
+    {
+        @* notifications.Add("Manually added test"); *@
+        await hubConnection.InvokeAsync("SendMessage", "test", $"Message sent at {DateTime.Now}");
+    }
+
+    public bool IsConnected => hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

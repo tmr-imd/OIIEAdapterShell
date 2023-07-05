@@ -37,6 +37,7 @@
     <ProjectReference Include="..\CIRLib.UI\CIRLib.UI.csproj" />
     <ProjectReference Include="..\Transformation\Transformation.csproj" />
     <ProjectReference Include="..\OiieSettings\OiieSettings.csproj" />
+    <ProjectReference Include="..\Notifications.UI\Notifications.UI.csproj" />
   </ItemGroup>
 
 	<Target Name="CheckForNpm" BeforeTargets="BuildCSS">

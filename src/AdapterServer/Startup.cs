@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.Json;
 using TaskQueueing.ObjectModel.Models;
 using System.Numerics;
+using Notifications.UI;
 
 namespace AdapterServer;
 
@@ -45,6 +46,7 @@ public class Startup
         app.UseHangfireDashboard();
 
         routes.MapBlazorHub();
+        routes.AddNotifications("/app/notifications-hub");
         routes.MapFallbackToPage("/_Host");
 
         routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request, ILogger<Startup> log) =>
@@ -122,6 +124,8 @@ public class Startup
         services.AddScoped<PublicationViewModel>();
         services.AddScoped<PublicationService>();
         services.AddScoped<ConfirmBODConfigViewModel>();
+
+        services.AddNotifications(builder.Configuration);
     }
 
     private static bool EmptyId(string id)
