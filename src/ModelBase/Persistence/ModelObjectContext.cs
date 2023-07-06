@@ -1,7 +1,7 @@
-using TaskQueueing.ObjectModel.Models;
+using ModelBase.ObjectModel;
 using Microsoft.EntityFrameworkCore;
 
-namespace TaskQueueing.Persistence;
+namespace ModelBase.Persistence;
 
 public abstract class ModelObjectContext : DbContext
 {

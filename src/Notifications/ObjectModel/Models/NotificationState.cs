@@ -1,4 +1,4 @@
-using TaskQueueing.ObjectModel.Models;
+using ModelBase.ObjectModel;
 
 namespace Notifications.ObjectModel.Models;
 

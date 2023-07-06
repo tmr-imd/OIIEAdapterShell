@@ -1,10 +1,7 @@
 using Notifications.ObjectModel;
 using Notifications.ObjectModel.Models;
-using TaskQueueing.ObjectModel.Models;
-using TaskQueueing.Persistence;
-using AdapterQueue.Persistence.Configuration;
-using System;
-using System.Collections.Generic;
+using ModelBase.Persistence;
+using ModelBase.Persistence.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Notifications.Persistence;

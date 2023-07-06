@@ -1,4 +1,4 @@
-using TaskQueueing.ObjectModel.Models;
+using ModelBase.ObjectModel;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;

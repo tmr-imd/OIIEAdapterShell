@@ -1,10 +1,10 @@
 ﻿using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.ObjectModel;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using System.Net.Mail;
 using System.Security.Cryptography;
-using System.Text.Json;
+using ModelBase.Persistence;
+using ModelBase.Persistence.Configuration;
 using AdapterQueue.Persistence.Configuration;
 
 namespace TaskQueueing.Persistence
