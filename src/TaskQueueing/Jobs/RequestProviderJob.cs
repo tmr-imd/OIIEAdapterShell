@@ -51,8 +51,16 @@ public class RequestProviderJob<TProcessJob, TRequest, TResponse>
 
         for (var requestMessage = await provider.ReadRequest(sessionId); requestMessage is not null; requestMessage = await provider.ReadRequest(sessionId))
         {
-            var exists = await context.Requests.AnyAsync(x => x.RequestId == requestMessage.Id);
-            if (exists) continue;
+            var exists = await context.Requests
+                .WhereReceived()
+                .Where(x => (x.State & (MessageState.Processing | MessageState.Processed)) != MessageState.Undefined)
+                .AnyAsync(x => x.RequestId == requestMessage.Id);
+            if (exists)
+            {
+                await provider.RemoveRequest(sessionId);
+                lastReadRequest = requestMessage.Id;
+                continue;
+            }
 
             var content = requestMessage.MessageContent.Deserialise<TRequest>();
 
