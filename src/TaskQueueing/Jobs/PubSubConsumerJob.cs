@@ -55,9 +55,15 @@ public class PubSubConsumerJob<TProcessJob, TContent>
 
             var exists = await context.Publications
                 .WhereReceived()
-                .AnyAsync(x => x.MessageId == publication.Id );
+                .Where(x => (x.State & (MessageState.Processing | MessageState.Processed)) != MessageState.Undefined)
+                .AnyAsync(x => x.MessageId == publication.Id);
 
-            if (exists) continue;
+            if (exists)
+            {
+                await consumer.RemovePublication(sessionId);
+                lastReadMessage = publication.Id;
+                continue;
+            }
 
             var storedPublication = new Publication()
             {
