@@ -12,47 +12,38 @@
 
 @implements IAsyncDisposable
 
-<div class="my-component">
-    <p>This component is defined in the <strong>Notifications.UI</strong> library.</p>
+<div class="">
+    <p>To be converted into a modal. Don't forget to remove the 'Test' button.</p>
     <div>
-        <p>Connection Id: @ConnectionId</p>
         <button class="btn" @onclick="Test" disabled="@(!IsConnected)">Test</button>
         <ul>
         @foreach (var n in notifications)
         {
-            <li>@n</li>
+            <li class="my-3">@(n.Data.Deserialize<string>()) <button class="btn" @onclick="() => MarkRead(n)" disabled="@(!IsConnected)">Mark Read</button></li>
         }
         </ul>
     </div>
 </div>
 
 @code {
-    private string ConnectionId { get; set; } = "";
+    private List<string> ConnectionId { get; set; } = new();
 
-    private List<string> notifications = new List<string>();
+    private List<Notification> notifications = new();
 
     protected override async Task OnInitializedAsync()
     {
-        ConnectionId = await NotificationsService.RegisterLocal("test", async notification => 
-        {
-            @* await viewModel.Load(context); *@
-            notifications.Add(notification.Data.Deserialize<string>() ?? "Unknown message");
-            await InvokeAsync(StateHasChanged);
-            using var context = await Factory.CreateDbContext(Principal);
-            var state = new NotificationState()
-            {
-                Id = Guid.NewGuid(),
-                NotificationRefId = notification.Id,
-                ReadState = ReadState.Read,
-                Principal = Principal?.Identity?.Name ?? ""
-            };
+        ConnectionId.Add(await NotificationsService.RegisterLocal("test", UpdateNotifications));
+        ConnectionId.Add(await NotificationsService.RegisterLocal("admin-important", UpdateNotifications));
+        ConnectionId.Add(await NotificationsService.RegisterLocal("publication-message-update", UpdateNotifications));
+        ConnectionId.Add(await NotificationsService.RegisterLocal("request-message-update", UpdateNotifications));
 
-            if (!string.IsNullOrWhiteSpace(state.Principal))
-            {
-                context.Add(state);
-                await context.SaveChangesAsync();
-            }
-        });
+        using var context = await Factory.CreateDbContext(Principal);
+        var who = Principal.Identity?.Name;
+        notifications = context.Notifications
+            .Where(n => n.ReadState != ReadState.Read)
+            .Where(n => !n.NotificationStates.Any(ns => ns.Principal == who && ns.ReadState == ReadState.Read) )
+            .OrderByDescending(n => n.DateCreated)
+            .ToList();
 
         await base.OnInitializedAsync();
     }
@@ -61,14 +52,45 @@
     {
         @* notifications.Add("Manually added test"); *@
         @* await hubConnection.InvokeAsync("SendMessage", "test", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}")); *@
-        NotificationsService.Notify(Scope.Internal, "test", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}"), ConnectionId);
+        NotificationsService.Notify(Scope.Local, "test", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}"), ConnectionId[0]);
+    }
+
+    private async void MarkRead(Notification notification)
+    {
+        using var context = await Factory.CreateDbContext(Principal);
+        var state = new NotificationState()
+        {
+            Id = Guid.NewGuid(),
+            NotificationRefId = notification.Id,
+            ReadState = ReadState.Read,
+            Principal = Principal?.Identity?.Name ?? ""
+        };
+
+        if (!string.IsNullOrWhiteSpace(state.Principal))
+        {
+            context.Add(state);
+            await context.SaveChangesAsync();
+        }
+
+        notifications.Remove(notification);
+        await InvokeAsync(StateHasChanged);
     }
 
     @* public bool IsConnected => hubConnection?.State == HubConnectionState.Connected; *@
-    public bool IsConnected => !string.IsNullOrWhiteSpace(ConnectionId);
+    public bool IsConnected => ConnectionId.Count() > 0;
 
     public async ValueTask DisposeAsync()
     {
-        await NotificationsService.Unregister(ConnectionId);
+        foreach (var conn in ConnectionId)
+        {
+            await NotificationsService.Unregister(conn);
+        }
+    }
+
+    private async void UpdateNotifications(Notification notification)
+    {
+        @* await viewModel.Load(context); *@
+        notifications.Insert(0, notification);
+        await InvokeAsync(StateHasChanged);
     }
 }

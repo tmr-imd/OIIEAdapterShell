@@ -1,0 +1,56 @@
+﻿@* @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers *@
+@using System.Text.Json;
+@using System.Security.Claims;
+@using Notifications.ObjectModel;
+@using Notifications.ObjectModel.Models;
+@using Notifications.Persistence;
+
+@inject ClaimsPrincipal Principal
+@inject INotificationService NotificationsService
+@inject NotificationsContextFactory Factory
+
+@implements IAsyncDisposable
+
+<span class="">(@Count)</span>
+
+@code {
+    private int Count { get; set; } = 0;
+    private List<string> ConnectionId { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ConnectionId.Add(await NotificationsService.RegisterLocal("admin-important", UpdateCount));
+        ConnectionId.Add(await NotificationsService.RegisterLocal("publication-message-update", UpdateCount));
+        ConnectionId.Add(await NotificationsService.RegisterLocal("request-message-update", UpdateCount));
+
+        using var context = await Factory.CreateDbContext(Principal);
+        // TODO: proper unread state per user/principal
+        var who = Principal.Identity?.Name;
+        Count = context.Notifications
+            .Where(n => n.ReadState != ReadState.Read)
+            .Where(n => !n.NotificationStates.Any(ns => ns.Principal == who && ns.ReadState == ReadState.Read) )
+            .Count();
+
+        await base.OnInitializedAsync();
+    }
+
+    @* public bool IsConnected => hubConnection?.State == HubConnectionState.Connected; *@
+    public bool IsConnected => ConnectionId.Count() > 0;
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var conn in ConnectionId)
+        {
+            await NotificationsService.Unregister(conn);
+        }
+    }
+
+    private async void UpdateCount(Notification notification)
+    {
+        var message = notification.Data.Deserialize<string>() ?? "Unknown message";
+        using var context = await Factory.CreateDbContext(Principal);
+        // TODO: proper unread state per user/principal
+        Count = context.Notifications.Where(n => n.ReadState != ReadState.Read).Count();
+        await InvokeAsync(StateHasChanged);
+    }
+}
