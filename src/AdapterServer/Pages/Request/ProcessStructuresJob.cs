@@ -13,13 +13,15 @@ using Oagis;
 using AdapterServer.Data;
 using Oiie.Settings;
 using AdapterServer.Extensions;
+using Notifications;
 using System.Text.Json;
 
 namespace AdapterServer.Pages.Request;
 
 public class ProcessStructuresJob : ProcessRequestResponseJob<StructureAssetsFilter, RequestStructures>
 {
-    public ProcessStructuresJob(JobContextFactory factory, ClaimsPrincipal principal) : base(factory, principal)
+    public ProcessStructuresJob(JobContextFactory factory, ClaimsPrincipal principal, INotificationService notifications)
+        : base(factory, principal, notifications)
     {
     }
 

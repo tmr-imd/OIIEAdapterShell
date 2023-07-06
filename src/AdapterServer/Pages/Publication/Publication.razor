@@ -4,11 +4,15 @@
 @using AdapterServer.Components;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
+@using Notifications
 
 @inject ILogger<Publication> Logger
 @inject PublicationViewModel viewModel
 @inject JobContextFactory factory
 @inject ClaimsPrincipal principal
+@inject INotificationService NotificationService
+
+@implements IAsyncDisposable
 
 <PageTitle>Publish/Subscribe - Adapter Shell</PageTitle>
 
@@ -151,10 +155,27 @@
     private bool notReady => viewModel.SessionId == "";
     string error = "";
     private string channelName = "pub-sub";
+    private string connectionId = "";
 
     [Parameter]
     [SupplyParameterFromQuery]
     public string? Edit { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        connectionId = await NotificationService.RegisterLocal("publication-message-update", async n => {
+            using var context = await factory.CreateDbContext(principal);
+            await viewModel.Load(context);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await base.OnInitializedAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await NotificationService.Unregister(connectionId);
+    }
 
     protected override async Task OnParametersSetAsync()
     {

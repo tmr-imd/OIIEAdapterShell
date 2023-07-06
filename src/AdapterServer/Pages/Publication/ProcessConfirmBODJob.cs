@@ -11,6 +11,7 @@ using System.Xml.Serialization;
 using AdapterServer.Data;
 using Oiie.Settings;
 using AdapterServer.Extensions;
+using Notifications;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -20,7 +21,8 @@ public class ProcessConfirmBODJob : ProcessPublicationJob<string>
 
     public SettingsService? Settings { get; set; } = new SettingsService();
 
-    public ProcessConfirmBODJob(JobContextFactory factory, ClaimsPrincipal principal) : base(factory, principal)
+    public ProcessConfirmBODJob(JobContextFactory factory, ClaimsPrincipal principal, INotificationService notifications)
+        : base(factory, principal, notifications)
     {
     }
 

@@ -11,6 +11,7 @@ using Oagis;
 using AdapterServer.Data;
 using Oiie.Settings;
 using AdapterServer.Extensions;
+using Notifications;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -18,7 +19,8 @@ public class ProcessNewStructuresJob : ProcessPublicationJob<NewStructureAsset>
 {
     public SettingsService? Settings { get; set; } = new SettingsService();
 
-    public ProcessNewStructuresJob(JobContextFactory factory, ClaimsPrincipal principal) : base(factory, principal)
+    public ProcessNewStructuresJob(JobContextFactory factory, ClaimsPrincipal principal, INotificationService notifications)
+        : base(factory, principal, notifications)
     {
     }
 

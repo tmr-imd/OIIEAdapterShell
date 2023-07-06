@@ -126,7 +126,7 @@ public class ManagePublicationViewModel
             await provider.CloseSession(ProviderSessionId);
 
         }
-        catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
+        catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault || ex.FaultType == IsbmFaultType.SessionFault)
         {
         }
 

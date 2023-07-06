@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Security.Claims;
@@ -30,14 +31,18 @@ public class NotificationService : INotificationService
     private readonly ClaimsPrincipal _principal;
     private readonly Uri _hubUrl;
 
-    public NotificationService(IHubContext<NotificationsHub, INotificationsClient> hubContext, ClaimsPrincipal principal, NavigationManager navigation)
+    public NotificationService(IHubContext<NotificationsHub, INotificationsClient> hubContext, ClaimsPrincipal principal, IServer server)
     {
         _hubContext = hubContext;
         _principal = principal;
         // Refer to https://swimburger.net/blog/dotnet/how-to-get-aspdotnet-core-server-urls for different
         // mechanisms for accessing the URL addresses of the application. We currently use the NavigationManger
         // as for the front-end, but we may actually be able to just use the internal addresses.
-        _hubUrl = navigation.ToAbsoluteUri("/app/notifications-hub");
+        // *Is there a safe default or should we throw an exception?
+        var address = server.Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault() ?? "http://localhost";
+        var uriBuilder = new UriBuilder(address);
+        uriBuilder.Path = "/app/notifications-hub";
+        _hubUrl = uriBuilder.Uri;
     }
 
     public async Task Notify<T>(Scope scope, string topic, T data, string origin)
