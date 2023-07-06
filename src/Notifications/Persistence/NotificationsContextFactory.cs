@@ -25,8 +25,11 @@ public class NotificationsContextFactory
         builder.UseSqlite($"Filename={defaultConnection}");
         var context = new NotificationsContext(builder.Options, who);
 
-        // await context.Database.EnsureCreatedAsync();
+#if DEBUG
+        await context.Database.EnsureCreatedAsync();
+#else
         await context.Database.MigrateAsync();
+#endif
 
         return context;
     }

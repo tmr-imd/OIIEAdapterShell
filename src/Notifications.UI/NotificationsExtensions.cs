@@ -23,7 +23,7 @@ public static class NotificationsExtensions
         var contextFactory = new NotificationsContextFactory(configuration);
         NotificationService.ContextFactory = contextFactory;
         services.AddSingleton(contextFactory);
-        services.AddSingleton<INotificationService>(new NotificationService());
+        services.AddScoped<INotificationService, NotificationService>();
     }
 
     public static void AddNotifications(this IEndpointRouteBuilder app, string path)

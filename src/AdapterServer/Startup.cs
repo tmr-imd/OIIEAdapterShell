@@ -125,7 +125,7 @@ public class Startup
         services.AddScoped<PublicationService>();
         services.AddScoped<ConfirmBODConfigViewModel>();
 
-        services.AddNotifications(builder.Configuration);
+        services.AddNotifications(Configuration);
     }
 
     private static bool EmptyId(string id)

@@ -1,9 +1,17 @@
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Client;
+using System.Security.Claims;
 using System.Text.Json;
+using Hangfire;
 using Notifications.ObjectModel;
 using Notifications.ObjectModel.Models;
 using Notifications.Persistence;
+using Notifications.Jobs;
 
 namespace Notifications.Services;
+
+using Internal;
 
 /// <summary>
 /// Default concrete implementation of the INotificationService interface.
@@ -16,7 +24,23 @@ public class NotificationService : INotificationService
 {
     public static NotificationsContextFactory ContextFactory { get; set; } = null!;
 
-    public async void Notify<T>(Scope scope, string topic, T data, string origin)
+    private static readonly Dictionary<string, HubConnection> _hubConnections = new();
+
+    private readonly IHubContext<NotificationsHub, INotificationsClient> _hubContext;
+    private readonly ClaimsPrincipal _principal;
+    private readonly Uri _hubUrl;
+
+    public NotificationService(IHubContext<NotificationsHub, INotificationsClient> hubContext, ClaimsPrincipal principal, NavigationManager navigation)
+    {
+        _hubContext = hubContext;
+        _principal = principal;
+        // Refer to https://swimburger.net/blog/dotnet/how-to-get-aspdotnet-core-server-urls for different
+        // mechanisms for accessing the URL addresses of the application. We currently use the NavigationManger
+        // as for the front-end, but we may actually be able to just use the internal addresses.
+        _hubUrl = navigation.ToAbsoluteUri("/app/notifications-hub");
+    }
+
+    public async Task Notify<T>(Scope scope, string topic, T data, string origin)
     {
         using var context = await ContextFactory.CreateDbContext(origin);
 
@@ -32,15 +56,77 @@ public class NotificationService : INotificationService
         context.SaveChanges();
 
         // TODO: Do specfic processing based on scope
+        switch (scope)
+        {
+            case Scope.Local:
+                await new InternalNotificationJob(_hubContext, _principal).SendMessage(topic, notification.Id.ToString());
+                break;
+            case Scope.Internal:
+                // XXX: need to apply to each replicant's queue
+                BackgroundJob.Enqueue<InternalNotificationJob>(x => x.SendMessage(topic, notification.Id.ToString(), null!));
+                break;
+            case Scope.External:
+                break;
+            case Scope.InternalAndExternal:
+                // XXX: need to apply to each replicant's queue
+                BackgroundJob.Enqueue<InternalNotificationJob>(x => x.SendMessage(topic, notification.ToString(), null!));
+                break;
+            case Scope.Undefined:
+            // Fall through to default
+            default:
+                break;
+        }
     }
 
-    public string RegisterLocal(string topic, Action<object> callback, params string[] todo)
+    public async Task<string> RegisterLocal(string topic, Action<Notification> callback, params string[] todo)
     {
-        throw new NotImplementedException();
+        var hubConnection = new HubConnectionBuilder()
+            .WithUrl(_hubUrl)
+            // .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<string>("SyncConnectionId", (connectionId) => {
+            // Not sure I actually need this, but possibly want to register specific topics for groupings.
+            if (hubConnection.ConnectionId != connectionId)
+            {
+                Console.WriteLine("Conn IDs do not match for some reason {} != {}", hubConnection.ConnectionId, connectionId);
+            }
+        });
+
+        hubConnection.On<string, string>("Notify", async (t, notificationId) =>
+        {
+            // XXX: does not yet check user read states (does it need to here?)
+            if (t == topic)
+            {
+                using var context = await ContextFactory.CreateDbContext("internal");
+                var notification = context.Notifications
+                    .Where(n => n.Id == Guid.Parse(notificationId) && n.ReadState != ReadState.Read)
+                    .FirstOrDefault();
+                if (notification is null) return;
+                await Task.Run(() => callback(notification));
+            }
+        });
+
+        await hubConnection.StartAsync();
+
+        if (hubConnection.ConnectionId is null)
+        {
+            await hubConnection.DisposeAsync();
+            throw new Exception("Failed to connect to SignalR hub for local notifications");
+        }
+
+        _hubConnections[hubConnection.ConnectionId] = hubConnection;
+
+        return hubConnection.ConnectionId;
     }
 
-    public void Unregister(string id)
+    public async Task Unregister(string id)
     {
-        throw new NotImplementedException();
+        if (!_hubConnections.ContainsKey(id)) return;
+        Console.WriteLine("NotificationsHub");
+
+        var hubConnection = _hubConnections[id];
+        _hubConnections.Remove(id);
+        await hubConnection.DisposeAsync();
     }
 }

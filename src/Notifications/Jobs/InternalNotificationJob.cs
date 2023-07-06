@@ -6,7 +6,7 @@ using Notifications.Services.Internal;
 
 namespace Notifications.Jobs;
 
-public class InternalNotificationJob
+public class InternalNotificationJob : INotificationsHub
 {
     private readonly IHubContext<NotificationsHub, INotificationsClient> _hubContext;
     private readonly ClaimsPrincipal _principal;
@@ -17,8 +17,14 @@ public class InternalNotificationJob
         _principal = principal;
     }
 
-    public async Task DoNotify()
+    public async Task SendMessage(string topic, string notificationId, Hangfire.Server.PerformContext? ctxt)
     {
-        await _hubContext.Clients.All.Notify("test", JsonSerializer.SerializeToDocument(new {Test = "example"}));
+        Console.WriteLine($"Notifying all for {topic}: {notificationId}");
+        await _hubContext.Clients.All.Notify(topic, notificationId);
+    }
+
+    public async Task SendMessage(string topic, string notificationId)
+    {
+        await SendMessage(topic, notificationId, null);
     }
 }
