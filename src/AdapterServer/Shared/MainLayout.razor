@@ -1,10 +1,10 @@
 ﻿@inherits LayoutComponentBase
-@inject AdapterServer.Shared.NavigationConfiguration navConfig
+@using AdapterServer.Shared;
 
 <PageTitle>AdapterServer</PageTitle>
 
 <div>
-    <DynamicComponent Type="navConfig.getSelectedComponent()"/>
+    <DynamicComponent Type="NavigationConfiguration.selectedComponent"/>
     <main class="container mx-auto py-6">
         <article class="content px-4">
             @Body

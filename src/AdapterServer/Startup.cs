@@ -92,7 +92,8 @@ public class Startup
         services.AddScoped<PublicationListViewModel>();
         services.AddScoped<PublicationViewModel>();
         services.AddScoped<ConfirmBODConfigViewModel>();
-        services.AddScoped<NavigationConfiguration>();
-        services.AddScoped<INavigationConfiguration, NavigationConfiguration>();
+
+        NavigationConfiguration.selectedComponent = (typeof(AdapterServer.Shared.NavMenu));
+        services.AddSingleton<INavigationConfiguration, NavigationConfiguration>();
     }
 }

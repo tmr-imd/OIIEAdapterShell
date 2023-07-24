@@ -5,7 +5,7 @@ namespace CIRLib.Persistence;
 
 public class JobContextDesignFactory : IDesignTimeDbContextFactory<CIRLibContext>
 {
-        public CIRLibContext CreateDbContext(string[] args)
+    public CIRLibContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<CIRLibContext>();
 

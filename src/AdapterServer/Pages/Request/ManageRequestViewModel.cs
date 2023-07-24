@@ -33,12 +33,15 @@ public class ManageRequestViewModel
     private readonly NavigationManager navigation;
     private readonly JobContextFactory factory;
     private readonly ClaimsPrincipal principal;
+    private readonly IScheduledJobsConfig jobScheduler;
 
-    public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal )
+    public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
+        IScheduledJobsConfig jobScheduler)
     {
         this.navigation = navigation;
         this.factory = factory;
         this.principal = principal;
+        this.jobScheduler = jobScheduler;
     }
 
     private async Task AddOrUpdateStoredSession()
@@ -156,27 +159,14 @@ public class ManageRequestViewModel
         await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
-        switch (MessageType)
-        {
-            case MessageTypes.JSON:
-                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
-                break;
-            case MessageTypes.ExampleBOD:
-                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id), Cron.Hourly);
-                break;
-            case MessageTypes.CCOM:
-                throw new Exception("Not yet implemented");
-        }
+        jobScheduler.ScheduleJobs(MessageType, Topic, providerSession.Id, consumerSession.Id);
 
         await AddOrUpdateStoredSession();
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
     {
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
+        jobScheduler.UnscheduleJobs();
 
         try
         {
@@ -200,8 +190,7 @@ public class ManageRequestViewModel
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
+        jobScheduler.UnscheduleJobs();
 
         try
         {
