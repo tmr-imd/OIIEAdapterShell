@@ -23,7 +23,6 @@ namespace CIRLIB.UI.Pages
             return new ObjModels.Property
             {
                 PropertyId = viewModel.PropertyId,
-                PropertyValue = viewModel.PropertyValue,
                 DataType = viewModel.DataType,
                 EntryIdInSource = viewModel.EntryId
             };

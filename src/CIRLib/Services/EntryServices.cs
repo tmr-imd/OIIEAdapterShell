@@ -23,6 +23,15 @@ public class EntryServices : CommonServices
     {
         IQueryable<ObjModels.Entry> Query = dbContext.Entry;
 
+        if(string.IsNullOrWhiteSpace(registryId) && string.IsNullOrWhiteSpace(categoryId) &&
+         string.IsNullOrWhiteSpace(entryId) && string.IsNullOrWhiteSpace(entrySourceId) &&
+         string.IsNullOrWhiteSpace(propertyId) && string.IsNullOrWhiteSpace(propertyValueKey) &&
+         string.IsNullOrWhiteSpace(CIRId) && string.IsNullOrWhiteSpace(categorySourceID))
+        {   
+            //If none of the filters are present we return all records.
+            return Query.ToList();
+        }
+
         if (!string.IsNullOrWhiteSpace(registryId))
         {
             Query = Query.Join(
@@ -182,7 +191,16 @@ public class EntryServices : CommonServices
             );
         }
 
-        return Query.ToList();
+        var entryList = Query.FirstOrDefault();
+        if(entryList != null && entryList.CIRId !=null)
+        {
+            return dbContext.Entry.Where(item => item.CIRId.Equals(entryList.CIRId)).ToList();
+        }
+        else
+        {
+            return Query.ToList();
+        }
+        
     }
     public void CreateNewEntry(ObjModels.Entry newEntry, CIRLibContext dbContext)
     {

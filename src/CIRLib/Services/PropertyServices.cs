@@ -95,7 +95,6 @@ public class PropertyServices : CommonServices
         var entryExists = CheckIfEntryExists(updateProperty.EntryIdInSource, dbContext, "update");
 
         var PropertyObj = dbContext.Property.Where(item => item.Id.Equals(Id)).First();
-        PropertyObj.PropertyValue = updateProperty.PropertyValue;
         PropertyObj.DataType = updateProperty.DataType;
         dbContext.SaveChanges();
     }

@@ -47,7 +47,8 @@ public class CRUDModelOperationsTest
                 Id = Guid.NewGuid(),
                 PropertyId="c",
                 Entry = entryObj,
-                EntryIdInSource = "A101", PropertyValue="PV101", DataType ="DT101"
+                EntryIdInSource = "A101",
+                DataType ="DT101"
             };
         var propertyValueObj = new PropertyValue
             {
@@ -95,10 +96,8 @@ public class CRUDModelOperationsTest
 
         //Property Table
         var props = mockDbContext.Property.Where(item => item.PropertyId.Contains("c")).First();
-        props.PropertyValue = "Updated PV101";
         mockDbContext.SaveChanges();
         var updated_props = mockDbContext.Property.Where(item => item.PropertyId.Contains("c")).First();
-        Assert.Equal(updated_props.PropertyValue,props.PropertyValue);
 
         //Property Value Table
         var prop_vals = mockDbContext.PropertyValue.Where(item => item.Key.Contains("PV101")).First();
