@@ -4,7 +4,6 @@ using AdapterServer.Data;
 using AdapterServer.Pages;
 using AdapterServer.Pages.Request;
 using AdapterServer.Pages.Publication;
-using AdapterServer.Shared;
 using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Jobs;
@@ -92,8 +91,5 @@ public class Startup
         services.AddScoped<PublicationListViewModel>();
         services.AddScoped<PublicationViewModel>();
         services.AddScoped<ConfirmBODConfigViewModel>();
-
-        NavigationConfiguration.selectedComponent = (typeof(AdapterServer.Shared.NavMenu));
-        services.AddSingleton<INavigationConfiguration, NavigationConfiguration>();
     }
 }
