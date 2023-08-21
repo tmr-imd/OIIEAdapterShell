@@ -1,4 +1,4 @@
-﻿@* @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers *@
+@* @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers *@
 @using System.Text.Json;
 @using System.Security.Claims;
 @using Notifications.ObjectModel;
@@ -9,17 +9,30 @@
 @inject NavigationManager Navigation
 @inject INotificationService NotificationsService
 @inject NotificationsContextFactory Factory
+@inject NotificationsJs Js
 
 @implements IAsyncDisposable
 
 <div class="">
-    <p>To be converted into a modal. Don't forget to remove the 'Test' button.</p>
     <div>
-        <button class="btn" @onclick="Test" disabled="@(!IsConnected)">Test</button>
+        <button class="btn" type="submit" @onclick="Test" disabled="@(!IsConnected)">Test</button>
+        <button class="btn" type="submit" @onclick="MarkReadAll" disabled="@(!IsConnected)">Mark All as Read</button>
         <ul>
         @foreach (var n in notifications)
         {
-            <li class="my-3">@(n.Data.Deserialize<string>()) <button class="btn" @onclick="() => MarkRead(n)" disabled="@(!IsConnected)">Mark Read</button></li>
+            <li class="border rounded shadow-sm hover:bg-gray-100 my-4 p-3 flex">
+                <div class="flex-auto">
+                    <h5 class="font-bold not-italic text-base tracking-tight pb-1 text-gray-900">General</h5>
+                    <p class="max-w-prose p-0 text-gray-600">@(n.Data.Deserialize<string>())</p>
+                </div>
+                <div>
+                    <button class="btn group ml-4 px-1" type="submit" @onclick="() => MarkRead(n)" disabled="@(!IsConnected)" title="Mark Read">
+                        <span class="sr-only">Mark Read</span><span class="h-4"><!-- For height/baseline alignment --></span>
+                        <svg class="h-5 w-6"  width="24" height="20" viewBox="0 2 24 20" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">  <circle cx="12" cy="12" r="2" />  <path d="M2 12l1.5 2a11 11 0 0 0 17 0l1.5 -2" />  <path d="M2 12l1.5 -2a11 11 0 0 1 17 0l1.5 2" /></svg>
+                        <svg class="h-5 w-6 absolute opacity-0 group-hover:opacity-100 transition-opacity"  width="24" height="20" viewBox="0 2 24 20" stroke-width="2" stroke="currentColor" fill="currentColor" stroke-linecap="round" stroke-linejoin="round">  <circle cx="12" cy="12" r="2" />  <path d="M2 12l1.5 2a11 11 0 0 0 17 0l1.5 -2" />  <path d="M2 12l1.5 -2a11 11 0 0 1 17 0l1.5 2" /></svg>
+                    </button>
+                </div>
+            </li>
         }
         </ul>
     </div>
@@ -52,7 +65,7 @@
     {
         @* notifications.Add("Manually added test"); *@
         @* await hubConnection.InvokeAsync("SendMessage", "test", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}")); *@
-        NotificationsService.Notify(Scope.Local, "test", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}"), ConnectionId[0]);
+        NotificationsService.Notify(Scope.Local, "admin-important", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}"), ConnectionId[0]);
     }
 
     private async void MarkRead(Notification notification)
@@ -74,6 +87,38 @@
 
         notifications.Remove(notification);
         await InvokeAsync(StateHasChanged);
+
+        await Js.UpdateCounter(notifications.Count, false);
+    }
+
+    private async void MarkReadAll()
+    {
+        using var context = await Factory.CreateDbContext(Principal);
+        var state = new NotificationState()
+        {
+            ReadState = ReadState.Read,
+            Principal = Principal?.Identity?.Name ?? ""
+        };
+        foreach (var notification in notifications)
+        {
+            state = state with
+            {
+                Id = Guid.NewGuid(),
+                NotificationRefId = notification.Id,
+            };
+
+            if (!string.IsNullOrWhiteSpace(state.Principal))
+            {
+                context.Add(state);
+            }
+
+        }
+
+        notifications.Clear();
+        await context.SaveChangesAsync();
+        await InvokeAsync(StateHasChanged);
+
+        await Js.UpdateCounter(0, false);        
     }
 
     @* public bool IsConnected => hubConnection?.State == HubConnectionState.Connected; *@
