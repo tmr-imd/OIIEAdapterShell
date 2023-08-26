@@ -54,23 +54,23 @@
     public string SearchPropertyValueFilter {get; set;} = "";
     void SearchForRegistry(ChangeEventArgs args)
     {
-        SearchRegistryFilter = (string) args.Value;
+        SearchRegistryFilter = (args.Value as string) ?? "";
     }
     void SearchForCategory(ChangeEventArgs args)
     {
-        SearchCategoryFilter = (string) args.Value;
+        SearchCategoryFilter = (args.Value as string) ?? "";
     }
     void SearchForEntry(ChangeEventArgs args)
     {
-        SearchEntryFilter = (string) args.Value;
+        SearchEntryFilter = (args.Value as string) ?? "";
     }
     void SearchForProperty(ChangeEventArgs args)
     {
-        SearchPropertyFilter = (string) args.Value;
+        SearchPropertyFilter = (args.Value as string) ?? "";
     }
     void SearchForPropertyValue(ChangeEventArgs args)
     {
-        SearchPropertyValueFilter = (string) args.Value;
+        SearchPropertyValueFilter = (args.Value as string) ?? "";
     }
     
 }

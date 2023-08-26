@@ -92,8 +92,8 @@
     }    
     async Task SearchForPropertyValue()
     {
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
         PropertyValueList = Services.GetPropertyValuesFromFilters(SearchFilterReg,
-            SearchFilterCat, SearchFilterEntry, SearchFilterProperty, SearchFilterPropertyValue, Context.Result);      
+            SearchFilterCat, SearchFilterEntry, SearchFilterProperty, SearchFilterPropertyValue, context);
     }
 }

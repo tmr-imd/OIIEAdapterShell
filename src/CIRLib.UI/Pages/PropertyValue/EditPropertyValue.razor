@@ -104,7 +104,7 @@
             using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
             if( Id is null)
             {
-                Services.CreateNewPropertyValue(viewModel,null,context);
+                Services.CreateNewPropertyValue(viewModel, dbContext: context);
             }
             else
             {

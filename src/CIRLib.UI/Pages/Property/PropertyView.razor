@@ -86,12 +86,11 @@
     void AddProperty(){
         NavigationManager.NavigateTo("/edit-property");
     }    
-    async Task SearchForProperty(){
-        
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+    async Task SearchForProperty()
+    {    
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
         PropertyList = Services.GetPropertiesFromFilters(SearchFilterReg, SearchFilterCat, SearchFilterEntry,
-            SearchFilterProperty, SearchFilterPropertyValue, Context.Result);
-
+            SearchFilterProperty, SearchFilterPropertyValue, context);
     }
 
 }

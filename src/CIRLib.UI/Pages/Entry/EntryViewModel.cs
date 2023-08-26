@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using ObjModels = CIRLib.ObjectModel.Models;
 
@@ -12,7 +13,11 @@ namespace CIRLIB.UI.Pages
         public string Name { get; set; } = "";
         public string Description { get; set; } = "";
         public bool Inactive { get; set; }
+        [Required(AllowEmptyStrings = false)]
+        [DisplayName("Category")]
         public string CategoryId { get; set; } = "";
+        [Required(AllowEmptyStrings = false)]
+        [DisplayName("Registry")]
         public string RegistryId { get; set; } = "";
 
         public static implicit operator ObjModels.Entry(EntryViewModel viewModel)

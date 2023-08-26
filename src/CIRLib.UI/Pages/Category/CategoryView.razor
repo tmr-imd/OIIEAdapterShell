@@ -89,9 +89,9 @@
     } 
     async Task SearchForCategory()
     {
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
         CategoryList = Services.GetCategoryFromFilters(SearchFilterEntry, SearchFilterReg,
-            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue, Context.Result);
+            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue, context);
     }
 
 }

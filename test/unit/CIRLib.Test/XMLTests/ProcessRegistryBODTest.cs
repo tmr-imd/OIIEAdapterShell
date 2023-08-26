@@ -48,6 +48,6 @@ public class ProcesRegistryBODTest : IClassFixture<BODTestSamples>
         var expected = XDocument.Parse(examples.ProcessRegistryBOD(bodId, senderId, creationDateTime));
         var deserialized = ProcessRegistryBOD.Deserialize<ProcessRegistryBOD>(expected);
 
-        Assert.Equal("Global Corporate Registry", deserialized.DataArea.CreateRegistry.Registry.First().ID.Value);
+        Assert.Equal("Global Corporate Registry", deserialized?.DataArea.CreateRegistry.Registry.First().ID.Value);
     }
 }

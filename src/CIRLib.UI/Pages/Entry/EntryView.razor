@@ -97,9 +97,14 @@
 
     async Task SearchForEntry()
     {
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
-        EntryList = Services.GetEntriesFromFilters(entryId:SearchFilterEntry, 
-        registryId:SearchFilterReg, categoryId:SearchFilterCat, propertyId:SearchFilterProperty,
-        propertyValueKey: SearchFilterPropertyValue,dbContext:Context.Result);      
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
+        EntryList = Services.GetEntriesFromFilters(
+            entryId: SearchFilterEntry,
+            registryId: SearchFilterReg,
+            categoryId: SearchFilterCat,
+            propertyId: SearchFilterProperty,
+            propertyValueKey: SearchFilterPropertyValue,
+            dbContext: context
+        );
     }
 }

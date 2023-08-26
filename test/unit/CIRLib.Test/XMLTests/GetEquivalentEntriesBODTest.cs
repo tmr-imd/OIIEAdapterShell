@@ -57,7 +57,7 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
 
         var bod = reader.AsBod<GetEquivalentEntriesBOD>();
         Assert.NotNull(bod);
-        Assert.Equal("Enterprise", bod.DataArea.GetEquivalentEntries.EntryIdentifier.First().RegistryID.Value);
+        Assert.Equal("Enterprise", bod?.DataArea.GetEquivalentEntries.EntryIdentifier.First().RegistryID.Value);
     }
 
 }

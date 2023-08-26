@@ -85,9 +85,8 @@
 
     async Task SearchForRegistry()
     {
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
         RegistryList = Services.GetRegistryFromFilters(SearchFilterEntry, SearchFilterReg,
-            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue ,Context.Result);
-
+            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue, context);
     }
 }
