@@ -19,12 +19,12 @@ public class JobSchedulerForStructures : IScheduledJobsConfig
         switch (messageType)
         {
             case MessageTypes.JSON:
-                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSessionId), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSessionId), Cron.Hourly);
+                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSessionId, null!), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSessionId, null!), Cron.Hourly);
                 break;
             case MessageTypes.ExampleBOD:
-                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSessionId), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSessionId), Cron.Hourly);
+                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSessionId, null!), Cron.Hourly);
+                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSessionId, null!), Cron.Hourly);
                 break;
             case MessageTypes.CCOM:
                 throw new Exception("Not yet implemented");
