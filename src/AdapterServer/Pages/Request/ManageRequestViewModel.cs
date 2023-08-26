@@ -1,4 +1,4 @@
-﻿using AdapterServer.Data;
+﻿using AdapterServer.Shared;
 using Oiie.Settings;
 using Hangfire;
 using Isbm2Client.Interface;
@@ -13,10 +13,6 @@ using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Request;
 
-using RequestJobJSON = RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
-using ResponseJobJSON = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
-using RequestJobBOD = RequestProviderJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
-using ResponseJobBOD = RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
 using MessageTypes = RequestViewModel.MessageTypes;
 
 public class ManageRequestViewModel
@@ -33,12 +29,15 @@ public class ManageRequestViewModel
     private readonly NavigationManager navigation;
     private readonly JobContextFactory factory;
     private readonly ClaimsPrincipal principal;
+    private readonly IScheduledJobsConfig<ManageRequestViewModel> jobScheduler;
 
-    public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal )
+    public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
+        IScheduledJobsConfig<ManageRequestViewModel> jobScheduler)
     {
         this.navigation = navigation;
         this.factory = factory;
         this.principal = principal;
+        this.jobScheduler = jobScheduler;
     }
 
     public async Task LoadSettings(SettingsService settings, string channelName)
@@ -106,27 +105,14 @@ public class ManageRequestViewModel
         await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
-        switch (MessageType)
-        {
-            case MessageTypes.JSON:
-                RecurringJob.AddOrUpdate<RequestJobJSON>("CheckForRequests", x => x.CheckForRequests(providerSession.Id, null!), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobJSON>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id, null!), Cron.Hourly);
-                break;
-            case MessageTypes.ExampleBOD:
-                RecurringJob.AddOrUpdate<RequestJobBOD>("CheckForRequests", x => x.CheckForRequests(providerSession.Id, null!), Cron.Hourly);
-                RecurringJob.AddOrUpdate<ResponseJobBOD>("CheckForResponses", x => x.CheckForResponses(consumerSession.Id, null!), Cron.Hourly);
-                break;
-            case MessageTypes.CCOM:
-                throw new Exception("Not yet implemented");
-        }
+        jobScheduler.ScheduleJobs(Topic, providerSession.Id, consumerSession.Id, MessageType);
 
         await AddOrUpdateStoredSession();
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
     {
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
+        jobScheduler.UnscheduleJobs();
 
         try
         {
@@ -150,8 +136,7 @@ public class ManageRequestViewModel
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
-        RecurringJob.RemoveIfExists("CheckForRequests");
-        RecurringJob.RemoveIfExists("CheckForResponses");
+        jobScheduler.UnscheduleJobs();
 
         try
         {
