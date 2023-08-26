@@ -8,7 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Concrete adapter implementations can add customisation by subclassing
 // AdapterServer.Startup, or by customising directly in Program.cs
 
-NavigationConfiguration.selectedComponent = typeof(AdapterServer.Shared.NavMenu);
 builder.Services.AddSingleton<INavigationConfiguration, NavigationConfiguration>();
 builder.Services.AddSingleton<IScheduledJobsConfig<ManageRequestViewModel>, JobSchedulerForStructures>();
 builder.Services.AddSingleton<IScheduledJobsConfig<ManagePublicationViewModel>, JobSchedulerForPubStructures>();
