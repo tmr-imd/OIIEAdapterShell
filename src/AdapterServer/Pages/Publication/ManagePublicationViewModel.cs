@@ -1,4 +1,4 @@
-﻿using AdapterServer.Data;
+﻿using AdapterServer.Shared;
 using Oiie.Settings;
 using Hangfire;
 using Isbm2Client.Interface;
@@ -28,12 +28,15 @@ public class ManagePublicationViewModel
     private readonly NavigationManager navigation;
     private readonly JobContextFactory factory;
     private readonly ClaimsPrincipal principal;
+    private readonly IScheduledJobsConfig<ManagePublicationViewModel> jobScheduler;
 
-    public ManagePublicationViewModel(NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal)
+    public ManagePublicationViewModel(NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
+        IScheduledJobsConfig<ManagePublicationViewModel> jobScheduler)
     {
         this.navigation = navigation;
         this.factory = factory;
         this.principal = principal;
+        this.jobScheduler = jobScheduler;
     }
 
     public async Task Load(SettingsService settings, string channelName)
@@ -106,26 +109,14 @@ public class ManagePublicationViewModel
         await Save(settings, channelName);
 
         // Setup recurring tasks!
-        switch (MessageType)
-        {
-            case MessageTypes.JSON:
-                RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessNewStructuresJob, NewStructureAsset>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Hourly);
-                break;
-            case MessageTypes.ExampleBOD:
-                RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessSyncStructureAssetsJob, System.Xml.Linq.XDocument>>("PollNewStructureAssets", x => x.PollSubscription(consumerSession.Id, null!), Cron.Hourly);
-                break;
-            case MessageTypes.CCOM:
-                throw new Exception("Not yet implemented");
-        }
-        RecurringJob.AddOrUpdate<PubSubConsumerJob<ProcessConfirmBODJob, string>>("PollConfirmBOD", x => x.PollSubscription(confirmationSession.Id, null!), Cron.Hourly);
+        jobScheduler.ScheduleJobs(Topic, ProviderSessionId, ConsumerSessionId, (MessageType, ConfirmationSessionId));
 
         await AddOrUpdateStoredSession();
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)
     {
-        RecurringJob.RemoveIfExists("PollNewStructureAssets");
-        RecurringJob.RemoveIfExists("PollConfirmBOD");
+        jobScheduler.UnscheduleJobs();
 
         try
         {
@@ -149,8 +140,7 @@ public class ManagePublicationViewModel
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
-        RecurringJob.RemoveIfExists("PollNewStructureAssets");
-        RecurringJob.RemoveIfExists("PollConfirmBOD");
+        jobScheduler.UnscheduleJobs();
 
         try
         {

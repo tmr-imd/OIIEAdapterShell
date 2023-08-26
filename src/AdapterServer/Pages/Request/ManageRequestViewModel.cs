@@ -1,4 +1,4 @@
-﻿using AdapterServer.Data;
+﻿using AdapterServer.Shared;
 using Oiie.Settings;
 using Hangfire;
 using Isbm2Client.Interface;
@@ -13,10 +13,6 @@ using TaskQueueing.Persistence;
 
 namespace AdapterServer.Pages.Request;
 
-using RequestJobJSON = RequestProviderJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
-using ResponseJobJSON = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
-using RequestJobBOD = RequestProviderJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
-using ResponseJobBOD = RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
 using MessageTypes = RequestViewModel.MessageTypes;
 
 public class ManageRequestViewModel
@@ -33,10 +29,10 @@ public class ManageRequestViewModel
     private readonly NavigationManager navigation;
     private readonly JobContextFactory factory;
     private readonly ClaimsPrincipal principal;
-    private readonly IScheduledJobsConfig jobScheduler;
+    private readonly IScheduledJobsConfig<ManageRequestViewModel> jobScheduler;
 
     public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
-        IScheduledJobsConfig jobScheduler)
+        IScheduledJobsConfig<ManageRequestViewModel> jobScheduler)
     {
         this.navigation = navigation;
         this.factory = factory;
@@ -109,7 +105,7 @@ public class ManageRequestViewModel
         await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
-        jobScheduler.ScheduleJobs(MessageType, Topic, providerSession.Id, consumerSession.Id);
+        jobScheduler.ScheduleJobs(Topic, providerSession.Id, consumerSession.Id, MessageType);
 
         await AddOrUpdateStoredSession();
     }
