@@ -22,9 +22,8 @@
     <thead class="bg-gray-100">
         <tr>
             <th scope="col">Property Id</th>
-            <th scope="col">Property Value</th>
             <th scope="col">Property DataType</th>
-            <th scope="col">Entry Ref Id</th>
+            <th scope="col">Entry Id</th>
             <th scope="col">Created By</th> 
             <th scope="col">Date Created</th>
             <th scope="col">Modified By</th> 
@@ -38,9 +37,8 @@
         {
             <tr>
                 <td>@Property.PropertyId</td>
-                <td>@Property.PropertyValue</td>
                 <td>@Property.DataType</td>
-                <td>@Property.EntryRefIdInSource</td>
+                <td>@Property.EntryIdInSource</td>
                 <td>@Property.CreatedBy</td>
                 <td>@Property.DateCreated</td>
                 <td>@Property.ModifiedBy</td>
@@ -88,12 +86,11 @@
     void AddProperty(){
         NavigationManager.NavigateTo("/edit-property");
     }    
-    async Task SearchForProperty(){
-        
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+    async Task SearchForProperty()
+    {    
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
         PropertyList = Services.GetPropertiesFromFilters(SearchFilterReg, SearchFilterCat, SearchFilterEntry,
-            SearchFilterProperty, SearchFilterPropertyValue, Context.Result);
-
+            SearchFilterProperty, SearchFilterPropertyValue, context);
     }
 
 }

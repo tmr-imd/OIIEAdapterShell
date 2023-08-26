@@ -81,17 +81,19 @@
         await base.OnInitializedAsync();
     }
     
-    void EditPropertyValue(Guid Id){
+    void EditPropertyValue(Guid Id)
+    {
         NavigationManager.NavigateTo($"/edit-property-value/{Id}");
     }
 
-    void AddPropertyValue(){
+    void AddPropertyValue()
+    {
         NavigationManager.NavigateTo("/edit-property-value");
     }    
     async Task SearchForPropertyValue()
     {
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
         PropertyValueList = Services.GetPropertyValuesFromFilters(SearchFilterReg,
-            SearchFilterCat, SearchFilterEntry, SearchFilterProperty, SearchFilterPropertyValue, Context.Result);      
+            SearchFilterCat, SearchFilterEntry, SearchFilterProperty, SearchFilterPropertyValue, context);
     }
 }

@@ -22,8 +22,7 @@ namespace CIRLIB.UI.Pages
             return new ObjModels.Registry 
             { 
                 RegistryId = viewModel.RegistryId,
-                Description = viewModel.Description,
-                Id = Guid.NewGuid()
+                Description = viewModel.Description
             };
         }
 

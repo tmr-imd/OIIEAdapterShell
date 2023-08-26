@@ -37,7 +37,7 @@
             <tr>
                 <td>@Category.CategoryId</td>
                 <td>@Category.CategorySourceId</td>
-                <td>@Category.RegistryRefId</td>
+                <td>@Category.RegistryId</td>
                 <td>@Category.Description</td>
                 <td>@Category.CreatedBy</td>
                 <td>@Category.DateCreated</td>
@@ -89,9 +89,9 @@
     } 
     async Task SearchForCategory()
     {
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
+        using var context = await Factory.CreateDbContext(new ClaimsPrincipal());
         CategoryList = Services.GetCategoryFromFilters(SearchFilterEntry, SearchFilterReg,
-            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue, Context.Result);
+            SearchFilterCat, SearchFilterProperty, SearchFilterPropertyValue, context);
     }
 
 }

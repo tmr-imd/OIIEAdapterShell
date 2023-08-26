@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using ObjModels = CIRLib.ObjectModel.Models;
 
@@ -12,8 +13,12 @@ namespace CIRLIB.UI.Pages
         public string Name { get; set; } = "";
         public string Description { get; set; } = "";
         public bool Inactive { get; set; }
-        public string CategoryRefId { get; set; } = "";
-        public string RegistryRefId { get; set; } = "";
+        [Required(AllowEmptyStrings = false)]
+        [DisplayName("Category")]
+        public string CategoryId { get; set; } = "";
+        [Required(AllowEmptyStrings = false)]
+        [DisplayName("Registry")]
+        public string RegistryId { get; set; } = "";
 
         public static implicit operator ObjModels.Entry(EntryViewModel viewModel)
         {
@@ -26,9 +31,8 @@ namespace CIRLIB.UI.Pages
                 Name = viewModel.Name,
                 Description = viewModel.Description,
                 Inactive = viewModel.Inactive,
-                CategoryRefId = viewModel.CategoryRefId,
-                RegistryRefId = viewModel.RegistryRefId,
-                Id = Guid.NewGuid()
+                CategoryId = viewModel.CategoryId,
+                RegistryId = viewModel.RegistryId
             };
         }
     }

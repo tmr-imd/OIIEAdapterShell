@@ -19,35 +19,35 @@ public class CategoryServices : CommonServices
         return DbContext.Category.Where(item => item.Id.Equals(Id)).First(); 
     }
     
-    public List<ObjModels.Category> GetCategoryFromFilters(string EntryId, string RegistryId, string CategoryId,
-        string PropertyId, string PropertyValueKey, CIRLibContext DbContext)
+    public List<ObjModels.Category> GetCategoryFromFilters(string entryId, string registryId, string categoryId,
+        string propertyId, string propertyValueKey, CIRLibContext dbContext)
     {   
-        IQueryable<ObjModels.Category> Query = DbContext.Category;
+        IQueryable<ObjModels.Category> Query = dbContext.Category;
 
-        if(!string.IsNullOrWhiteSpace(RegistryId))
+        if(!string.IsNullOrWhiteSpace(registryId))
         {
             Query = Query.Join(
-                DbContext.Registry, 
+                dbContext.Registry, 
                 c => c.RegistryRefId,                
-                r => r.RegistryId,
+                r => r.Id,
                 (c,r) => new 
                 {
                     Category = c,
                     Registry = r
                 }
             ).Where(
-                joinResult => joinResult.Registry.RegistryId == RegistryId
+                joinResult => joinResult.Registry.RegistryId == registryId
             )
             .Select(
                 joinResult => joinResult.Category
             );
         }
 
-        if(!string.IsNullOrWhiteSpace(EntryId))
+        if(!string.IsNullOrWhiteSpace(entryId))
         {
             Query = Query.Join(
-                DbContext.Entry, 
-                c => c.CategoryId,
+                dbContext.Entry, 
+                c => c.Id,
                 e => e.CategoryRefId,
                 (c,e) => new 
                 {
@@ -55,28 +55,28 @@ public class CategoryServices : CommonServices
                     Entry = e
                 }
             ).Where(
-                joinResult => joinResult.Entry.IdInSource == EntryId
+                joinResult => joinResult.Entry.IdInSource == entryId
             )
             .Select(
                 joinResult => joinResult.Category
             );
         }        
 
-        if(!string.IsNullOrWhiteSpace(PropertyId))
+        if(!string.IsNullOrWhiteSpace(propertyId))
         {
-            if(string.IsNullOrWhiteSpace(PropertyValueKey))
+            if(string.IsNullOrWhiteSpace(propertyValueKey))
             {
                 Query = Query.Join(
-                    DbContext.Property, 
-                    c => c.CategoryId,
-                    p => p.CategoryRefId,
+                    dbContext.Property, 
+                    c => c.Id,
+                    p => p.Entry.CategoryRefId,
                     (c,p) => new 
                     {
                         Category = c,
                         Property = p
                     }
                 ).Where(
-                    joinResult => joinResult.Property.PropertyId == PropertyId
+                    joinResult => joinResult.Property.PropertyId == propertyId
                 ).Select(
                     joinResult => joinResult.Category
                 ); 
@@ -84,17 +84,17 @@ public class CategoryServices : CommonServices
             else
             {
                 Query = Query.Join(
-                    DbContext.Property, 
-                    c => c.CategoryId,
-                    p => p.CategoryRefId,
+                    dbContext.Property, 
+                    c => c.Id,
+                    p => p.Entry.CategoryRefId,
                     (c,p) => new 
                     {
                         Category = c,
                         Property = p
                     }
                 ).Join(
-                    DbContext.PropertyValue, 
-                    p => p.Property.PropertyId,
+                    dbContext.PropertyValue, 
+                    p => p.Property.Id,
                     pv => pv.PropertyRefId,
                     (p,pv) => new 
                     {
@@ -103,28 +103,28 @@ public class CategoryServices : CommonServices
                         PropertyValue = pv
                     }
                 ).Where(
-                    joinResult => joinResult.PropertyValue.Key == PropertyValueKey
+                    joinResult => joinResult.PropertyValue.Key == propertyValueKey
                 ).Where(
-                    joinResult => joinResult.Property.PropertyId == PropertyId
+                    joinResult => joinResult.Property.PropertyId == propertyId
                 ).Select(
                     joinResult => joinResult.Category
                 );           
             }
         }
-        else if(string.IsNullOrWhiteSpace(PropertyId) && !string.IsNullOrWhiteSpace(PropertyValueKey))
+        else if(string.IsNullOrWhiteSpace(propertyId) && !string.IsNullOrWhiteSpace(propertyValueKey))
         {
             Query = Query.Join(
-                DbContext.Property, 
-                c => c.CategoryId,
-                p => p.CategoryRefId,
+                dbContext.Property, 
+                c => c.Id,
+                p => p.Entry.CategoryRefId,
                 (c,p) => new 
                 {
                     Category = c,
                     Property = p
                 }
             ).Join(
-                DbContext.PropertyValue, 
-                p => p.Property.PropertyId,
+                dbContext.PropertyValue, 
+                p => p.Property.Id,
                 pv => pv.PropertyRefId,
                 (p,pv) => new 
                 {
@@ -133,38 +133,43 @@ public class CategoryServices : CommonServices
                     PropertyValue = pv
                 }
             ).Where(
-                joinResult => joinResult.PropertyValue.Key == PropertyValueKey
+                joinResult => joinResult.PropertyValue.Key == propertyValueKey
             ).Select(
                 joinResult => joinResult.Category
             );           
         }
         
-        if(!string.IsNullOrWhiteSpace(CategoryId))
+        if(!string.IsNullOrWhiteSpace(categoryId))
         {
             Query = Query.Where(
-                joinResult => joinResult.CategoryId == CategoryId
+                joinResult => joinResult.CategoryId == categoryId
                 );
         }
         return Query.ToList();
     }
 
-    public void CreateNewCategory(ObjModels.Category NewCategory, CIRLibContext DbContext )
+    public void CreateNewCategory(ObjModels.Category newCategory, CIRLibContext dbContext )
     {
-        var registryExists = CheckIfRegistryExists(NewCategory.RegistryRefId, DbContext, "create");
-        if(!registryExists)
+        var registryObjExists = CheckIfRegistryExists(newCategory.RegistryId, dbContext, "create");
+        if(registryObjExists == null)
         {
             //If Registry does not exists, we create one
             var regObj = new ObjModels.Registry()
             {
-                RegistryId = NewCategory.RegistryRefId,
+                RegistryId = newCategory.RegistryId,
                 Id = Guid.NewGuid()
             };
-            DbContext.Registry.Add(regObj);
+            dbContext.Registry.Add(regObj);
+            newCategory.Registry = regObj;
+        }
+        else
+        {
+            newCategory.Registry = registryObjExists;
         }
 
-        NewCategory.Id = Guid.NewGuid();
-        DbContext.Category.Add(NewCategory);
-        DbContext.SaveChanges();
+        newCategory.Id = Guid.NewGuid();
+        dbContext.Category.Add(newCategory);
+        dbContext.SaveChanges();
     }
     public void UpdateCategory(Guid id, ObjModels.Category updateCategory, CIRLibContext dbContext )
     {

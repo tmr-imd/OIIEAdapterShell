@@ -15,37 +15,37 @@ public class PropertyServices : CommonServices
     {     
         return DbContext.Property.Where(item => item.Id.Equals(Id)).First(); 
     }
-    public List<ObjModels.Property> GetPropertiesFromFilters(string RegistryId, string CategoryId, string EntryId,
-        string PropertyId, string PropertyValueKey, CIRLibContext DbContext)
+    public List<ObjModels.Property> GetPropertiesFromFilters(string registryId, string categoryId, string entryId,
+        string propertyId, string propertyValueKey, CIRLibContext dbContext)
     {     
-       IQueryable<ObjModels.Property> Query = DbContext.Property;
+       IQueryable<ObjModels.Property> Query = dbContext.Property;
 
-        if(!string.IsNullOrWhiteSpace(RegistryId))
+        if(!string.IsNullOrWhiteSpace(registryId))
         {
             Query = Query.Where(
-                    Result => Result.RegistryRefId == RegistryId
+                    Result => Result.Entry.Category.Registry.RegistryId == registryId
                 );
         }
 
-        if(!string.IsNullOrWhiteSpace(CategoryId))
+        if(!string.IsNullOrWhiteSpace(categoryId))
         {
             Query = Query.Where(
-                    Result => Result.CategoryRefId == CategoryId
+                    Result => Result.Entry.Category.CategoryId == categoryId
                 );
         }
 
-        if(!string.IsNullOrWhiteSpace(EntryId))
+        if(!string.IsNullOrWhiteSpace(entryId))
         {
             Query = Query.Where(
-                    Result => Result.EntryRefIdInSource == EntryId
+                    Result => Result.EntryIdInSource == entryId
                 );
         }
 
-        if(!string.IsNullOrWhiteSpace(PropertyValueKey))
+        if(!string.IsNullOrWhiteSpace(propertyValueKey))
         {
             Query = Query.Join(
-                    DbContext.PropertyValue, 
-                    p => p.PropertyId,
+                    dbContext.PropertyValue, 
+                    p => p.Id,
                     pv => pv.PropertyRefId,
                     (p,pv) => new 
                     {
@@ -53,16 +53,16 @@ public class PropertyServices : CommonServices
                         PropertyValue = pv
                     }
                 ).Where(
-                    joinResult => joinResult.PropertyValue.Key == PropertyValueKey
+                    joinResult => joinResult.PropertyValue.Key == propertyValueKey
                 ).Select(
                     joinResult => joinResult.Property
                 );
         }
 
-        if(!string.IsNullOrWhiteSpace(PropertyId))
+        if(!string.IsNullOrWhiteSpace(propertyId))
         {
             Query = Query.Where(
-                Result => Result.PropertyId == PropertyId
+                Result => Result.PropertyId == propertyId
             );
         }
         return Query.ToList();
@@ -70,14 +70,18 @@ public class PropertyServices : CommonServices
 
     public void CreateNewProperty(ObjModels.Property newProperty, CIRLibContext dbContext)
     {            
-        var entryExists = CheckIfEntryExists(newProperty.EntryRefIdInSource, dbContext, "create");
-        if(entryExists == null)
+        var entryObjExists = CheckIfEntryExists(newProperty.EntryIdInSource, dbContext, "create");
+        if(entryObjExists == null)
         {
-            var entryObj = new ObjModels.Entry()
-            {
-                IdInSource = newProperty.EntryRefIdInSource
-            };
-            dbContext.Entry.Add(entryObj);
+            //We expect a valid EntryIdInSource to be provided.
+            //Otherwise, we error out.
+
+            // We can create an Entry on the fly but the CategoryRefId and RegistryRefId is not available.
+            throw new ArgumentException("EntryIdInSource is not Valid.");
+        }
+        else
+        {
+            newProperty.Entry = entryObjExists;
         }
         
         newProperty.Id = Guid.NewGuid();
@@ -86,12 +90,11 @@ public class PropertyServices : CommonServices
     }
     public void UpdateProperty(Guid Id, ObjModels.Property updateProperty, CIRLibContext dbContext)
     {
-        _ = CheckIfRegistryExists(updateProperty.RegistryRefId, dbContext, "update");
-        _ = CheckIfCategoryExists(updateProperty.CategoryRefId, dbContext, "update");
-        var entryExists = CheckIfEntryExists(updateProperty.EntryRefIdInSource, dbContext, "update");
+        _ = CheckIfRegistryExists(updateProperty.Entry.Category.Registry.RegistryId, dbContext, "update");
+        _ = CheckIfCategoryExists(updateProperty.Entry.Category.CategoryId, dbContext, "update");
+        var entryExists = CheckIfEntryExists(updateProperty.EntryIdInSource, dbContext, "update");
 
         var PropertyObj = dbContext.Property.Where(item => item.Id.Equals(Id)).First();
-        PropertyObj.PropertyValue = updateProperty.PropertyValue;
         PropertyObj.DataType = updateProperty.DataType;
         dbContext.SaveChanges();
     }

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CIRLib.Migrations
 {
     /// <inheritdoc />
-    public partial class CIRModelCreation : Migration
+    public partial class CIRLibInitialMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,9 +15,9 @@ namespace CIRLib.Migrations
                 name: "Registry",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     RegistryId = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -25,18 +25,19 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Registry", x => x.RegistryId);
+                    table.PrimaryKey("PK_Registry", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Category",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CategoryId = table.Column<string>(type: "TEXT", nullable: false),
-                    RegistryRefId = table.Column<string>(type: "TEXT", nullable: false),
+                    RegistryRefId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RegistryId = table.Column<string>(type: "TEXT", nullable: false),
                     SourceId = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -44,12 +45,12 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Category", x => x.CategoryId);
+                    table.PrimaryKey("PK_Category", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Category_Registry_RegistryRefId",
                         column: x => x.RegistryRefId,
                         principalTable: "Registry",
-                        principalColumn: "RegistryId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -57,6 +58,7 @@ namespace CIRLib.Migrations
                 name: "Entry",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     IdInSource = table.Column<string>(type: "TEXT", nullable: false),
                     SourceId = table.Column<string>(type: "TEXT", nullable: false),
                     CIRId = table.Column<string>(type: "TEXT", nullable: false),
@@ -64,9 +66,10 @@ namespace CIRLib.Migrations
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
                     Inactive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CategoryRefId = table.Column<string>(type: "TEXT", nullable: false),
-                    RegistryRefId = table.Column<string>(type: "TEXT", nullable: false),
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CategoryRefId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RegistryRefId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CategoryId = table.Column<string>(type: "TEXT", nullable: false),
+                    RegistryId = table.Column<string>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -74,18 +77,18 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Entry", x => x.IdInSource);
+                    table.PrimaryKey("PK_Entry", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Entry_Category_CategoryRefId",
                         column: x => x.CategoryRefId,
                         principalTable: "Category",
-                        principalColumn: "CategoryId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Entry_Registry_RegistryRefId",
                         column: x => x.RegistryRefId,
                         principalTable: "Registry",
-                        principalColumn: "RegistryId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -93,13 +96,14 @@ namespace CIRLib.Migrations
                 name: "Property",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     PropertyId = table.Column<string>(type: "TEXT", nullable: false),
                     PropertyValue = table.Column<string>(type: "TEXT", nullable: false),
                     DataType = table.Column<string>(type: "TEXT", nullable: false),
-                    CategoryRefId = table.Column<string>(type: "TEXT", nullable: false),
-                    RegistryRefId = table.Column<string>(type: "TEXT", nullable: false),
-                    EntryRefIdInSource = table.Column<string>(type: "TEXT", nullable: false),
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    EntryRefId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    EntryIdInSource = table.Column<string>(type: "TEXT", nullable: false),
+                    CategoryId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    RegistryId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -107,36 +111,35 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Property", x => x.PropertyId);
+                    table.PrimaryKey("PK_Property", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Property_Category_CategoryRefId",
-                        column: x => x.CategoryRefId,
+                        name: "FK_Property_Category_CategoryId",
+                        column: x => x.CategoryId,
                         principalTable: "Category",
-                        principalColumn: "CategoryId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Property_Entry_EntryRefIdInSource",
-                        column: x => x.EntryRefIdInSource,
+                        name: "FK_Property_Entry_EntryRefId",
+                        column: x => x.EntryRefId,
                         principalTable: "Entry",
-                        principalColumn: "IdInSource",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Property_Registry_RegistryRefId",
-                        column: x => x.RegistryRefId,
+                        name: "FK_Property_Registry_RegistryId",
+                        column: x => x.RegistryId,
                         principalTable: "Registry",
-                        principalColumn: "RegistryId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "PropertyValue",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Key = table.Column<string>(type: "TEXT", nullable: false),
                     Value = table.Column<string>(type: "TEXT", nullable: false),
                     UnitOfMeasure = table.Column<string>(type: "TEXT", nullable: false),
-                    PropertyRefId = table.Column<string>(type: "TEXT", nullable: false),
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PropertyRefId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PropertyId = table.Column<string>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -144,12 +147,12 @@ namespace CIRLib.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PropertyValue", x => x.Key);
+                    table.PrimaryKey("PK_PropertyValue", x => x.Id);
                     table.ForeignKey(
                         name: "FK_PropertyValue_Property_PropertyRefId",
                         column: x => x.PropertyRefId,
                         principalTable: "Property",
-                        principalColumn: "PropertyId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -179,14 +182,14 @@ namespace CIRLib.Migrations
                 column: "RegistryRefId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Property_CategoryRefId",
+                name: "IX_Property_CategoryId",
                 table: "Property",
-                column: "CategoryRefId");
+                column: "CategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Property_EntryRefIdInSource",
+                name: "IX_Property_EntryRefId",
                 table: "Property",
-                column: "EntryRefIdInSource");
+                column: "EntryRefId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Property_PropertyId",
@@ -194,9 +197,14 @@ namespace CIRLib.Migrations
                 column: "PropertyId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Property_RegistryRefId",
+                name: "IX_Property_RegistryId",
                 table: "Property",
-                column: "RegistryRefId");
+                column: "RegistryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PropertyValue_Key",
+                table: "PropertyValue",
+                column: "Key");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PropertyValue_PropertyRefId",

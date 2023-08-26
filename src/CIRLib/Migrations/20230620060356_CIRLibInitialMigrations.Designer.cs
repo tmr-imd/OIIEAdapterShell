@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CIRLib.Migrations
 {
     [DbContext(typeof(CIRLibContext))]
-    [Migration("20230605003448_AliasColumnSourceId")]
-    partial class AliasColumnSourceId
+    [Migration("20230620060356_CIRLibInitialMigrations")]
+    partial class CIRLibInitialMigrations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,7 +22,12 @@ namespace CIRLib.Migrations
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.Category", b =>
                 {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CategoryId")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CategorySourceId")
@@ -44,18 +49,18 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("RegistryRefId")
+                    b.Property<string>("RegistryId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("CategoryId");
+                    b.Property<Guid>("RegistryRefId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
@@ -66,15 +71,19 @@ namespace CIRLib.Migrations
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.Entry", b =>
                 {
-                    b.Property<string>("IdInSource")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CIRId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CategoryRefId")
+                    b.Property<string>("CategoryId")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CategoryRefId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -91,7 +100,8 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("Id")
+                    b.Property<string>("IdInSource")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Inactive")
@@ -105,8 +115,11 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("RegistryRefId")
+                    b.Property<string>("RegistryId")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RegistryRefId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SourceId")
@@ -117,7 +130,7 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("IdInSource");
+                    b.HasKey("Id");
 
                     b.HasIndex("CategoryRefId");
 
@@ -130,11 +143,11 @@ namespace CIRLib.Migrations
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.Property", b =>
                 {
-                    b.Property<string>("PropertyId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CategoryRefId")
-                        .IsRequired()
+                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -151,14 +164,18 @@ namespace CIRLib.Migrations
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("EntryRefIdInSource")
+                    b.Property<string>("EntryIdInSource")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("EntryRefId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PropertyId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -166,26 +183,26 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("RegistryRefId")
-                        .IsRequired()
+                    b.Property<Guid?>("RegistryId")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("PropertyId");
+                    b.HasKey("Id");
 
-                    b.HasIndex("CategoryRefId");
+                    b.HasIndex("CategoryId");
 
-                    b.HasIndex("EntryRefIdInSource");
+                    b.HasIndex("EntryRefId");
 
                     b.HasIndex("PropertyId");
 
-                    b.HasIndex("RegistryRefId");
+                    b.HasIndex("RegistryId");
 
                     b.ToTable("Property");
                 });
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.PropertyValue", b =>
                 {
-                    b.Property<string>("Key")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -198,15 +215,19 @@ namespace CIRLib.Migrations
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("Id")
+                    b.Property<string>("Key")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("PropertyRefId")
+                    b.Property<string>("PropertyId")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PropertyRefId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UnitOfMeasure")
@@ -217,7 +238,7 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Key");
+                    b.HasKey("Id");
 
                     b.HasIndex("Key");
 
@@ -228,7 +249,8 @@ namespace CIRLib.Migrations
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.Registry", b =>
                 {
-                    b.Property<string>("RegistryId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -245,14 +267,15 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("RegistryId");
+                    b.Property<string>("RegistryId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("RegistryId");
 
@@ -291,29 +314,21 @@ namespace CIRLib.Migrations
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.Property", b =>
                 {
-                    b.HasOne("CIRLib.ObjectModel.Models.Category", "Category")
+                    b.HasOne("CIRLib.ObjectModel.Models.Category", null)
                         .WithMany("Properties")
-                        .HasForeignKey("CategoryRefId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CategoryId");
 
                     b.HasOne("CIRLib.ObjectModel.Models.Entry", "Entry")
                         .WithMany("Property")
-                        .HasForeignKey("EntryRefIdInSource")
+                        .HasForeignKey("EntryRefId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CIRLib.ObjectModel.Models.Registry", "Registry")
+                    b.HasOne("CIRLib.ObjectModel.Models.Registry", null)
                         .WithMany("Properties")
-                        .HasForeignKey("RegistryRefId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Category");
+                        .HasForeignKey("RegistryId");
 
                     b.Navigation("Entry");
-
-                    b.Navigation("Registry");
                 });
 
             modelBuilder.Entity("CIRLib.ObjectModel.Models.PropertyValue", b =>
