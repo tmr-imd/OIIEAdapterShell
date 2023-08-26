@@ -29,72 +29,54 @@
             </div>
 }
 <EditForm Model="@viewModel" OnValidSubmit="@HandleSubmit">
-    <Modal Title="Property">  
-        <ChildContent>
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-            <div class="grid gap-2">
-                <div>
-                    <label>
-                        <h3 class="col-span-2">Property Id 
-                            @if (Id is not null ){  
-                                <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteProperty((Guid)Id))">
-                                        Delete
-                                </button>
-                            }
-                        </h3>
-                        @if (Id is null ){                            
-                            <InputText type="text" @bind-Value="viewModel.PropertyId" 
-                                placeholder="Enter Property Id" class="form-input w-full" />
-                        }else{
-                            <InputText readonly="true" type="text" @bind-Value="viewModel.PropertyId"
-                                class="form-input w-full" />
-                        }
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        <h3>Property Value</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.PropertyValue" />
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        <h3>Data Type</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.DataType" />
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        <h3>Category Ref Id</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.CategoryRefId" />
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        <h3>Registry Ref Id</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.RegistryRefId" />
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        <h3>Entry Ref Id</h3>
-                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.EntryRefIdInSource" />
-                    </label>
-                </div>
-            </div>
-        </ChildContent>
-        <Footer>
-            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto @(error is not null ? "" : "hidden")">@(Id is null ? "Save New Property" : "Update")</button>
-            <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
-        </Footer>
-    </Modal>
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="grid gap-2">
+        <div>
+            <label>
+                <h3 class="col-span-2">Property Id 
+                    @if (Id is not null ){  
+                        <button type ="button" style="float:right" class="btn btn-danger" @onclick="(() =>DeleteProperty((Guid)Id))">
+                                Delete
+                        </button>
+                    }
+                </h3>
+                @if (Id is null ){                            
+                    <InputText type="text" @bind-Value="viewModel.PropertyId" 
+                        placeholder="Enter Property Id" class="form-input w-full" />
+                }else{
+                    <InputText readonly="true" type="text" @bind-Value="viewModel.PropertyId"
+                        class="form-input w-full" />
+                }
+            </label>
+        </div>
+        <div>
+            <label>
+                <h3>Property Value</h3>
+                <InputText type="text" class="form-input w-full" @bind-Value="viewModel.PropertyValue" />
+            </label>
+        </div>
+        <div>
+            <label>
+                <h3>Data Type</h3>
+                <InputText type="text" class="form-input w-full" @bind-Value="viewModel.DataType" />
+            </label>
+        </div>
+        <div>
+            <label>
+                <h3>Entry Id</h3>
+                <InputText type="text" class="form-input w-full" @bind-Value="viewModel.EntryId" />
+            </label>
+        </div>
+    </div>
+    <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto @(error is not null ? "" : "hidden")">@(Id is null ? "Save New Property" : "Update")</button>
+    <a href="/cir-library" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a>
 </EditForm> 
 
 @code {
     [Parameter]
     public Guid? Id { get; set; }
-    public ObjModels.Property PropertyObj;
+    public ObjModels.Property? PropertyObj = null;
     public PropertyViewModel viewModel = new PropertyViewModel();
     public string error { get; set; } ="";
 
@@ -104,14 +86,14 @@
         if ( Id is not null){
             using var Context = await Factory.CreateDbContext(new ClaimsPrincipal());
             PropertyObj = Services.GetPropertyById((Guid)Id, Context);
-            if (PropertyObj is not null){
+            if (PropertyObj is not null)
+            {
                 viewModel.PropertyId = PropertyObj.PropertyId;
-                viewModel.PropertyValue = PropertyObj.PropertyValue;
                 viewModel.DataType = PropertyObj.DataType;
-                viewModel.CategoryRefId = PropertyObj.CategoryRefId;
-                viewModel.EntryRefIdInSource = PropertyObj.EntryRefIdInSource;
-                viewModel.RegistryRefId = PropertyObj.RegistryRefId;
-            }else{                
+                viewModel.EntryId = PropertyObj.EntryIdInSource;
+            }
+            else
+            {                
                 NavigationManager.NavigateTo("/cir-library");
             }
         } 
@@ -142,8 +124,8 @@
     }
     
     void DeleteProperty(Guid Id){
-        var Context = Factory.CreateDbContext(new ClaimsPrincipal());
-        Services.DeletePropertyById(Id, Context.Result);
+        var context = Factory.CreateDbContext(new ClaimsPrincipal());
+        Services.DeletePropertyById(Id, context.Result);
         NavigationManager.NavigateTo("/cir-library");
     }
 }

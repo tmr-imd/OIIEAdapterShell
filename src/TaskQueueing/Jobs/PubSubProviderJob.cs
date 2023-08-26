@@ -35,7 +35,7 @@ public class PubSubProviderJob<T> where T : notnull
             Content = publication.MessageContent.Content
         };
 
-        var context = await factory.CreateDbContext(principal);
+        using var context = await factory.CreateDbContext(principal);
         context.Publications.Add(storedPublication);
         await context.SaveChangesAsync();
 

@@ -2,6 +2,7 @@
 using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
@@ -24,6 +25,9 @@ public class PubSubConsumerJob<TProcessJob, TContent>
         this.principal = principal;
     }
 
+    #if DEBUG
+    [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
+    #endif
     public async Task<string> PollSubscription(string sessionId, PerformContext ctx)
     {
         var lastReadMessage = "";
@@ -49,6 +53,12 @@ public class PubSubConsumerJob<TProcessJob, TContent>
         {
             using var context = await factory.CreateDbContext(principal);
 
+            var exists = await context.Publications
+                .WhereReceived()
+                .AnyAsync(x => x.MessageId == publication.Id );
+
+            if (exists) continue;
+
             var storedPublication = new Publication()
             {
                 JobId = ctx.BackgroundJob.Id,
@@ -61,11 +71,9 @@ public class PubSubConsumerJob<TProcessJob, TContent>
             };
 
             context.Publications.Add(storedPublication);
-
             await context.SaveChangesAsync();
 
             BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessPublication(storedPublication.MessageId, null!));
-
             await consumer.RemovePublication(sessionId);
 
             lastReadMessage = publication.Id;

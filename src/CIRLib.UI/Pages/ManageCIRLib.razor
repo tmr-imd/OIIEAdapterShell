@@ -52,25 +52,25 @@
     public string SearchEntryFilter {get; set;} = "";
     public string SearchPropertyFilter {get; set;} = "";
     public string SearchPropertyValueFilter {get; set;} = "";
-    void SearchForRegistry(ChangeEventArgs Args)
+    void SearchForRegistry(ChangeEventArgs args)
     {
-        SearchRegistryFilter = (string) Args.Value;
+        SearchRegistryFilter = (args.Value as string) ?? "";
     }
-    void SearchForCategory(ChangeEventArgs Args)
+    void SearchForCategory(ChangeEventArgs args)
     {
-        SearchCategoryFilter = (string) Args.Value;
+        SearchCategoryFilter = (args.Value as string) ?? "";
     }
-    void SearchForEntry(ChangeEventArgs Args)
+    void SearchForEntry(ChangeEventArgs args)
     {
-        SearchEntryFilter = (string) Args.Value;
+        SearchEntryFilter = (args.Value as string) ?? "";
     }
-    void SearchForProperty(ChangeEventArgs Args)
+    void SearchForProperty(ChangeEventArgs args)
     {
-        SearchPropertyFilter = (string) Args.Value;
+        SearchPropertyFilter = (args.Value as string) ?? "";
     }
-    void SearchForPropertyValue(ChangeEventArgs Args)
+    void SearchForPropertyValue(ChangeEventArgs args)
     {
-        SearchPropertyValueFilter = (string) Args.Value;
+        SearchPropertyValueFilter = (args.Value as string) ?? "";
     }
     
 }

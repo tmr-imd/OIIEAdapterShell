@@ -7,10 +7,12 @@ using AdapterServer.Pages.Publication;
 using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Jobs;
-using CIRLib.Persistence;
-using CIRServices;
 using CIRLib.Extensions;
 using Oiie.Settings;
+using System.Text;
+using System.Text.Json;
+using TaskQueueing.ObjectModel.Models;
+using System.Numerics;
 
 namespace AdapterServer;
 
@@ -45,12 +47,39 @@ public class Startup
         routes.MapBlazorHub();
         routes.MapFallbackToPage("/_Host");
 
-        routes.MapPut("/api/notifications/{sessionId}/{messageId}", (string sessionId, string messageId) =>
+        routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request, ILogger<Startup> log) =>
         {
-            // Queue job (complete with DI)...
-            BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId));
+            try
+            {
+                // Health check
+                if (EmptyId(sessionId) && EmptyId(messageId))
+                {
+                    log.LogInformation("sessionId: {sessionId}, messageId: {messageId} - Health Check", sessionId, messageId);
 
-            // ...and return immediately!
+                    return Results.Ok();
+                }
+
+                log.LogInformation("sessionId: {sessionId}, messageId: {messageId} - Notification received", sessionId, messageId);
+
+                using StreamReader reader = new(request.Body, Encoding.UTF8, true, 1024, true);
+                var content = await reader.ReadToEndAsync();
+
+                log.LogInformation("sessionId: {sessionId}, messageId: {messageId} - {content}", sessionId, messageId, content);
+
+                var notifyBody = !string.IsNullOrEmpty(content) ? JsonSerializer.Deserialize<NotifyBody>(content) : new NotifyBody();
+
+                if (notifyBody is not null)
+                {
+                    var jobId = BackgroundJob.Enqueue<NotificationJob>(x => x.Notify(sessionId, messageId, notifyBody));
+
+                    log.LogInformation("sessionId: {sessionId}, messageId: {messageId} - NotificationJob {jobId} enqueued", sessionId, messageId, jobId);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "sessionId: {sessionId}, messageId: {messageId} - Error processing notification", sessionId, messageId);
+            }
+
             return Results.NoContent();
         });
     }
@@ -86,10 +115,22 @@ public class Startup
         services.AddScoped<RequestViewModel>();
         services.AddScoped<ManageRequestViewModel>();
         services.AddScoped<ResponseViewModel>();
-        services.AddScoped<PublicationService>();
+        services.AddScoped<ManagePublicationViewModel>();
         services.AddScoped<PublicationDetailViewModel>();
         services.AddScoped<PublicationListViewModel>();
         services.AddScoped<PublicationViewModel>();
+        services.AddScoped<PublicationService>();
         services.AddScoped<ConfirmBODConfigViewModel>();
+    }
+
+    private static bool EmptyId(string id)
+    {
+        if (Guid.TryParse(id, out Guid idGuid))
+            return idGuid == Guid.Empty;
+
+        if (int.TryParse(id, out int idInt))
+            return idInt == 0;
+
+        return string.IsNullOrEmpty(id);
     }
 }

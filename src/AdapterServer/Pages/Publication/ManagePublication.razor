@@ -19,6 +19,7 @@
 @inject IJSRuntime JS
 @inject ClaimsPrincipal principal
 @inject JobContextFactory factory
+@inject ManagePublicationViewModel viewModel
 
 <PageTitle>Manage Publication Channel - Adapter Shell</PageTitle>
 
@@ -92,8 +93,6 @@
 
     [Parameter]
     public string BackTo { get; set; } = null!;
-
-    private ManagePublicationViewModel viewModel = new ManagePublicationViewModel();
 
     protected override async Task OnInitializedAsync()
     {

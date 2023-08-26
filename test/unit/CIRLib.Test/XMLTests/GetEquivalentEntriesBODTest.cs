@@ -11,7 +11,6 @@ using CIRServices;
 using ObjModels = CIRLib.ObjectModel.Models;
 using Microsoft.Extensions.Configuration;
 using CIRLib.Test;
-using CIRLib.Test.Fixture;
 using DataModel = DataModelServices;
 namespace CIRLib.Test.XMLTests;
 
@@ -58,7 +57,7 @@ public class GetEquivalentEntriesBODTest : IClassFixture<BODTestSamples>
 
         var bod = reader.AsBod<GetEquivalentEntriesBOD>();
         Assert.NotNull(bod);
-        Assert.Equal("Enterprise", bod.DataArea.GetEquivalentEntries.EntryIdentifier.First().RegistryID.Value);
+        Assert.Equal("Enterprise", bod?.DataArea.GetEquivalentEntries.EntryIdentifier.First().RegistryID.Value);
     }
 
 }

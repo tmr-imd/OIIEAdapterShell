@@ -7,28 +7,7 @@ namespace CIRServices;
 
 public class CommonServices
 {
-    public static void checkMandatoryPropertiesPassed(DataModel.EntryDef newEntryObj = null,
-    DataModel.RegistryDef? newRegObj = null, DataModel.CategoryDef? newCatObj = null, string? action = "")
-    {
-        if(string.IsNullOrWhiteSpace(newEntryObj.IdInSource) || string.IsNullOrWhiteSpace(newEntryObj.SourceId))
-        {
-            throw new Exception("Mandatory Entry Identifiers not provided. ");
-        }
-
-        if(action.Equals("add"))
-        {
-            if ((string.IsNullOrWhiteSpace(newRegObj.RegistryId) &&
-                string.IsNullOrWhiteSpace(newEntryObj.RegistryRefId)) ||
-                (string.IsNullOrWhiteSpace(newCatObj.CategoryId) &&
-                string.IsNullOrWhiteSpace(newEntryObj.CategoryRefId))
-                )
-            {
-                throw new Exception("Mandatory Entry Reference Identifiers not provided. ");
-            }
-        }
-    }
-
-    public static bool CheckIfRegistryExists(string registryId, CIRLibContext dbContext, string action)
+    public static ObjModels.Registry? CheckIfRegistryExists(string registryId, CIRLibContext dbContext, string action)
     {
         try
         {
@@ -36,8 +15,8 @@ public class CommonServices
             {
                 throw new Exception("Please provide a valid RegistryId.");
             }
-            var regObj = dbContext.Registry.Where(item => item.RegistryId.Equals(registryId)).Count();
-            if(regObj == 0)
+            var regObj = dbContext.Registry.FirstOrDefault(item => item.RegistryId.Equals(registryId));
+            if(regObj == null)
             {
                 if(action == "update")
                 {
@@ -45,17 +24,17 @@ public class CommonServices
                 }
                 else if(action == "create")
                 {
-                    return false;
+                    return regObj;
                 }
             }
-            return true;
+            return regObj;
         }
         catch(Exception ex)
         {
             throw new Exception(" Exception: "+ex);
         }
     }
-    public static bool CheckIfCategoryExists(string categoryId, CIRLibContext dbContext, string action)
+    public static ObjModels.Category? CheckIfCategoryExists(string categoryId, CIRLibContext dbContext, string action)
     {
         try
         {
@@ -63,8 +42,8 @@ public class CommonServices
             {
                 throw new Exception("Please provide a valid CategoryId.");
             }
-            var catObj = dbContext.Category.Where(item => item.CategoryId.Equals(categoryId)).Count();
-            if(catObj == 0)
+            var catObj = dbContext.Category.SingleOrDefault(item => item.CategoryId.Equals(categoryId));
+            if(catObj == null)
             {
                 if(action == "update")
                 {
@@ -72,27 +51,28 @@ public class CommonServices
                 }
                 else if(action == "create")
                 {
-                    return false;
+                    return catObj;
                 }
             }
-            return true;
+            return catObj;
         }
         catch(Exception ex)
         {
             throw new Exception("Exception: "+ ex);
         }
     }
-    public static ObjModels.Entry CheckIfEntryExists(string idInSource, CIRLibContext dbContext, string action="")
+    public static ObjModels.Entry? CheckIfEntryExists(string idInSource, CIRLibContext dbContext,
+        string action="")
     {
         try
         {
             if(string.IsNullOrWhiteSpace(idInSource))
             {
-                throw new Exception("Please provide a valid EntryId.");
+                throw new ArgumentException("Please provide a valid EntryId.");
             }
 
-            var entryObj = dbContext.Entry.Where(item => item.IdInSource.Equals(idInSource)).ToList();
-            if(entryObj.Count() == 0)
+            var entryObj = dbContext.Entry.SingleOrDefault(item => item.IdInSource.Equals(idInSource));
+            if(entryObj == null)
             {
                 if(action == "update")
                 {
@@ -100,14 +80,14 @@ public class CommonServices
                 }
                 else if(action == "create")
                 {
-                    return null;
+                    return entryObj;
                 }
             }
             else
             {
-                return entryObj.First();
+                return entryObj;
             }
-            return null;
+            return entryObj;
         }
         catch(Exception ex)
         {
@@ -115,7 +95,7 @@ public class CommonServices
         }
     }
 
-    public static bool CheckIfPropertyExists(string propertyId, CIRLibContext dbContext, string action="")
+    public static ObjModels.Property? CheckIfPropertyExists(string propertyId, CIRLibContext dbContext = null!, string action="")
     {
         try
         {
@@ -123,8 +103,8 @@ public class CommonServices
             {
                 throw new Exception("Please provide a valid PropertyId.");
             }
-            var propertyObj = dbContext.Property.Where(item => item.PropertyId.Equals(propertyId)).Count();
-            if(propertyObj == 0)
+            var propertyObj = dbContext.Property.SingleOrDefault(item => item.PropertyId.Equals(propertyId));
+            if(propertyObj == null)
             {
                 if(action == "update")
                 {
@@ -132,10 +112,10 @@ public class CommonServices
                 }
                 else if(action == "create")
                 {
-                    return false;
+                    return propertyObj;
                 }
             }
-            return true;
+            return propertyObj;
         }
         catch(Exception ex)
         {

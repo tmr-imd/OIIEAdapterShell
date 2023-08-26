@@ -48,9 +48,9 @@ public class AcknowledgeRegistryBODTest : IClassFixture<BODTestSamples>
         var expected = XDocument.Parse(examples.AcknowledgeRegistryBOD(bodId, senderId, creationDateTime));
         var deserialized = AcknowledgeRegistryBOD.Deserialize<AcknowledgeRegistryBOD>(expected);
 
-        Assert.Equal("Internal Error while creation.", deserialized.DataArea.CreateRegistryFault.First().Description.Value);
-        Assert.Equal("Internal Error while creation.", deserialized.DataArea.CreateCategoryFault.First().Description.Value);
-        Assert.Equal("Entry already exists.", deserialized.DataArea.DuplicateEntryFault.First().Description.Value);
-        Assert.Equal("Property already exists.", deserialized.DataArea.DuplicatePropertyFault.First().Description.Value);
+        Assert.Equal("Internal Error while creation.", deserialized?.DataArea.CreateRegistryFault.First().Description.Value);
+        Assert.Equal("Internal Error while creation.", deserialized?.DataArea.CreateCategoryFault.First().Description.Value);
+        Assert.Equal("Entry already exists.", deserialized?.DataArea.DuplicateEntryFault.First().Description.Value);
+        Assert.Equal("Property already exists.", deserialized?.DataArea.DuplicatePropertyFault.First().Description.Value);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Storage;
 using Microsoft.EntityFrameworkCore;
+using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
 
@@ -26,28 +27,6 @@ public class NotificationService
         return recurringJobs.Select(x => x.LastJobId).FirstOrDefault();
     }
 
-    public static bool RecurringJobIsRunning(string jobId)
-    {
-        using var connection = JobStorage.Current.GetConnection();
-
-        string lastRunResult = string.Empty;
-        var recurringJobs = connection.GetRecurringJobs(new[] { jobId });
-
-        try
-        {
-            var jobState = connection.GetStateData(jobId);
-            lastRunResult = jobState.Name; // For Example: "Succeeded", "Processing", "Deleted"
-
-            return jobState.Name == "Processing";
-        }
-        catch
-        {
-            //job has not been run by the scheduler yet, swallow error
-        }
-
-        return false;
-    }
-
     public static async Task<AbstractMessage?> GetMessage(string messageId, JobContext context)
     {
         var request = await context.Requests.Where(x => x.RequestId == messageId).FirstOrDefaultAsync();
@@ -60,7 +39,10 @@ public class NotificationService
         if (response is not null)
             return response;
 
-        var publication = await context.Publications.Where(x => x.MessageId == messageId).FirstOrDefaultAsync();
+        var publication = await context.Publications
+            .WhereReceived()
+            .Where(x => x.MessageId == messageId)
+            .FirstOrDefaultAsync();
 
         return publication;
     }

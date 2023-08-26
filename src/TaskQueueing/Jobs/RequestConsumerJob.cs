@@ -2,6 +2,7 @@
 using Hangfire.Server;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
@@ -49,7 +50,10 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         return request.Id;
     }
 
-    public async Task<string> CheckForResponses( string sessionId )
+    #if DEBUG
+    [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
+    #endif
+    public async Task<string> CheckForResponses( string sessionId, PerformContext ctx)
     {
         using var context = await factory.CreateDbContext(principal);
 
@@ -60,7 +64,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         {
             try
             {
-                lastResponseRead = await readRemoveAll(sessionId, openRequest, context);
+                lastResponseRead = await readRemoveAll(sessionId, openRequest, context, ctx);
             }
             catch (IsbmFault)
             {
@@ -72,7 +76,7 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
         return lastResponseRead;
     }
 
-    private async Task<string> readRemoveAll(string sessionId, Request openRequest, JobContext context)
+    private async Task<string> readRemoveAll(string sessionId, Request openRequest, JobContext context, PerformContext ctx)
     {
         var lastResponseRead = "";
 
@@ -80,8 +84,12 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
             responseMessage is not null; 
             responseMessage = await consumer.ReadResponse(sessionId, openRequest.RequestId))
         {
+            var exists = await context.Responses.AnyAsync(x => x.ResponseId == responseMessage.Id);
+            if ( exists ) continue;
+
             var response = new Response
             {
+                JobId = ctx.BackgroundJob.Id,
                 State = MessageState.Received,
                 ResponseId = responseMessage.Id,
                 RequestId = openRequest.RequestId,
@@ -90,14 +98,11 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
                 ContentEncoding = responseMessage.MessageContent.ContentEncoding,
                 Content = responseMessage.MessageContent.Content
             };
-            
+
             context.Responses.Add(response);
             await context.SaveChangesAsync();
 
-            var jobId = BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
-            response.JobId = jobId;
-            await context.SaveChangesAsync();
-
+            BackgroundJob.Enqueue<TProcessJob>(x => x.ProcessResponse(openRequest.RequestId, responseMessage.Id, null!));
             await consumer.RemoveResponse(sessionId, openRequest.RequestId);
 
             lastResponseRead = responseMessage.Id;
