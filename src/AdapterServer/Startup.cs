@@ -87,14 +87,15 @@ public class Startup
     public virtual void ConfigureServices(IServiceCollection services)
     {
         var hangfireConnection = Configuration.GetConnectionString("HangfireConnection");
-        var hangfireStorage = Configuration.GetSection("Hangfire").GetValue<string>( "Storage" );
+        var hangfireStorage = Configuration.GetSection("Hangfire").GetValue<string>("Storage");
+        var hangfireQueues = Configuration.GetSection("Hangfire:Queues").Get<string[]>();
 
         // Add Hangfire services.
         var hangfireConfig = services.HangfireConfiguration(hangfireConnection, hangfireStorage);
         services.AddHangfire(hangfireConfig);
 
         // Add the processing server as IHostedService
-        services.AddHangfireServer();
+        services.AddHangfireServer(opts => opts.Queues = hangfireQueues);
 
         services.AddScoped(x => JobContextHelper.PrincipalFromString("AdapterServer"));
         services.AddSingleton(new JobContextFactory(Configuration));
