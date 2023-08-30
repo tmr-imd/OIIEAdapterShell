@@ -16,7 +16,7 @@
 
 @if ( Edit == "channel" )
 {
-    <ManagePublication ChannelName="@channelName" BackTo="/pub-sub" />
+    <ManagePublication ChannelName="@channelName" BackTo=@($"/pub-sub?Entry={Entry}") />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
@@ -64,7 +64,8 @@
         <div />
         <div />
         <div />
-
+        @if (Entry != "fss")
+        {
         <h2 class="col-span-full mt-6">Message Settings</h2>
 
         <h3>Code</h3>
@@ -139,11 +140,14 @@
                 }
             </tbody>
         </table>
+        }
     </div>
 </EditForm>
-
-<h2 class="col-span-full mt-6">Publications</h2>
-<PublicationList />
+@if (Entry != "fss")
+{
+    <h2 class="col-span-full mt-6">Publications</h2>
+    <PublicationList />
+}
 
 @code {
     bool working;
@@ -155,6 +159,10 @@
     [Parameter]
     [SupplyParameterFromQuery]
     public string? Edit { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Entry {get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
