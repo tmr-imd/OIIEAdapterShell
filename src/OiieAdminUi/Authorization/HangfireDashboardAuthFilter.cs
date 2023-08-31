@@ -9,7 +9,7 @@ public class HangfireDashboardAuthFilter : IDashboardAuthorizationFilter
 {
     public bool Authorize([NotNull] DashboardContext context)
     {
-        Console.WriteLine(context.GetHttpContext().Request.Headers);
+        // context.GetHttpContext().Request.Headers;
 #if DEBUG
         return true;
 #endif
