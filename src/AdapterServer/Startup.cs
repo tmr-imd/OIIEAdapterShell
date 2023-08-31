@@ -12,7 +12,7 @@ using Oiie.Settings;
 using System.Text;
 using System.Text.Json;
 using TaskQueueing.ObjectModel.Models;
-using System.Numerics;
+using OiieAdminUi.Authorization;
 
 namespace AdapterServer;
 
@@ -42,7 +42,10 @@ public class Startup
 
         app.UseRouting();
 
-        app.UseHangfireDashboard();
+        app.UseHangfireDashboard(options: new DashboardOptions()
+        {
+            Authorization = new[] { new HangfireDashboardAuthFilter() }
+        });
 
         routes.MapBlazorHub();
         routes.MapFallbackToPage("/_Host");

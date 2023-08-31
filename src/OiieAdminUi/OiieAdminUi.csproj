@@ -12,6 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" Version="[1.7.33,1.8.0)" />
+    <PackageReference Include="Hangfire.Core" Version="[1.7.33,1.8)" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.14" />
   </ItemGroup>
 
