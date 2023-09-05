@@ -13,6 +13,8 @@ using System.Text;
 using System.Text.Json;
 using TaskQueueing.ObjectModel.Models;
 using OiieAdminUi.Authorization;
+using System.Net.Security;
+using AdapterServer.Shared;
 
 namespace AdapterServer;
 
@@ -46,6 +48,13 @@ public class Startup
         {
             Authorization = new[] { new HangfireDashboardAuthFilter() }
         });
+
+        // Ensure the certificate validator is instantiated, if provided.
+        var certValidator = app.ApplicationServices.GetService<ICertificateValidator>();
+        if (certValidator is not null && ICertificateValidator.Instance is null)
+        {
+            ICertificateValidator.Instance = certValidator;
+        }
 
         routes.MapBlazorHub();
         routes.MapFallbackToPage("/_Host");
@@ -109,7 +118,12 @@ public class Startup
 
         var isbmSection = Configuration.GetSection("Isbm");
         services.Configure<ClientConfig>(isbmSection);
-        services.AddIsbmRestClient(isbmSection);
+        var certificateValidationCallback = services
+            .Where(sd => sd.ServiceType == typeof(RemoteCertificateValidationCallback) && sd.ImplementationInstance is not null)
+            .Select(sd => sd.ImplementationInstance)
+            .Cast<RemoteCertificateValidationCallback?>()
+            .FirstOrDefault();
+        services.AddIsbmRestClient(isbmSection, certificateValidationCallback);
 
         //CIR Config
         services.AddCIRServices(Configuration);
