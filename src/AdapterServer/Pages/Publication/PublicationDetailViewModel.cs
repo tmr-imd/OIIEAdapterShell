@@ -1,4 +1,5 @@
 ﻿using AdapterServer.Data;
+using AdapterServer.Services;
 using Oiie.Settings;
 using Isbm2Client.Model;
 using Microsoft.EntityFrameworkCore;

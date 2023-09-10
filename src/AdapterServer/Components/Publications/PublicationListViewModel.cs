@@ -1,4 +1,5 @@
 ﻿using AdapterServer.Data;
+using AdapterServer.Services;
 using Oiie.Settings;
 using AdapterServer.Pages.Request;
 using Hangfire;
@@ -10,7 +11,7 @@ using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
 using TaskModels = TaskQueueing.ObjectModel.Models;
 
-namespace AdapterServer.Pages.Publication;
+namespace AdapterServer.Components.Publications;
 
 public class PublicationListViewModel
 {

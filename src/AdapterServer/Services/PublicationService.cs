@@ -2,7 +2,7 @@
 using TaskQueueing.ObjectModel;
 using TaskModels = TaskQueueing.ObjectModel.Models;
 
-namespace AdapterServer.Pages.Publication;
+namespace AdapterServer.Services;
 
 public class PublicationService
 {

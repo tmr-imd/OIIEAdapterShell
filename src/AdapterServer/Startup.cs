@@ -1,9 +1,11 @@
 using Isbm2Client.Model;
 using AdapterServer.Extensions;
+using AdapterServer.Components.Publications;
 using AdapterServer.Data;
 using AdapterServer.Pages;
 using AdapterServer.Pages.Request;
 using AdapterServer.Pages.Publication;
+using AdapterServer.Services;
 using Hangfire;
 using TaskQueueing.Persistence;
 using TaskQueueing.Jobs;
