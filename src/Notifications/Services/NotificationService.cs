@@ -40,13 +40,17 @@ public class NotificationService : INotificationService
         // as for the front-end, but we may actually be able to just use the internal addresses.
         // *Is there a safe default or should we throw an exception?
         var address = server.Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault() ?? "http://localhost";
-        var uriBuilder = new UriBuilder(address);
-        uriBuilder.Path = "/app/notifications-hub";
+        var uriBuilder = new UriBuilder(address)
+        {
+            Path = "/app/notifications-hub"
+        };
         _hubUrl = uriBuilder.Uri;
     }
 
-    public async Task Notify<T>(Scope scope, string topic, T data, string origin)
+    public async Task Notify<T>(Scope scope, string topic, T data, string origin, ReadState readState = ReadState.Unread)
     {
+        if (readState == ReadState.Undefined) throw new Exception("Must provide a non-zero (Undefined) ReadState for the notification.");
+
         using var context = await ContextFactory.CreateDbContext(origin);
 
         var notification = new Notification()
@@ -54,13 +58,12 @@ public class NotificationService : INotificationService
             Id = Guid.NewGuid(),
             Scope = scope,
             Topic = topic,
-            ReadState = ReadState.Undefined,
+            ReadState = readState,
             Data = JsonSerializer.SerializeToDocument(data, JsonSerializerOptions.Default)
         };
         context.Add(notification);
         context.SaveChanges();
 
-        // TODO: Do specfic processing based on scope
         switch (scope)
         {
             case Scope.Local:
@@ -71,8 +74,10 @@ public class NotificationService : INotificationService
                 BackgroundJob.Enqueue<InternalNotificationJob>(x => x.SendMessage(topic, notification.Id.ToString(), null!));
                 break;
             case Scope.External:
+                BackgroundJob.Enqueue<EmailNotificationJob>(x => x.SendMessage(topic, notification.Id, null!));
                 break;
             case Scope.InternalAndExternal:
+                BackgroundJob.Enqueue<EmailNotificationJob>(x => x.SendMessage(topic, notification.Id, null!));
                 // XXX: need to apply to each replicant's queue
                 BackgroundJob.Enqueue<InternalNotificationJob>(x => x.SendMessage(topic, notification.ToString(), null!));
                 break;
@@ -83,18 +88,28 @@ public class NotificationService : INotificationService
         }
     }
 
+    public async Task NotifyUsers<T>(Scope scope, string topic, T data, string origin)
+    {
+        await Notify<T>(scope, topic, data, origin, ReadState.UserDependent);
+    }
+
+    public async Task NotifyApp<T>(Scope scope, string topic, T data, string origin)
+    {
+        await Notify<T>(scope, topic, data, origin, ReadState.AppDependent);
+    }
+
     public async Task<string> RegisterLocal(string topic, Action<Notification> callback, params string[] todo)
     {
         var hubConnection = new HubConnectionBuilder()
             .WithUrl(_hubUrl)
-            // .WithAutomaticReconnect()
+            .WithAutomaticReconnect()
             .Build();
 
         hubConnection.On<string>("SyncConnectionId", (connectionId) => {
             // Not sure I actually need this, but possibly want to register specific topics for groupings.
             if (hubConnection.ConnectionId != connectionId)
             {
-                Console.WriteLine("Conn IDs do not match for some reason {} != {}", hubConnection.ConnectionId, connectionId);
+                Console.WriteLine($"Conn IDs do not match for some reason {hubConnection.ConnectionId} != {connectionId}");
             }
         });
 

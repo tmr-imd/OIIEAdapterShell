@@ -73,7 +73,6 @@
 
     private async void UpdateCount(Notification notification)
     {
-        var message = notification.Data.Deserialize<string>() ?? "Unknown message";
         using var context = await Factory.CreateDbContext(Principal);
         // TODO: proper unread state per user/principal
         var who = Principal.Identity?.Name;

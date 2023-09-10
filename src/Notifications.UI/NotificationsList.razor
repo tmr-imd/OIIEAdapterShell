@@ -20,10 +20,13 @@
         <ul>
         @foreach (var n in notifications)
         {
+            @* n.ReadState; *@
+            var data = n.Data.Deserialize<UserData>();
             <li class="border rounded shadow-sm hover:bg-gray-100 my-4 p-3 flex">
                 <div class="flex-auto">
-                    <h5 class="font-bold not-italic text-base tracking-tight pb-1 text-gray-900">General</h5>
-                    <p class="max-w-prose p-0 text-gray-600">@(n.Data.Deserialize<string>())</p>
+                    <h5 class="font-bold not-italic text-base tracking-tight pb-1 text-gray-900">@data?.Summary</h5>
+                    <p class="max-w-prose p-0 text-gray-600">@data?.Detail</p>
+                    <p class="max-w-prose p-0 text-gray-600"><a href="@(GetEntityUrl(data?.EntityType, data?.EntityId))">See detail</a></p>
                 </div>
                 <div>
                     <button class="btn group ml-4 px-1" type="submit" @onclick="() => MarkRead(n)" disabled="@(!IsConnected)" title="Mark Read">
@@ -61,11 +64,18 @@
         await base.OnInitializedAsync();
     }
 
+    private string GetEntityUrl(string? entityType, Guid? entityId)
+    {
+        if (string.IsNullOrWhiteSpace(entityType) || entityId is null || entityId == Guid.Empty) return "#";
+        return "/todo";
+    }
+
     private void Test()
     {
         @* notifications.Add("Manually added test"); *@
         @* await hubConnection.InvokeAsync("SendMessage", "test", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}")); *@
-        NotificationsService.Notify(Scope.Local, "admin-important", JsonSerializer.SerializeToDocument($"Message sent at {DateTime.Now}"), ConnectionId[0]);
+        var data = new UserData("Notification Test", $"Message sent at {DateTime.Now}", typeof(UserData).FullName, null);
+        NotificationsService.Notify(Scope.Local, "admin-important", JsonSerializer.SerializeToDocument(data), ConnectionId[0]);
     }
 
     private async void MarkRead(Notification notification)
