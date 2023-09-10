@@ -15,6 +15,8 @@ using TaskQueueing.ObjectModel.Models;
 using OiieAdminUi.Authorization;
 using System.Net.Security;
 using AdapterServer.Shared;
+using System.Numerics;
+using Notifications.UI;
 
 namespace AdapterServer;
 
@@ -57,6 +59,7 @@ public class Startup
         }
 
         routes.MapBlazorHub();
+        routes.AddNotifications("/app/notifications-hub");
         routes.MapFallbackToPage("/_Host");
 
         routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request, ILogger<Startup> log) =>
@@ -139,6 +142,8 @@ public class Startup
         services.AddScoped<PublicationViewModel>();
         services.AddScoped<PublicationService>();
         services.AddScoped<ConfirmBODConfigViewModel>();
+
+        services.AddNotifications(Configuration);
     }
 
     private static bool EmptyId(string id)

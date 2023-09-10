@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
-namespace TaskQueueing.ObjectModel.Models;
+namespace ModelBase.ObjectModel;
 
 [DebuggerDisplay("{Id}")]
 public abstract record ModelObject

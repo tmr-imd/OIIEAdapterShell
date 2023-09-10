@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Lib\Isbm2RestClient\src\Isbm2Client\Isbm2Client.csproj" />
+    <ProjectReference Include="..\Notifications\Notifications.csproj" />
+    <ProjectReference Include="..\ModelBase\ModelBase.csproj" />
   </ItemGroup>
 
 </Project>

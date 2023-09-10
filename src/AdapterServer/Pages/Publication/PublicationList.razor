@@ -1,11 +1,15 @@
 @using AdapterServer.Components;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
+@using Notifications
 
 @inject ILogger<Publication> Logger
 @inject PublicationListViewModel viewModel
 @inject JobContextFactory factory
 @inject ClaimsPrincipal principal
+@inject INotificationService NotificationService
+
+@implements IAsyncDisposable
 
 <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
     <thead class="bg-gray-100">
@@ -41,6 +45,23 @@
 </table>
 
 @code {
+    private string connectionId = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        connectionId = await NotificationService.RegisterLocal("publication-message-update", async n => {
+            using var context = await factory.CreateDbContext(principal);
+            await viewModel.Load(context);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await base.OnInitializedAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await NotificationService.Unregister(connectionId);
+    }
 
     protected override async Task OnParametersSetAsync()
     {

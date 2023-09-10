@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Text.Json;
 
-namespace AdapterQueue.Persistence.Configuration;
+namespace ModelBase.Persistence.Configuration;
 
 public class JsonDocumentConverter : ValueConverter<JsonDocument, string>
 {
