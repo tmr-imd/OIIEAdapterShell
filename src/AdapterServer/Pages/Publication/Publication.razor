@@ -16,7 +16,7 @@
 
 @if ( Edit == "channel" )
 {
-    <ManagePublication ChannelName="@channelName" BackTo=@($"/pub-sub") />
+    <ManagePublication ChannelName="@channelName" BackTo="/pub-sub" />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
@@ -155,10 +155,6 @@
     [Parameter]
     [SupplyParameterFromQuery]
     public string? Edit { get; set; }
-
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string? Entry {get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
