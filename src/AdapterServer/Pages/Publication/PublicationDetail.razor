@@ -7,70 +7,76 @@
 
 @inject ILogger<Publication> Logger
 
-@inject PublicationDetailViewModel viewModel
-@inject NavigationManager navigation
-@inject JobContextFactory factory
+@inject PublicationDetailViewModel ViewModel
+@inject NavigationManager Navigation
+@inject JobContextFactory Factory
+@inject ClaimsPrincipal Principal
 
 <PageTitle>Publication - Adapter Shell</PageTitle>
 
 <h1>Publication</h1>
 
+<h2 class="col-span-full mt-6">Message Parameters</h2>
+
 <div class="grid grid-cols-4 gap-2">
-    <h2 class="col-span-full mt-6">Message Settings</h2>
+    <h3 class="col-span-2">Topics</h3>
+    <h3>Expiry</h3>
+    <h3>Status</h3>
 
-    <h3>Code</h3>
-    <h3>Type</h3>
-    <h3>Location</h3>
-    <h3>Owner</h3>
-
-    <div>@viewModel.Code</div>
-    <div>@viewModel.Type</div>
-    <div>@viewModel.Location</div>
-    <div>@viewModel.Owner</div>
-
-    <h3>Condition</h3>
-    <h3>Inspector</h3>
-    <div />
-    <div />
-
-    <div>@viewModel.Condition</div>
-    <div>@viewModel.Inspector</div>
-    <div />
-    <div />
-
-    @if ( !string.IsNullOrEmpty(error) )
-    {
-        <div class="col-span-full">
-            <span class="text-red-500">@error</span>
+    <div class="col-span-2">
+        <div class="form-input w-full">@ViewModel.Topics</div>
+    </div>
+    <div>
+        <div class="form-input w-full">-</div>
+    </div>
+    <div>
+        <div class="form-input w-full flex flex-row gap-2">
+            <DirectionIndicator State="ViewModel.MessageState" />
+            <ProcessingIndicator State="ViewModel.MessageState" />
         </div>
-    }
-
-    @if (MessageErrors.Any() || viewModel.RawContent is not null)
-    {
-        <div class="col-span-full">
-
-            <h2 class="mt-6">Message Detail</h2>
-            <ErrorsDisplay Errors="@MessageErrors" />
-
-            <h3 class="mt-3">Raw Message</h3>
-            <RawMessage Content="@MessageContent" />
-
-        </div>
-    }
-
-    @if (ResponseErrors.Any())
-    {
-        <div class="col-span-full">
-
-            <h2 class="mt-6">Response Detail</h2>
-            <ErrorsDisplay Errors="@ResponseErrors" />
-            
-            <h3 class="mt-3">Raw Response</h3>
-            <RawMessage Content="@ResponseContent" />
-        </div>
-    }
+    </div>
 
 </div>
+
+<h2 class="col-span-full mt-6">Message Content</h2>
+
+@if (ViewModel.DetailComponentType is not null)
+{
+    <DynamicComponent Type="ViewModel.DetailComponentType" Parameters="ViewModel.DetailComponentParameters" />
+}
+
+@if ( !string.IsNullOrEmpty(error) )
+{
+    <div class="col-span-full">
+        <span class="text-red-500">@error</span>
+    </div>
+}
+
+@if (MessageErrors.Any() || ViewModel.RawContent is not null)
+{
+    <div class="col-span-full">
+
+        <h2 class="mt-6">Message Detail</h2>
+        <ErrorsDisplay Errors="@MessageErrors" />
+
+        <h3 class="mt-3">Raw Message</h3>
+        <RawMessage Content="@MessageContent" />
+
+    </div>
+}
+
+@if (ResponseErrors.Any())
+{
+    <div class="col-span-full">
+
+        <h2 class="mt-6">Response Detail</h2>
+        <ErrorsDisplay Errors="@ResponseErrors" />
+        
+        <h3 class="mt-3">Raw Response</h3>
+        <RawMessage Content="@ResponseContent" />
+    </div>
+}
+
 
 @code {
     private string error = "";
@@ -85,12 +91,12 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await viewModel.LoadSettings(channelName);
+        @* await ViewModel.LoadSettings(channelName); *@
 
-        await InvokeAsync(StateHasChanged);
+        @* await InvokeAsync(StateHasChanged); *@
 
-        using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
-        await viewModel.Load( context, MessageId );
+        using var context = await Factory.CreateDbContext(Principal);
+        await ViewModel.Load(context, MessageId);
 
         await base.OnParametersSetAsync();
     }
@@ -99,7 +105,7 @@
     {
         get
         {
-            return viewModel.Message?.MessageErrors ?? Enumerable.Empty<MessageError>();
+            return ViewModel.Message?.MessageErrors ?? Enumerable.Empty<MessageError>();
         }
     }
 
@@ -107,9 +113,9 @@
     {
         get
         {
-            if (viewModel.RawContent is not null) return viewModel.RawContent;
+            if (ViewModel.RawContent is not null) return ViewModel.RawContent;
             
-            var doc = viewModel.Message?.Content;
+            var doc = ViewModel.Message?.Content;
             var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
             options.WriteIndented = true;
             return System.Text.Json.JsonSerializer.Serialize(doc, options);
@@ -120,7 +126,7 @@
     {
         get
         {
-            @* return viewModel.Message?.Responses?.LastOrDefault()?.MessageErrors ?? Enumerable.Empty<MessageError>(); *@
+            @* return ViewModel.Message?.Responses?.LastOrDefault()?.MessageErrors ?? Enumerable.Empty<MessageError>(); *@
             return Enumerable.Empty<MessageError>();
         }
     }
@@ -129,7 +135,7 @@
     {
         get
         {
-            @* var doc = viewModel.Message?.ResponseContent;
+            @* var doc = ViewModel.Message?.ResponseContent;
             var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerOptions.Default);
             options.WriteIndented = true;
             return System.Text.Json.JsonSerializer.Serialize(doc, options); *@

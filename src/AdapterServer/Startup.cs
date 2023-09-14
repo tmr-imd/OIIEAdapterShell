@@ -139,7 +139,6 @@ public class Startup
         services.AddScoped<ManageRequestViewModel>();
         services.AddScoped<ResponseViewModel>();
         services.AddScoped<ManagePublicationViewModel>();
-        services.AddScoped<PublicationDetailViewModel>();
         services.AddScoped<PublicationListViewModel>();
         services.AddScoped<PublicationViewModel>();
         services.AddScoped<PublicationService>();
