@@ -1,32 +1,42 @@
 ﻿using AdapterServer.Data;
 using AdapterServer.Services;
 using Oiie.Settings;
-using AdapterServer.Pages.Request;
-using Hangfire;
 using Isbm2Client.Model;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
-using TaskQueueing.Data;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
 using TaskModels = TaskQueueing.ObjectModel.Models;
+using TaskQueueing.Persistence;
+using System.Security.Claims;
 
 namespace AdapterServer.Components.Publications;
 
 public class PublicationListViewModel
 {
-    public IEnumerable<TaskModels.Publication> Publications { get; set; } = Enumerable.Empty<TaskModels.Publication>();
+    public bool IncludeReceivedMessages { get; set; } = true;
+    public bool IncludePostedMessages { get; set; } = true;
+
+    public bool ReceivedMessagesOnly => IncludeReceivedMessages && !IncludePostedMessages;
+    public bool PostedMessagesOnly => !IncludeReceivedMessages && IncludePostedMessages;
+    public bool PostedAndReceivedMessages => IncludeReceivedMessages && IncludePostedMessages;
 
     private readonly SettingsService settings;
     private readonly PublicationService service;
+    private readonly ILogger<PublicationListViewModel> logger;
+    private readonly JobContextFactory factory;
+    private readonly ClaimsPrincipal principal;
 
-    public PublicationListViewModel(IOptions<ClientConfig> config, SettingsService settings, PublicationService service)
+    public PublicationListViewModel(SettingsService settings, PublicationService service,
+        ILogger<PublicationListViewModel> logger, JobContextFactory factory, ClaimsPrincipal principal)
     {
         this.settings = settings;
         this.service = service;
+        this.logger = logger;
+        this.factory = factory;
+        this.principal = principal;
     }
 
-    public async Task LoadSettings(string channelName)
+    public async Task LoadSettings(string settingsId)
     {
         try
         {
@@ -40,13 +50,44 @@ public class PublicationListViewModel
         }
     }
 
-    public async Task Load(IJobContext context)
+    public IEnumerable<string> GetActiveFilters()
     {
-        Publications = await service.ListPublications(context);
+        return new[] {
+            (Name: nameof(IncludePostedMessages), Value: IncludePostedMessages),
+            (Name: nameof(IncludeReceivedMessages), Value: IncludeReceivedMessages)
+        }.Where(e => e.Value).Select(e => e.Name).ToArray();
     }
 
-    public void Update()
+    private JobContext? cachedContext;
+    public async void PublicationsQueryProvider(Action<IQueryable<TaskModels.Publication>> executor)
     {
-        // TODO: SignalR hook to reload publications list and trigger UI update?
+        if (cachedContext is null)
+        {
+            try
+            {
+                using var context = await factory.CreateDbContext(principal);
+                cachedContext = context;
+                PublicationsQueryProvider(executor);
+                return;
+            }
+            finally
+            {
+                cachedContext = null;
+            }
+        }
+        else 
+        {
+            var bareQuery = BuildQuery(cachedContext);
+            executor(bareQuery);
+        }
+    }
+
+    private IQueryable<TaskModels.Publication> BuildQuery(IJobContext context)
+    {
+        var query = service.PublicationsQuery(context);
+        if (ReceivedMessagesOnly) return query.WhereReceived();
+        if (PostedMessagesOnly) return query.WherePosted();
+        if (!PostedAndReceivedMessages) return query.Where(p => false);
+        return query;
     }
 }

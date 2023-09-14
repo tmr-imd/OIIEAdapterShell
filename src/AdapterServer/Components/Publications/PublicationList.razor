@@ -1,18 +1,23 @@
 @using AdapterServer.Components;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
+@using TaskQueueing.ObjectModel.Models;
 @using Notifications
 
 @inject ILogger<PublicationList> Logger
-@inject PublicationListViewModel viewModel
-@inject JobContextFactory factory
-@inject ClaimsPrincipal principal
+@inject PublicationListViewModel ViewModel
 @inject INotificationService NotificationService
 
 @implements IAsyncDisposable
 
-<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
-    <thead class="bg-gray-100">
+<PagedTable TEntity="Publication" QueryProvider="ViewModel.PublicationsQueryProvider" NumColumns="6" ActiveFilters="ActiveFilters">
+    <FilterContent>
+        <EditForm class="flex flex-row gap-3" EditContext="FilterContext">
+            <label><InputCheckbox @bind-Value="ViewModel.IncludePostedMessages" class="form-input" /><span class="ml-1">Posted</span></label>
+            <label><InputCheckbox @bind-Value="ViewModel.IncludeReceivedMessages" class="form-input" /><span class="ml-1">Received</span></label>
+        </EditForm>
+    </FilterContent>
+    <HeaderContent>
         <tr>
             <th scope="col">Job #</th>
             <th scope="col">Created</th>
@@ -21,39 +26,40 @@
             <th scope="col">Processed</th>
             <th scope="col">Action</th>
         </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-        @foreach (var publication in viewModel.Publications)
-        {
-            <tr>
-                <td>@publication.JobId</td>
-                <td>@publication.DateCreated.ToLocalTime().ToString("G")</td>
-                <td>@publication.MessageId <DirectionIndicator State="@publication.State" /></td>
-                <td>@String.Join(", ", publication.Topics)</td>
-                <td><ProcessingIndicator State="@(publication.State)" /></td>
-                @* <td><ProcessingIndicator State="@(publication.Posted && publication.Responses.Any() ? publication.Responses.Last().State : publication.State)" /></td> *@
-                <td>
-                    <a href="publication/@publication.Id" class="btn">View</a>
-                </td>
-            </tr>
-        }
-        @if (!viewModel.Publications.Any())
-        {
-            <tr><td colspan="6">No publications sent nor received.</td></tr>
-        }
-    </tbody>
-</table>
+    </HeaderContent>
+    <RowContent>
+        <tr>
+            <td>@context.JobId</td>
+            <td>@context.DateCreated.ToLocalTime().ToString("G")</td>
+            <td>@context.MessageId <DirectionIndicator State="@context.State" /></td>
+            <td>@String.Join(", ", context.Topics)</td>
+            <td><ProcessingIndicator State="@(context.State)" /></td>
+            <td>
+                <a href="publication/@context.Id" class="btn">View</a>
+            </td>
+        </tr>
+    </RowContent>
+</PagedTable>
 
 @code {
     private string connectionId = "";
+    private IEnumerable<string> ActiveFilters { get; set; } = Enumerable.Empty<string>();
+    private EditContext FilterContext
+    {
+        get => filterContext ??= new EditContext(ViewModel);
+        set => filterContext = value;
+    }
+    private EditContext? filterContext = null;
 
     protected override async Task OnInitializedAsync()
     {
         connectionId = await NotificationService.RegisterLocal("publication-message-update", async n => {
-            using var context = await factory.CreateDbContext(principal);
-            await viewModel.Load(context);
             await InvokeAsync(StateHasChanged);
         });
+
+        ActiveFilters = ViewModel.GetActiveFilters();
+
+        FilterContext.OnFieldChanged += FilterChanged;
 
         await base.OnInitializedAsync();
     }
@@ -65,11 +71,14 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await viewModel.LoadSettings("publications-list");
-
-        using var context = await factory.CreateDbContext(principal);
-        await viewModel.Load(context);
+        await ViewModel.LoadSettings("publications-list");
 
         await base.OnParametersSetAsync();
+    }
+
+    private void FilterChanged(object sender, FieldChangedEventArgs eventArgs)
+    {
+        Logger.LogDebug("Filter changed {FilterName}", eventArgs.FieldIdentifier.FieldName);
+        ActiveFilters = ViewModel.GetActiveFilters();
     }
 }

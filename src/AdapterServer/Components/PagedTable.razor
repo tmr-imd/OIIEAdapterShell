@@ -1,0 +1,130 @@
+@typeparam TEntity
+
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.EntityFrameworkCore.Query
+
+<div class="data-pager-header col-span-full min-w-full flex justify-between mb-2">
+    <div class="data-pager-size text-sm">
+        <label>
+            Display
+            <select class="form-input text-sm px-1 py-1" name="page-size" @onchange="UpdatePageSize">
+                @foreach (var size in PageSizes)
+                {
+                <option value="@size" selected="@(PageSize == size)">@size</option>                    
+                }
+            </select>
+            entities
+        </label>
+    </div>
+    <div class="data-pager-filters text-sm">
+        @FilterContent
+    </div>
+</div>
+<table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+    <thead class="bg-gray-100">
+        @HeaderContent
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        @foreach (var entity in entities)
+        {
+            @RowContent(entity)
+        }
+        @if (!entities.Any())
+        {
+            <tr><td colspan="@NumColumns">No entities.</td></tr>
+        }
+    </tbody>
+</table>
+<div class="data-pager-footer col-span-full min-w-full flex justify-between mt-2">
+    <div class="data-pager-entities text-sm">Displaying @Math.Min((PageNumber - 1) * PageSize + 1, @entityCount) to @Math.Min((long)PageNumber * PageSize, @entityCount) of @entityCount entities</div>
+    <div class="data-pager-pages">
+        <button type="button" disabled="@IsFirstPage" @onclick="GoToPreviousPage" class="btn text-sm font-normal px-3 py-1">Previous</button>
+        <button type="button" disabled class="btn text-sm font-normal px-3 py-1">@PageNumber</button>
+        <button type="button" disabled="@IsLastPage" @onclick="GoToNextPage" class="btn text-sm font-normal px-3 py-1">Next</button>
+    </div>
+</div>
+
+@code {
+    public static readonly int[] PageSizes = new[] { 20, 50, 100 };
+    public delegate void QueryProviderDelegate(Action<IQueryable<TEntity>> queryExecutor);
+
+    [Parameter]
+    public RenderFragment? FilterContent { get; set; } = null;
+    [Parameter]
+    public RenderFragment HeaderContent { get; set; } = null!;
+    [Parameter]
+    public RenderFragment<TEntity> RowContent { get; set; } = null!;
+    [Parameter]
+    public IQueryable<TEntity> EntityQuery { get; set; } = null!;
+    [Parameter]
+    public QueryProviderDelegate QueryProvider { get; set; } = null!;
+    [Parameter]
+    public int NumColumns { get; set; } = 1;
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 50;
+    [Parameter]
+    public IEnumerable<string> ActiveFilters { get; set; } = Enumerable.Empty<string>();
+
+    private bool IsFirstPage => PageNumber <= 1;
+    private bool IsLastPage => PageNumber >= PageCount;
+    private int PageCount => (int) Math.Ceiling(entityCount / (decimal)PageSize);
+
+    private IEnumerable<TEntity> entities = Enumerable.Empty<TEntity>();
+    private long entityCount = 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        QueryProvider(async (query) =>
+        {
+            var oldCount = entityCount;
+            if (query is IAsyncQueryProvider)
+            {
+                entityCount = await query.LongCountAsync();
+            }
+            else
+            {
+                entityCount = query.LongCount();
+            }
+            if (oldCount != entityCount) PageNumber = 1;
+            UpdateEntities();
+        });
+        await base.OnParametersSetAsync();
+    }
+
+    private void UpdateEntities()
+    {
+        QueryProvider(async (query) =>
+        {
+            var pagedQuery = query.Skip((PageNumber - 1) * PageSize).Take(PageSize);
+            if (query is IAsyncQueryProvider)
+            {
+                entities = await pagedQuery.ToListAsync();
+            }
+            else
+            {
+                entities = pagedQuery.ToList();
+            }
+        });
+    }
+
+    private void GoToNextPage()
+    {
+        ++PageNumber;
+        UpdateEntities();
+    }
+
+    private void GoToPreviousPage()
+    {
+        --PageNumber;
+        UpdateEntities();
+    }
+
+    private void UpdatePageSize(ChangeEventArgs eventArgs)
+    {
+        if (int.TryParse(eventArgs.Value?.ToString(), out var newPageSize))
+        {
+            PageSize = newPageSize;
+            UpdateEntities();
+        }
+    }
+}
