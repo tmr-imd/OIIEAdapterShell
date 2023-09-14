@@ -4,6 +4,11 @@ using TaskQueueing.ObjectModel.Enums;
 
 namespace TaskQueueing.ObjectModel.Models;
 
+public interface IMessage 
+{
+    public string MessageId { get; }
+}
+
 public abstract record AbstractMessage : ModelObject
 {
     public string JobId { get; set; } = "";

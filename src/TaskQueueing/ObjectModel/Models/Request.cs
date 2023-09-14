@@ -2,7 +2,7 @@
 
 namespace TaskQueueing.ObjectModel.Models;
 
-public record class Request : AbstractMessage
+public record class Request : AbstractMessage, IMessage
 {
     public string RequestId { get; set; } = "";
     public string Topic { get; set; } = "";
@@ -17,4 +17,5 @@ public record class Request : AbstractMessage
         }
     }
 
+    public virtual string MessageId => RequestId;
 }
