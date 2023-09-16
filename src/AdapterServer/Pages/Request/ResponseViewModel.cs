@@ -9,6 +9,7 @@ using RequestMessage = TaskQueueing.ObjectModel.Models.Request;
 
 using CommonBOD;
 using Oagis;
+using AdapterServer.Services;
 
 namespace AdapterServer.Pages.Request;
 

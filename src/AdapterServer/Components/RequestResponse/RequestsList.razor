@@ -4,17 +4,17 @@
 @using TaskQueueing.ObjectModel.Models;
 @using Notifications
 
-@inject ILogger<PublicationList> Logger
-@inject PublicationListViewModel ViewModel
+@inject ILogger<RequestsList> Logger
+@inject RequestsListViewModel ViewModel
 @inject INotificationService NotificationService
 
 @implements IAsyncDisposable
 
-<PagedTable TEntity="Publication" QueryProvider="ViewModel.PublicationsQueryProvider" NumColumns="7" ActiveFilters="ActiveFilters">
+<PagedTable TEntity="Request" QueryProvider="ViewModel.RequestsQueryProvider" NumColumns="7" ActiveFilters="ActiveFilters">
     <FilterContent>
         <EditForm class="flex flex-row gap-3" EditContext="FilterContext">
             <label><InputCheckbox @bind-Value="ViewModel.ErrorsOnly" class="form-input" /><span class="ml-1">Errors</span></label>
-            <label><InputCheckbox @bind-Value="ViewModel.IncludePostedMessages" class="form-input" /><span class="ml-1">Posted</span></label>
+            <label><InputCheckbox @bind-Value="ViewModel.IncludePostedMessages" class="form-input" /><span class="ml-1">Sent</span></label>
             <label><InputCheckbox @bind-Value="ViewModel.IncludeReceivedMessages" class="form-input" /><span class="ml-1">Received</span></label>
         </EditForm>
     </FilterContent>
@@ -23,8 +23,8 @@
             <th scope="col">Job #</th>
             <th scope="col">Created</th>
             <th scope="col">In/Out</th>
-            <th scope="col">Message Id</th>
-            <th scope="col">Topics</th>
+            <th scope="col">Request Id</th>
+            <th scope="col">Responses</th>
             <th scope="col">Processed</th>
             <th scope="col">Action</th>
         </tr>
@@ -37,14 +37,14 @@
                 <DirectionIndicator State="@context.State" />
             </td>
             <td>
-                <span class="whitespace-nowrap">@context.MessageId</span>
+                <span class="whitespace-nowrap">@context.RequestId</span>
             </td>
-            <td>@String.Join(", ", context.Topics)</td>
+            <td class="text-center">@context.Responses.Count()</td>
             <td class="text-center">
-                <ProcessingIndicator State="@(context.State)" />
+                <ProcessingIndicator State="@(context.Posted && context.Responses.Any() ? context.Responses.Last().State : context.State)" />
             </td>
             <td>
-                <a href="publication/@context.Id" class="btn">View</a>
+                <a href="response/@context.Id" class="btn">View</a>
             </td>
         </tr>
     </RowContent>
@@ -62,7 +62,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        connectionId = await NotificationService.RegisterLocal("publication-message-update", async n => {
+        connectionId = await NotificationService.RegisterLocal("request-message-update", async n => {
             await InvokeAsync(StateHasChanged);
         });
 
@@ -80,7 +80,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await ViewModel.LoadSettings("publications-list");
+        await ViewModel.LoadSettings("requests-list");
 
         await base.OnParametersSetAsync();
     }

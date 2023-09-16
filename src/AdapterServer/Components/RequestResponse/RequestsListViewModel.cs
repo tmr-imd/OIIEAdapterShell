@@ -1,34 +1,32 @@
-﻿using AdapterServer.Data;
+using System.Security.Claims;
 using AdapterServer.Services;
+using Microsoft.EntityFrameworkCore;
 using Oiie.Settings;
 using TaskQueueing.Jobs;
 using TaskQueueing.ObjectModel;
-using TaskModels = TaskQueueing.ObjectModel.Models;
+using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
-using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
 
-namespace AdapterServer.Components.Publications;
+namespace AdapterServer.Components.RequestResponse;
 
-public class PublicationListViewModel
+public class RequestsListViewModel
 {
     public bool IncludeReceivedMessages { get; set; } = true;
     public bool IncludePostedMessages { get; set; } = true;
     public bool ErrorsOnly { get; set; } = false;
 
-
     public bool ReceivedMessagesOnly => IncludeReceivedMessages && !IncludePostedMessages;
     public bool PostedMessagesOnly => !IncludeReceivedMessages && IncludePostedMessages;
     public bool PostedAndReceivedMessages => IncludeReceivedMessages && IncludePostedMessages;
 
-    private readonly SettingsService settings;
-    private readonly PublicationService service;
-    private readonly ILogger<PublicationListViewModel> logger;
-    private readonly JobContextFactory factory;
-    private readonly ClaimsPrincipal principal;
+    private SettingsService settings;
+    private RequestService service;
+    private ILogger<RequestsListViewModel> logger;
+    private JobContextFactory factory;
+    private ClaimsPrincipal principal;
 
-    public PublicationListViewModel(SettingsService settings, PublicationService service,
-        ILogger<PublicationListViewModel> logger, JobContextFactory factory, ClaimsPrincipal principal)
+    public RequestsListViewModel(SettingsService settings, RequestService service,
+        ILogger<RequestsListViewModel> logger, JobContextFactory factory, ClaimsPrincipal principal)
     {
         this.settings = settings;
         this.service = service;
@@ -53,14 +51,14 @@ public class PublicationListViewModel
 
     public IEnumerable<string> GetActiveFilters()
     {
-        return new[] {
+        return new (string Name, bool Value)[] {
             (Name: nameof(IncludePostedMessages), Value: IncludePostedMessages),
             (Name: nameof(IncludeReceivedMessages), Value: IncludeReceivedMessages)
         }.Where(e => e.Value).Select(e => e.Name).ToArray();
     }
 
-    private JobContext? cachedContext;
-    public async void PublicationsQueryProvider(Action<IQueryable<TaskModels.Publication>> executor)
+    private IJobContext? cachedContext;
+    public async void RequestsQueryProvider(Action<IQueryable<Request>> executor)
     {
         if (cachedContext is null)
         {
@@ -68,7 +66,7 @@ public class PublicationListViewModel
             {
                 using var context = await factory.CreateDbContext(principal);
                 cachedContext = context;
-                PublicationsQueryProvider(executor);
+                RequestsQueryProvider(executor);
                 return;
             }
             finally
@@ -83,12 +81,12 @@ public class PublicationListViewModel
         }
     }
 
-    private IQueryable<TaskModels.Publication> BuildQuery(IJobContext context)
+    private IQueryable<Request> BuildQuery(IJobContext context)
     {
-        var query = service.PublicationsQuery(context)
+        var query = RequestService.RequestsQuery(context)
             .AsNoTrackingWithIdentityResolution();
 
-        if (ErrorsOnly) query = query.WhereFailed();
+        if (ErrorsOnly) query = query.WhereRequestOrResponseFailed();
 
         if (ReceivedMessagesOnly) return query.WhereReceived();
         if (PostedMessagesOnly) return query.WherePosted();

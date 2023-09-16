@@ -3,6 +3,8 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.EntityFrameworkCore.Query
 
+@inject ILogger<PagedTable<TEntity>> Logger
+
 <div class="data-pager-header col-span-full min-w-full flex justify-between mb-2">
     <div class="data-pager-size text-sm">
         <label>
@@ -98,10 +100,12 @@
             var pagedQuery = query.Skip((PageNumber - 1) * PageSize).Take(PageSize);
             if (query is IAsyncQueryProvider)
             {
+                Logger.LogTrace("Complex query check (Async). {Query}", Logger.IsEnabled(LogLevel.Trace) ? pagedQuery.ToQueryString() : "");
                 entities = await pagedQuery.ToListAsync();
             }
             else
             {
+                Logger.LogTrace("Complex query check (non-Async). {Query}", Logger.IsEnabled(LogLevel.Trace) ? pagedQuery.ToQueryString() : "");
                 entities = pagedQuery.ToList();
             }
         });

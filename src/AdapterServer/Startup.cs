@@ -1,6 +1,7 @@
 using Isbm2Client.Model;
 using AdapterServer.Extensions;
 using AdapterServer.Components.Publications;
+using AdapterServer.Components.RequestResponse;
 using AdapterServer.Data;
 using AdapterServer.Pages;
 using AdapterServer.Pages.Request;
@@ -17,7 +18,6 @@ using TaskQueueing.ObjectModel.Models;
 using OiieAdminUi.Authorization;
 using System.Net.Security;
 using AdapterServer.Shared;
-using System.Numerics;
 using Notifications.UI;
 
 namespace AdapterServer;
@@ -136,6 +136,8 @@ public class Startup
         services.AddScoped<SettingsService>();
         services.AddScoped<StructureAssetService>();
         services.AddScoped<RequestViewModel>();
+        services.AddScoped<RequestsListViewModel>();
+        services.AddScoped<RequestService>();
         services.AddScoped<ManageRequestViewModel>();
         services.AddScoped<ResponseViewModel>();
         services.AddScoped<ManagePublicationViewModel>();
