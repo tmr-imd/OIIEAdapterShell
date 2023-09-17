@@ -15,6 +15,7 @@ builder.Services.AddSingleton<IScheduledJobsConfig<ManageRequestViewModel>, JobS
 builder.Services.AddSingleton<IScheduledJobsConfig<ManagePublicationViewModel>, JobSchedulerForPubStructures>();
 
 builder.Services.AddScoped<PublicationDetailViewModel, StructuresPublicationDetailViewModel>();
+builder.Services.AddScoped<RequestResponseDetailViewModel, StructuresRequestResponseDetailViewModel>();
 
 // Example SSL Certificate validation and logging
 builder.Services.AddSingleton<ICertificateValidator, DefaultCertificateValidator>();

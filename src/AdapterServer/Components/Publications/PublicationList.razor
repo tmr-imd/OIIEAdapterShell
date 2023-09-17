@@ -85,7 +85,7 @@
         await base.OnParametersSetAsync();
     }
 
-    private void FilterChanged(object sender, FieldChangedEventArgs eventArgs)
+    private void FilterChanged(object? sender, FieldChangedEventArgs eventArgs)
     {
         Logger.LogDebug("Filter changed {FilterName}", eventArgs.FieldIdentifier.FieldName);
         ActiveFilters = ViewModel.GetActiveFilters();

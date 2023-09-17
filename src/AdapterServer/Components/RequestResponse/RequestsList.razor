@@ -24,6 +24,7 @@
             <th scope="col">Created</th>
             <th scope="col">In/Out</th>
             <th scope="col">Request Id</th>
+            <th scope="col">Topic</th>
             <th scope="col">Responses</th>
             <th scope="col">Processed</th>
             <th scope="col">Action</th>
@@ -39,12 +40,13 @@
             <td>
                 <span class="whitespace-nowrap">@context.RequestId</span>
             </td>
+            <td>@context.Topic</td>
             <td class="text-center">@context.Responses.Count()</td>
             <td class="text-center">
                 <ProcessingIndicator State="@(context.Posted && context.Responses.Any() ? context.Responses.Last().State : context.State)" />
             </td>
             <td>
-                <a href="response/@context.Id" class="btn">View</a>
+                <a href="request/@context.Id" class="btn">View</a>
             </td>
         </tr>
     </RowContent>
@@ -85,7 +87,7 @@
         await base.OnParametersSetAsync();
     }
 
-    private void FilterChanged(object sender, FieldChangedEventArgs eventArgs)
+    private void FilterChanged(object? sender, FieldChangedEventArgs eventArgs)
     {
         Logger.LogDebug("Filter changed {FilterName}", eventArgs.FieldIdentifier.FieldName);
         ActiveFilters = ViewModel.GetActiveFilters();

@@ -56,9 +56,9 @@ public class PublicationDetailViewModel
         }
     }
 
-    public virtual async Task Load(IJobContext context, Guid MessageId)
+    public virtual async Task Load(IJobContext context, Guid messageId)
     {
-        Message = await PublicationService.GetPublication( context, MessageId );
+        Message = await PublicationService.GetPublication(context, messageId);
         RawContent = null;
 
         if (Message is not null)

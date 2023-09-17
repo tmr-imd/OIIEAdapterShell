@@ -14,12 +14,11 @@ public class StructuresPublicationDetailViewModel : PublicationDetailViewModel
     public override async Task Load(IJobContext context, Guid messageId)
     {
         await base.Load(context, messageId);
+        DetailComponentType = null;
+
         if (RawContent?.Contains("SyncStructureAssets") ?? false)
         {
             DetailComponentType = typeof(StructuresPublicationDetail);
-        }
-        else{
-            DetailComponentType = null;
         }
     }
 }

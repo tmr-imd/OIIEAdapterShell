@@ -30,7 +30,7 @@
 
 @code {
     [Parameter]
-    public PublishedMessage Message { get; set; }
+    public PublishedMessage Message { get; set; } = null!;
     private string? RawContent { get; set; } = null;
 
     private StructureAsset? Structure { get; set; } = null;

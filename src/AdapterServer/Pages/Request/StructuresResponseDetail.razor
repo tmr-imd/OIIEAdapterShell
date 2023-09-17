@@ -1,0 +1,115 @@
+@using AdapterServer.Data
+@using CommonBOD
+@using Oagis
+@using System.Text.Json
+@using TaskQueueing.Data
+@using RequestMessage = TaskQueueing.ObjectModel.Models.Request
+@using ResponseBODType = CommonBOD.GenericBodType<Oagis.ShowType, List<Ccom.Asset>>
+
+@if (Assets.Any())
+{
+    <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+        <thead class="bg-gray-100">
+            <tr>
+                <th scope="col">Short Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Registration Site</th>
+                <th scope="col">Asset Owner</th>
+                <th scope="col">Health Assessment</th>
+                @*<th scope="col">Inspector</th>*@
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            @foreach (var structureAsset in Assets)
+            {
+                <tr>
+                    <td>@structureAsset.ShortName.First().Value</td>
+                    <td>@structureAsset.Type?.FullName.First().Value</td>
+                    <td>@structureAsset.RegistrationSite?.FullName.First().Value</td>
+                    <td>@structureAsset.AssetOwnerEvent?.First().FullName.First().Value</td>
+                    <td>@structureAsset.HealthAssessment?.First().FullName.First().Value</td>
+                    @*<td>@structureAsset.Inspector</td>*@
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (StructureAssets.Any())
+{
+    <table class="col-span-full min-w-full divide-y divide-gray-300 border roundeed data-table">
+        <thead class="bg-gray-100">
+            <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Type</th>
+                <th scope="col">Location</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Condition</th>
+                <th scope="col">Inspector</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            @foreach (var structureAsset in StructureAssets)
+            {
+                <tr>
+                    <td>@structureAsset.Code</td>
+                    <td>@structureAsset.Type</td>
+                    <td>@structureAsset.Location</td>
+                    <td>@structureAsset.Owner</td>
+                    <td>@structureAsset.Condition</td>
+                    <td>@structureAsset.Inspector</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public RequestMessage Message { get; set; } = null!;
+
+    private IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
+    private IEnumerable<Ccom.Asset> Assets { get; set; } = Enumerable.Empty<Ccom.Asset>();
+
+    protected override Task OnParametersSetAsync()
+    {
+        StructureAssets = Enumerable.Empty<StructureAsset>();
+        Assets = Enumerable.Empty<Ccom.Asset>();
+
+        if (Message.MediaType.StartsWith("application/json"))
+        {
+            DeserializeStructures(Message);
+        }
+        else if (Message.MediaType.StartsWith("application/xml"))
+        {
+            DeserializeBOD(Message);
+        }
+
+        return base.OnParametersSetAsync();
+    }
+
+    private void DeserializeStructures(RequestMessage request)
+    {
+        if (request.ResponseContent is not null && request.Responses.Last().MediaType.StartsWith("application/json"))
+        {
+            // Deserialize the content only. Ignore ConfirmBOD (application/XML) as errors have already been attached to the request
+            var structures = request.ResponseContent.Deserialize<RequestStructures>();
+            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
+        }
+    }
+
+    private void DeserializeBOD(RequestMessage request)
+    {
+        if (request.ResponseContent is not null)
+        {
+            // Deserialize the content only. Ignore ConfirmBOD as errors have already been attached to the request
+            var responseBod = new ResponseBODType("ShowStructureAssets", Ccom.Namespace.URI);
+            responseBod = StructuresRequestResponseDetailViewModel.DeserializeBODContent<ResponseBODType, ShowType, List<Ccom.Asset>>(request.ResponseContent, responseBod);
+            if (responseBod is null) return;
+
+            var assets = responseBod.DataArea.Noun;
+            Assets = assets ?? Enumerable.Empty<Ccom.Asset>();
+        }
+    }
+}
+
