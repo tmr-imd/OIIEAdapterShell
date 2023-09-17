@@ -29,10 +29,16 @@ public class RequestResponseDetailViewModel
     public RequestMessage? Request { get; set; } = null;
     public string Topic => Request?.Topic ?? "";
     public MessageState RequestState => Request is null ? MessageState.Undefined : Request.State;
-    private Lazy<string> lazyRawRequest;
-    public string RequestRawContent => lazyRawRequest.Value;
-    public string ResponseRawContent => ExtractRawContent(Request?.Responses.LastOrDefault());
+    public string RequestRawContent => Request is null ? "" : lazyRawContents[Request.Id].Value;
 
+    public IEnumerable<Response> Responses
+    {
+        get => Request?.Responses.OrderBy(x => x.DateCreated).AsEnumerable() ?? Enumerable.Empty<Response>();
+    }
+
+    public string ResponseRawContent(Response response) => lazyRawContents[response.Id].Value;
+
+    private Dictionary<Guid, Lazy<string>> lazyRawContents = new();
     private readonly SettingsService settings;
 
     public RequestResponseDetailViewModel(IOptions<ClientConfig> config, SettingsService settings)
@@ -40,8 +46,6 @@ public class RequestResponseDetailViewModel
         Endpoint = config.Value?.EndPoint ?? "";
 
         this.settings = settings;
-
-        lazyRawRequest = new(() => ExtractRawContent(Request));
     }
 
     public async Task LoadSettings(string channelName)
@@ -61,10 +65,11 @@ public class RequestResponseDetailViewModel
     public virtual async Task Load(IJobContext context, Guid requestId)
     {
         Request = await RequestService.GetRequest(context, requestId);
-        lazyRawRequest = new Lazy<string>(() => ExtractRawContent(Request));
+        lazyRawContents = new(Responses.Select(r => KeyValuePair.Create(r.Id, new Lazy<string>(ExtractRawContent(r)))));
 
         if (Request is not null)
         {
+            lazyRawContents[Request.Id] = new Lazy<string>(() => ExtractRawContent(Request));
             RequestDetailComponentParameters["Message"] = Request;
             ResponseDetailComponentParameters["Message"] = Request;
         }

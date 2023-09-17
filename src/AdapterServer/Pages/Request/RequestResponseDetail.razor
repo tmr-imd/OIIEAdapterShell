@@ -80,11 +80,11 @@
 {
 <div class="col-span-full">
 
-    <h2 class="mt-6">Response Detail</h2>
-    <ErrorsDisplay Errors="@ResponseErrors" />
+    <h2 class="mt-6">Response Detail <small>(@response.Id)</small></h2>
+    <ErrorsDisplay Errors="@ResponseErrors(response)" />
     
     <h3 class="mt-3">Raw Response</h3>
-    <RawMessage Content="@ResponseContent" />
+    <RawMessage Content="@ResponseContent(response)" />
 
 </div>
 }
@@ -123,15 +123,9 @@
 
     private int ResponseCount => ViewModel.Request?.Responses.Count ?? 0;
 
-    private IEnumerable<Response> Responses
-    {
-        get => ViewModel.Request?.Responses.OrderBy(x => x.DateCreated).AsEnumerable() ?? Enumerable.Empty<Response>();
-    }
+    private IEnumerable<Response> Responses => ViewModel.Responses;
 
-    private IEnumerable<MessageError> ResponseErrors
-    {
-        get => ViewModel.Request?.Responses?.LastOrDefault()?.MessageErrors ?? Enumerable.Empty<MessageError>();
-    }
+    private IEnumerable<MessageError> ResponseErrors(Response response) => response.MessageErrors ?? Enumerable.Empty<MessageError>();
 
-    private string ResponseContent => ViewModel.ResponseRawContent;
+    private string ResponseContent(Response response) => ViewModel.ResponseRawContent(response);
 }
