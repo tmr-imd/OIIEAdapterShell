@@ -2,11 +2,18 @@ using CIRLib.Persistence;
 using System.Security.Claims;
 using ObjModels = CIRLib.ObjectModel.Models;
 using DataModel = DataModelServices;
+using Microsoft.Extensions.Logging;
 
 namespace CIRServices;
 public class CIRManager
 {
     public static CIRLibContextFactory Factory {get; set;} = new CIRLibContextFactory();
+    private static ILogger<CIRManager> _logger;
+
+    public CIRManager(ILogger<CIRManager> logger)
+    {
+        _logger = logger;
+    }
 
     public static void AddRegistries(DataModel.RegistryDef newRegObj, CIRLibContext? dbContext = null)
     {
@@ -45,6 +52,7 @@ public class CIRManager
         cService.CreateNewCategory(newCatObj, dbContext);
     }
 
+
     public static IEnumerable<ObjModels.Entry> GetEquivalentEntries( DataModel.EntryDef newEntryObj,
         CIRLibContext? dbContext = null)
     {
@@ -60,10 +68,21 @@ public class CIRManager
          CIRId :newEntryObj.CIRId, dbContext: dbContext);        
     }
 
-    public static void AddEntries(DataModel.EntryDef newEntryObj, CIRLibContext? dbContext = null)
+    public static IEnumerable<ObjModels.Entry> GetEquivalentEntries(string entryId = "", string entrySourceId = "", string registryId = "",
+        string categoryId = "", string categorySourceID = "", string propertyId = "",
+        string propertyValueKey = "", string CIRId = "", CIRLibContext? dbContext = null)
     {
-        AddEntries(new[] {newEntryObj}, dbContext);
+        if (dbContext is null)
+        {
+            //This will always be null initially.
+            //Added this to support dbContext passing for testing only.
+            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+        }
+
+        return new EntryServices().GetEntriesFromFilters(entryId, entrySourceId, registryId, categoryId, categorySourceID, propertyId ,
+        propertyValueKey, CIRId, dbContext: dbContext);
     }
+
     public static void AddEntries(IEnumerable<DataModel.EntryDef> newEntryObjs, CIRLibContext? dbContext = null)
     {
         List<string> errorMessages = new List<string>();
@@ -81,9 +100,8 @@ public class CIRManager
                 || string.IsNullOrWhiteSpace(newEntryObj.CategoryId)
                 || string.IsNullOrWhiteSpace(newEntryObj.RegistryId))
             {
-                errorMessages.Add("Entry Id, CategoryId and RegistryId are mandatory fields!");
-                errorMessages.Add("Mandatory fields not provided for: "+ newEntryObj);
-                continue;
+                _logger.LogInformation("Creating Placeholder Category and Registry as the Category and Registry details were not present.");
+
             }
             
             var eService = new EntryServices();       
@@ -179,6 +197,62 @@ public class CIRManager
             var eService = new EntryServices();
             eService.UpdateEntry(entryExists.Id, newEntryObj, dbContext);
         }
+    }
+
+    public static void UpdateCIRIdInEntryDetails(string CIRId, ObjModels.Entry newEntryObj, CIRLibContext? dbContext = null)
+    {
+        if (dbContext is null)
+        {
+            //This will always be null initially.
+            //Added this to support dbContext passing for testing only.
+            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+        }
+
+        var eService = new EntryServices();
+        eService.UpdateCIRIdInEntry(CIRId, newEntryObj, dbContext);
+    }
+
+    /// <summary>
+    /// Retrieves the CIRId from the existing Entry.
+    /// </summary>
+    /// <param name="entryObj">Entry Object which will contain all the fields to filter for the corresponding CIRId</param>
+    /// <param name="dbContext"></param>
+    /// <returns></returns>
+    public static string GetCIRIdFromEntry(ObjModels.Entry entryObj, CIRLibContext? dbContext = null)
+    {
+        if (dbContext is null)
+        {
+            //This will always be null initially.
+            //Added this to support dbContext passing for testing only.
+            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+        }
+
+        var eService = new EntryServices();
+        var entry = eService.GetEntriesFromFilters(entryId: entryObj.IdInSource, entrySourceId: entryObj.SourceId,
+         registryId: entryObj.RegistryId, categoryId: entryObj.CategoryId, dbContext: dbContext).FirstOrDefault();
+        return entry.CIRId;
+    }
+
+    /// <summary>
+    /// Get's the IdInSource from the existing Entries.
+    /// Expecting to get unique values and hence a FirstorDefault() is added to the Filter.
+    /// </summary>
+    /// <param name="entryObj">Entry Object which will have all the fields necessary to retrieve the corresponding IdInSource</param>
+    /// <param name="dbContext"></param>
+    /// <returns></returns>
+    public static string GetIdInSourceFromEntry(ObjModels.Entry entryObj, CIRLibContext? dbContext = null)
+    {
+        if (dbContext is null)
+        {
+            //This will always be null initially.
+            //Added this to support dbContext passing for testing only.
+            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+        }
+
+        var eService = new EntryServices();
+        var entry = eService.GetEntriesFromFilters(entrySourceId: entryObj.SourceId,
+         registryId: entryObj.RegistryId, categoryId: entryObj.CategoryId, CIRId: entryObj.CIRId, dbContext: dbContext).FirstOrDefault();
+        return entry.IdInSource;
     }
 
     public static void ProcessRegistry(DataModel.RegistryDef regObj, DataModel.CategoryDef catObj,
