@@ -21,7 +21,7 @@
 
 @if ( Edit == "channel" )
 {
-    <ManageRequest ChannelName="@channelName" BackTo=@($"/request-response?Entry={Entry}") />
+    <ManageRequest ChannelName="@channelName" BackTo=@($"/request-response") />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
@@ -37,7 +37,7 @@
 
                     <span>No open session</span>
                 </div>
-                <a class="btn" href="/request-response?Entry=@Entry&edit=channel">Manage Channel</a>
+                <a class="btn" href="/request-response?edit=channel">Manage Channel</a>
             </div>
         </div>
 
@@ -70,8 +70,6 @@
         <div />
         <div />
         
-        @if (Entry != "fss")
-        {
         <h2 class="col-span-full mt-6">Message Settings</h2>
 
         <h3>Code</h3>
@@ -156,8 +154,6 @@
                 }
             </tbody>
         </table>
-        }
-        
     </div>
 </EditForm>
 
@@ -173,10 +169,6 @@
     [SupplyParameterFromQuery]
     public string? Edit { get; set; }
 
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string? Entry {get; set; }
-    
     protected override async Task OnInitializedAsync()
     {
         connectionId = await NotificationService.RegisterLocal("request-message-update", async n => {

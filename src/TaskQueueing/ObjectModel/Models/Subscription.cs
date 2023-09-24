@@ -2,8 +2,8 @@
 
 namespace TaskQueueing.ObjectModel.Models;
 
-public record class Publication : AbstractMessage
+public record class Publication : AbstractMessage, IMessage
 {
-    public string MessageId { get; set; } = "";
+    public virtual string MessageId { get; set; } = "";
     public IEnumerable<string> Topics { get; set; } = Array.Empty<string>();
 }
