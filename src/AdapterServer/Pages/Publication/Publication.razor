@@ -1,7 +1,7 @@
 ﻿@page "/pub-sub"
 @using AdapterServer.Data;
 @using Oiie.Settings;
-@using AdapterServer.Components;
+@using AdapterServer.Components.Publications;
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
 @using Notifications
@@ -68,6 +68,7 @@
         <div />
         <div />
         <div />
+
         <h2 class="col-span-full mt-6">Message Settings</h2>
 
         <h3>Code</h3>
@@ -142,7 +143,6 @@
                 }
             </tbody>
         </table>
-        }
     </div>
 </EditForm>
 
@@ -185,6 +185,7 @@
 
         using var context = await factory.CreateDbContext(principal);
         await viewModel.Load(context);
+
         await base.OnParametersSetAsync();
     }
 

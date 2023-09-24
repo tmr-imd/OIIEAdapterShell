@@ -1,0 +1,66 @@
+@using AdapterServer.Data
+@using CommonBOD
+@using Oagis
+@using System.Text.Json
+@using RequestMessage = TaskQueueing.ObjectModel.Models.Request
+@using RequestBODType = CommonBOD.GenericBodType<Oagis.GetType, List<AdapterServer.Data.StructureAssetsFilter>>
+
+<div class="grid grid-cols-4 gap-2">
+    <h3>Code</h3>
+    <h3>Type</h3>
+    <h3>Location</h3>
+    <h3>Owner</h3>
+
+    <div>@Filter?.FilterCode</div>
+    <div>@Filter?.FilterType</div>
+    <div>@Filter?.FilterLocation</div>
+    <div>@Filter?.FilterOwner</div>
+
+    <h3>Condition</h3>
+    <h3>Inspector</h3>
+    <div />
+    <div />
+
+    <div>@Filter?.FilterCondition</div>
+    <div>@Filter?.FilterInspector</div>
+    <div />
+    <div />
+</div>
+
+@code {
+    [Parameter]
+    public RequestMessage Message { get; set; } = null!;
+
+    private StructureAssetsFilter? Filter { get; set; } = null;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (Message.MediaType.StartsWith("application/json"))
+        {
+            DeserializeStructures(Message);
+        }
+        else if (Message.MediaType.StartsWith("application/xml"))
+        {
+            DeserializeBOD(Message);
+        }
+
+        return base.OnParametersSetAsync();
+    }
+
+    private void DeserializeStructures(RequestMessage request)
+    {
+        var filter = request.Content.Deserialize<StructureAssetsFilter>();
+        Filter = filter;
+    }
+
+    private void DeserializeBOD(RequestMessage request)
+    {
+        var bod = new RequestBODType("GetStructureAssets", Ccom.Namespace.URI, nounName: "StructureAssetsFilter");
+        bod = StructuresRequestResponseDetailViewModel.DeserializeBODContent<RequestBODType, GetType, List<StructureAssetsFilter>>(request.Content, bod);
+        if (bod is null) return;
+
+        var filter = bod.DataArea.Noun.First();
+        Filter = filter;
+    }
+}
+

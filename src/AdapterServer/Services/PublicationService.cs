@@ -2,14 +2,19 @@
 using TaskQueueing.ObjectModel;
 using TaskModels = TaskQueueing.ObjectModel.Models;
 
-namespace AdapterServer.Pages.Publication;
+namespace AdapterServer.Services;
 
 public class PublicationService
 {
+    public IQueryable<TaskModels.Publication> PublicationsQuery(IJobContext context)
+    {
+        return context.Publications
+            .OrderByDescending(x => x.DateCreated);
+    }
+
     public async Task<IEnumerable<TaskModels.Publication>> ListPublications(IJobContext context)
     {
-        return await context.Publications
-            .OrderByDescending(x => x.DateCreated)
+        return await PublicationsQuery(context)
             .ToListAsync();
     }
 

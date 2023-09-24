@@ -2,18 +2,11 @@
 @using AdapterServer.Data
 @using System.Security.Claims
 @using TaskQueueing.Persistence
-@using AdapterServer.Components
-@using Notifications
+@using AdapterServer.Components.RequestResponse;
 
 @inject ILogger<Request> Logger
 
-@inject RequestViewModel viewModel
-@inject NavigationManager navigation
-@inject JobContextFactory factory
-@inject ClaimsPrincipal principal
-@inject INotificationService NotificationService
-
-@implements IAsyncDisposable
+@inject RequestViewModel ViewModel
 
 <PageTitle>Request/Response - Adapter Shell</PageTitle>
 
@@ -24,7 +17,7 @@
     <ManageRequest ChannelName="@channelName" BackTo=@($"/request-response") />
 }
 
-<EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
+<EditForm Model="@ViewModel" OnSubmit="@HandleSubmit">
     <div class="grid grid-cols-4 gap-2">
         <div class="col-span-full flex justify-between items-center mt-6">
             <h2>ISBM Settings</h2>
@@ -45,13 +38,13 @@
         <h3>ISBM Channel</h3>
         <h3>ISBM Topic</h3>
         <div class="col-span-2">
-            <InputText type="text" class="form-input w-full" disabled @bind-Value="viewModel.Endpoint" />
+            <InputText type="text" class="form-input w-full" disabled @bind-Value="ViewModel.Endpoint" />
         </div>
         <div>
-            <InputText type="text" class="form-input w-full" disabled @bind-Value="viewModel.ChannelUri" />
+            <InputText type="text" class="form-input w-full" disabled @bind-Value="ViewModel.ChannelUri" />
         </div>
         <div>
-            <InputText type="text" class="form-input w-full" disabled @bind-Value="@viewModel.Topic" />
+            <InputText type="text" class="form-input w-full" disabled @bind-Value="ViewModel.Topic" />
         </div>
 
         <h3>Message Type</h3>
@@ -60,7 +53,7 @@
         <div />
 
         <div>
-            <InputSelect class="form-select" disabled @bind-Value="@viewModel.MessageType">
+            <InputSelect class="form-select" disabled @bind-Value="ViewModel.MessageType">
                 <option value="@RequestViewModel.MessageTypes.JSON">Simple JSON</option>
                 <option value="@RequestViewModel.MessageTypes.ExampleBOD">Example BOD</option>
                 <option value="@RequestViewModel.MessageTypes.CCOM">CCOM BOD</option>
@@ -77,18 +70,18 @@
         <h3>Location</h3>
         <h3>Owner</h3>
 
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterCode" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterType" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterLocation" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterOwner" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@ViewModel.FilterCode" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@ViewModel.FilterType" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@ViewModel.FilterLocation" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@ViewModel.FilterOwner" disabled="@notReady" /></div>
 
         <h3>Condition</h3>
         <h3>Inspector</h3>
         <div />
         <div />
 
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterCondition" disabled="@notReady" /></div>
-        <div><InputText type="text" class="form-input w-full" @bind-Value="@viewModel.FilterInspector" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@ViewModel.FilterCondition" disabled="@notReady" /></div>
+        <div><InputText type="text" class="form-input w-full" @bind-Value="@ViewModel.FilterInspector" disabled="@notReady" /></div>
         <div />
         <div />
 
@@ -115,52 +108,16 @@
                 <span class="text-red-500">@error</span>
             </div>
         }
-
-        <h2 class="col-span-full mt-6 @(viewModel.Requests.Count() == 0 ? "hidden" : "")">Requests</h2>
-        <table class="col-span-full min-w-full divide-y divide-gray-300 border rounded data-table @(viewModel.Requests.Count() == 0 ? "hidden" : "")">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th scope="col">Job #</th>
-                    <th scope="col">Created</th>
-                    <th scope="col">RequestId</th>
-                    <th scope="col">Process</th>
-                    <th scope="col">Direction</th>
-                    <th scope="col">Processed</th>
-                    <th scope="col">Action</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @foreach (var request in viewModel.Requests)
-                {
-                    <tr class="@(request.Received ? "bg-gray-50" : "")">
-                        <td>@request.JobId</td>
-                        <td>@request.DateCreated.ToLocalTime().ToString("G")</td>
-                        <td>@request.RequestId</td>
-                        <td>
-                            <span>@(request.Posted ? "Consumer" : "Provider")</span>
-                        </td>
-                        <td>
-                            <DirectionIndicator State="@request.State" />
-                            <span>@(request.Posted ? "Posted" : "Received")</span>
-                        </td>
-                        <td><ProcessingIndicator State="@(request.Posted && request.Responses.Any() ? request.Responses.Last().State : request.State)" /></td>
-                        <td>
-                            @if ( request.ResponseContent is not null )
-                            { 
-                                <a href="response/@request.Id" class="btn">View</a>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
     </div>
 </EditForm>
+
+<h2 class="col-span-full mt-6">Requests</h2>
+<RequestsList />
 
 @code {
     private bool working;
     private bool sent;
-    private bool notReady => viewModel.SessionId == "";
+    private bool notReady => ViewModel.SessionId == "";
     private string error = "";
     private string channelName = "request-response";
     private string connectionId = "";
@@ -171,29 +128,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        connectionId = await NotificationService.RegisterLocal("request-message-update", async n => {
-            using var context = await factory.CreateDbContext(principal);
-            await viewModel.Load(context);
-            await InvokeAsync(StateHasChanged);
-        });
-
         await base.OnInitializedAsync();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await NotificationService.Unregister(connectionId);
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await viewModel.LoadSettings(channelName);
-
-        await InvokeAsync(StateHasChanged);
-
-        using var context = await factory.CreateDbContext(principal);
-        await viewModel.Load(context);
-
+        await ViewModel.LoadSettings(channelName);
         await base.OnParametersSetAsync();
     }
 
@@ -210,7 +150,7 @@
         try
         {
             // Process the form
-            viewModel.Request();
+            ViewModel.Request();
 
             sent = true;
         }

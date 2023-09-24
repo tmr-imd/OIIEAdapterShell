@@ -22,8 +22,16 @@ public class NotificationsJs : IAsyncDisposable
     public async ValueTask<bool> UpdateCounter(int count, bool replayAnimation)
     {
         // Best to always return some value from JS used through interop to avoid task cancelled errors.
-        var module = await moduleTask.Value;
-        return await module.InvokeAsync<bool>("updateNotificationCounter", count, replayAnimation);
+        try
+        {
+            var module = await moduleTask.Value;
+            return await module.InvokeAsync<bool>("updateNotificationCounter", count, replayAnimation);
+        }
+        catch (TaskCanceledException)
+        {
+            // Assuming page switch or similar, no reason to worry.
+            return false;
+        }
     }
 
     public async ValueTask DisposeAsync()

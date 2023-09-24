@@ -1,0 +1,134 @@
+@using AdapterServer.Components
+@using AdapterServer.Data
+@using CommonBOD
+@using Oagis
+@using System.Text.Json
+@using TaskQueueing.Data
+@using TaskQueueing.ObjectModel.Models
+@using RequestMessage = TaskQueueing.ObjectModel.Models.Request
+@using ResponseBODType = CommonBOD.GenericBodType<Oagis.ShowType, List<Ccom.Asset>>
+
+<p>
+    Content from response <code>@(MainResponse?.Id.ToString() ?? "NONE")</code>.
+</p>
+
+@if (Assets.Any())
+{
+    <PagedTable TEntity="Ccom.Asset" Context="structureAsset" QueryProvider="AssetsQueryProvider" NumColumns="5">
+        <HeaderContent>
+            <tr>
+                <th scope="col">Short Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Registration Site</th>
+                <th scope="col">Asset Owner</th>
+                <th scope="col">Health Assessment</th>
+                @*<th scope="col">Inspector</th>*@
+            </tr>
+        </HeaderContent>
+        <RowContent>
+            <tr>
+                <td>@structureAsset.ShortName.First().Value</td>
+                <td>@structureAsset.Type?.FullName.First().Value</td>
+                <td>@structureAsset.RegistrationSite?.FullName.First().Value</td>
+                <td>@structureAsset.AssetOwnerEvent?.First().FullName.First().Value</td>
+                <td>@structureAsset.HealthAssessment?.First().FullName.First().Value</td>
+                @*<td>@structureAsset.Inspector</td>*@
+            </tr>
+        </RowContent>
+    </PagedTable>
+}
+
+@if (StructureAssets.Any())
+{
+    <PagedTable TEntity="StructureAsset" Context="structureAsset" QueryProvider="StructureAssetsQueryProvider" NumColumns="6">
+        <HeaderContent>
+            <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Type</th>
+                <th scope="col">Location</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Condition</th>
+                <th scope="col">Inspector</th>
+            </tr>
+        </HeaderContent>
+        <RowContent>
+            <tr>
+                <td>@structureAsset.Code</td>
+                <td>@structureAsset.Type</td>
+                <td>@structureAsset.Location</td>
+                <td>@structureAsset.Owner</td>
+                <td>@structureAsset.Condition</td>
+                <td>@structureAsset.Inspector</td>
+            </tr>
+        </RowContent>
+    </PagedTable>
+}
+
+@code {
+    [Parameter]
+    public RequestMessage Message { get; set; } = null!;
+    
+    private Response? MainResponse { get; set; }
+
+    private IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
+    private void StructureAssetsQueryProvider(Action<IQueryable<StructureAsset>> executor)
+    {
+        executor(StructureAssets.AsQueryable());
+    }
+
+    private IEnumerable<Ccom.Asset> Assets { get; set; } = Enumerable.Empty<Ccom.Asset>();
+    private void AssetsQueryProvider(Action<IQueryable<Ccom.Asset>> executor)
+    {
+        executor(Assets.AsQueryable());
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        MainResponse = null;
+        StructureAssets = Enumerable.Empty<StructureAsset>();
+        Assets = Enumerable.Empty<Ccom.Asset>();
+
+        if (Message.MediaType.StartsWith("application/json"))
+        {
+            DeserializeStructures(Message);
+        }
+        else if (Message.MediaType.StartsWith("application/xml"))
+        {
+            DeserializeBOD(Message);
+        }
+
+        return base.OnParametersSetAsync();
+    }
+
+    private void DeserializeStructures(RequestMessage request)
+    {
+        // Ignore ConfirmBOD (application/XML) as errors have already been attached to the request
+        var response = request.Responses.LastOrDefault(r => r.MediaType.StartsWith("application/json"));
+        if (response is not null)
+        {
+            MainResponse = response;
+            // Deserialize the content only.
+            var structures = response.Content.Deserialize<RequestStructures>();
+            StructureAssets = structures?.StructureAssets ?? Enumerable.Empty<StructureAsset>();
+        }
+    }
+
+    private void DeserializeBOD(RequestMessage request)
+    {
+        // Ignore ConfirmBOD as errors have already been attached to the request
+        var response = request.Responses.LastOrDefault(r => !(r.Content.RootElement.GetString()?.Contains("<ConfirmBOD") ?? false));
+        if (response is not null)
+        {
+            MainResponse = response;
+
+            // Deserialize the content only.
+            var responseBod = new ResponseBODType("ShowStructureAssets", Ccom.Namespace.URI);
+            responseBod = StructuresRequestResponseDetailViewModel.DeserializeBODContent<ResponseBODType, ShowType, List<Ccom.Asset>>(response.Content, responseBod);
+            if (responseBod is null) return;
+
+            var assets = responseBod.DataArea.Noun;
+            Assets = assets ?? Enumerable.Empty<Ccom.Asset>();
+        }
+    }
+}
+

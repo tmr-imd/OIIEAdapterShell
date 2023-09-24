@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 using System.Xml.Linq;
 using TaskQueueing.Data;
 using TaskQueueing.Jobs;
-using TaskQueueing.ObjectModel;
 using TaskModels = TaskQueueing.ObjectModel.Models;
 
 namespace AdapterServer.Pages.Request;
@@ -34,8 +33,6 @@ public class RequestViewModel
     public string FilterOwner { get; set; } = "";
     public string FilterCondition { get; set; } = "";
     public string FilterInspector { get; set; } = "";
-
-    public IEnumerable<TaskModels.Request> Requests { get; set; } = Enumerable.Empty<TaskModels.Request>();
 
     private readonly SettingsService settings;
 
@@ -66,11 +63,6 @@ public class RequestViewModel
         {
             // Just leave things as they are
         }
-    }
-
-    public async Task Load(IJobContext context)
-    {
-        Requests = await RequestService.ListRequests(context);
     }
 
     public void Request()

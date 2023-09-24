@@ -1,4 +1,5 @@
 ﻿using AdapterServer.Data;
+using AdapterServer.Services;
 using Oiie.Settings;
 using Isbm2Client.Model;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using TaskQueueing.Data;
 using TaskQueueing.ObjectModel;
 using AbstractMessage = TaskQueueing.ObjectModel.Models.AbstractMessage;
 using PublishedMessage = TaskQueueing.ObjectModel.Models.Publication;
+using TaskQueueing.ObjectModel.Enums;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -18,18 +20,16 @@ public class PublicationDetailViewModel
     public string Topic { get; set; } = "Test Topic";
     public string SessionId { get; set; } = "";
 
-    public string Code { get; set; } = "";
-    public string Type { get; set; } = "";
-    public string Location { get; set; } = "";
-    public string Owner { get; set; } = "";
-    public string Condition { get; set; } = "";
-    public string Inspector { get; set; } = "";
+    public Type? DetailComponentType { get; protected set; } = null;
+    public IDictionary<string, object> DetailComponentParameters { get; } = new Dictionary<string, object>();
 
     public PublishedMessage? Message { get; set; } = null;
 
+    public string Topics => string.Join("\n", Message?.Topics ?? Enumerable.Empty<string>());
+    public MessageState MessageState => Message is null ? MessageState.Undefined : Message.State;
+
     public string? RawContent { get; set; } = null;
 
-    // public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
 
     private readonly SettingsService settings;
 
@@ -56,62 +56,21 @@ public class PublicationDetailViewModel
         }
     }
 
-    public async Task Load(IJobContext context, Guid MessageId)
+    public virtual async Task Load(IJobContext context, Guid messageId)
     {
-        Message = await PublicationService.GetPublication( context, MessageId );
+        Message = await PublicationService.GetPublication(context, messageId);
         RawContent = null;
 
         if (Message is not null)
         {
-            if (Message.MediaType == "application/json")
-            {
-                DeserializeStructure(Message);
-            }
-            else if (Message.Content.RootElement.ValueKind == JsonValueKind.String)
-            {
-                DeserializeBOD(Message);
-            }
+            DetailComponentParameters["Message"] = Message;
+
+            RawContent = Message.Content.Deserialize<string>();
 
             // if (Message.ResponseContent is not null)
             // {
             //     // TODO: COnfirmBOD.
             // }
         }
-    }
-
-    private void DeserializeStructure(PublishedMessage message)
-    {
-        var structure = message.Content.Deserialize<NewStructureAsset>();
-
-        if (structure is not null)
-        {
-            Code = structure.Data.Code;
-            Type = structure.Data.Type;
-            Location = structure.Data.Location;
-            Owner = structure.Data.Owner;
-            Condition = structure.Data.Condition;
-            Inspector = structure.Data.Inspector;
-        }
-    }
-
-    private void DeserializeBOD(AbstractMessage message)
-    {
-        RawContent = message.Content.Deserialize<string>();
-        if (RawContent is null || RawContent.Contains("ConfirmBOD")) return;
-
-        var bod = new CommonBOD.GenericBodType<Oagis.SyncType, List<StructureAssets>>("SyncStructureAssets", Ccom.Namespace.URI);
-        using (var input = new StringReader(RawContent))
-        {
-            bod = bod.CreateSerializer().Deserialize(input) as CommonBOD.GenericBodType<Oagis.SyncType, List<StructureAssets>>;
-        }
-        if (bod is null) return;
-        
-        var structure = bod.DataArea.Noun.First().StructureAsset.First();
-        Code = structure.Code;
-        Type = structure.Type;
-        Location = structure.Location;
-        Owner = structure.Owner;
-        Condition = structure.Condition;
-        Inspector = structure.Inspector;
     }
 }

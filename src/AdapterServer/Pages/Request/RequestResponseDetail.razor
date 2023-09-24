@@ -1,0 +1,131 @@
+﻿@page "/request/{RequestId:guid}"
+@using AdapterServer.Data;
+@using System.Security.Claims;
+@using TaskQueueing.Persistence;
+@using TaskQueueing.ObjectModel.Models;
+@using AdapterServer.Components
+@using System.Text.Json;
+
+@inject ILogger<RequestResponseDetail> Logger
+
+@inject RequestResponseDetailViewModel ViewModel
+@inject NavigationManager Navigation
+@inject JobContextFactory Factory
+@inject ClaimsPrincipal Principal
+
+<PageTitle>Request/Response Detail - Adapter Shell</PageTitle>
+
+<h1>Request</h1>
+
+<h2 class="col-span-full mt-6">Request Parameters</h2>
+
+<div class="grid grid-cols-4 gap-2">
+    <h3 class="col-span-2">Topic</h3>
+    <h3>Expiry</h3>
+    <h3>Status</h3>
+
+    <div class="col-span-2">
+        <div class="form-input w-full">@ViewModel.Topic</div>
+    </div>
+    <div>
+        <div class="form-input w-full">-</div>
+    </div>
+    <div>
+        <div class="form-input w-full flex flex-row gap-2">
+            <DirectionIndicator State="ViewModel.RequestState" />
+            <ProcessingIndicator State="ViewModel.RequestState" />
+        </div>
+    </div>
+
+</div>
+
+<h2 class="col-span-full mt-6">Request Content</h2>
+
+@if (ViewModel.RequestDetailComponentType is not null)
+{
+    <DynamicComponent Type="ViewModel.RequestDetailComponentType" Parameters="ViewModel.RequestDetailComponentParameters" />
+}
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="col-span-full">
+        <span class="text-red-500">@error</span>
+    </div>
+}
+
+<div class="col-span-full">
+
+    @* <h2 class="mt-6">Request Detail</h2> *@
+    <ErrorsDisplay Errors="@RequestErrors" />
+
+    <h3 class="mt-3">Raw Request</h3>
+    <RawMessage Content="@RequestContent" />
+
+</div>
+
+<h2 class="col-span-full mt-6">Response</h2>
+
+<p>
+    Received @ResponseCount response@(ResponseCount == 1 ? "" : "s").
+</p>
+
+<h3 class="mt-3">Main Response Content</h3>
+
+@if (ViewModel.ResponseDetailComponentType is not null)
+{
+    <DynamicComponent Type="ViewModel.ResponseDetailComponentType" Parameters="ViewModel.ResponseDetailComponentParameters" />
+}
+
+@foreach (var response in Responses)
+{
+<div class="col-span-full">
+
+    <h2 class="mt-6">Response Detail <small>(@response.Id)</small></h2>
+    <ErrorsDisplay Errors="@ResponseErrors(response)" />
+    
+    <h3 class="mt-3">Raw Response</h3>
+    <RawMessage Content="@ResponseContent(response)" />
+
+</div>
+}
+
+@code {
+    //private bool working;
+    private bool notReady => string.IsNullOrWhiteSpace(ViewModel.ChannelSettings.ConsumerSessionId);
+    private string error = "";
+    private string channelName = "request-response";
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Edit { get; set; }
+
+    [Parameter]
+    public Guid RequestId { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ViewModel.LoadSettings(channelName);
+
+        await InvokeAsync(StateHasChanged);
+
+        using var context = await Factory.CreateDbContext(Principal);
+        await ViewModel.Load(context, RequestId);
+
+        await base.OnParametersSetAsync();
+    }
+
+    private IEnumerable<MessageError> RequestErrors
+    {
+        get => ViewModel.Request?.MessageErrors ?? Enumerable.Empty<MessageError>();
+    }
+
+    private string RequestContent => ViewModel.RequestRawContent;
+
+    private int ResponseCount => ViewModel.Request?.Responses.Count ?? 0;
+
+    private IEnumerable<Response> Responses => ViewModel.Responses;
+
+    private IEnumerable<MessageError> ResponseErrors(Response response) => response.MessageErrors ?? Enumerable.Empty<MessageError>();
+
+    private string ResponseContent(Response response) => ViewModel.ResponseRawContent(response);
+}

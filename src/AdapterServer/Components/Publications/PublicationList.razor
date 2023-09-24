@@ -1,0 +1,93 @@
+@using AdapterServer.Components;
+@using System.Security.Claims;
+@using TaskQueueing.Persistence;
+@using TaskQueueing.ObjectModel.Models;
+@using Notifications
+
+@inject ILogger<PublicationList> Logger
+@inject PublicationListViewModel ViewModel
+@inject INotificationService NotificationService
+
+@implements IAsyncDisposable
+
+<PagedTable TEntity="Publication" QueryProvider="ViewModel.PublicationsQueryProvider" NumColumns="7" ActiveFilters="ActiveFilters">
+    <FilterContent>
+        <EditForm class="flex flex-row gap-3" EditContext="FilterContext">
+            <label><InputCheckbox @bind-Value="ViewModel.ErrorsOnly" class="form-input" /><span class="ml-1">Errors</span></label>
+            <label><InputCheckbox @bind-Value="ViewModel.IncludePostedMessages" class="form-input" /><span class="ml-1">Posted</span></label>
+            <label><InputCheckbox @bind-Value="ViewModel.IncludeReceivedMessages" class="form-input" /><span class="ml-1">Received</span></label>
+        </EditForm>
+    </FilterContent>
+    <HeaderContent>
+        <tr>
+            <th scope="col">Job #</th>
+            <th scope="col">Created</th>
+            <th scope="col">In/Out</th>
+            <th scope="col">Message Id</th>
+            <th scope="col">Topics</th>
+            <th scope="col">Processed</th>
+            <th scope="col">Action</th>
+        </tr>
+    </HeaderContent>
+    <RowContent>
+        <tr class="@(context.Received ? "bg-gray-50" : "")">
+            <td>@context.JobId</td>
+            <td>@context.DateCreated.ToLocalTime().ToString("G")</td>
+            <td class="text-center">
+                <DirectionIndicator State="@context.State" />
+            </td>
+            <td>
+                <span class="whitespace-nowrap">@context.MessageId</span>
+            </td>
+            <td>@String.Join(", ", context.Topics)</td>
+            <td class="text-center">
+                <ProcessingIndicator State="@(context.State)" />
+            </td>
+            <td>
+                <a href="publication/@context.Id" class="btn">View</a>
+            </td>
+        </tr>
+    </RowContent>
+</PagedTable>
+
+@code {
+    private string connectionId = "";
+    private IEnumerable<string> ActiveFilters { get; set; } = Enumerable.Empty<string>();
+    private EditContext FilterContext
+    {
+        get => filterContext ??= new EditContext(ViewModel);
+        set => filterContext = value;
+    }
+    private EditContext? filterContext = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        connectionId = await NotificationService.RegisterLocal("publication-message-update", async n => {
+            await InvokeAsync(StateHasChanged);
+        });
+
+        ActiveFilters = ViewModel.GetActiveFilters();
+
+        FilterContext.OnFieldChanged += FilterChanged;
+
+        await base.OnInitializedAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await NotificationService.Unregister(connectionId);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ViewModel.LoadSettings("publications-list");
+
+        await base.OnParametersSetAsync();
+    }
+
+    private void FilterChanged(object? sender, FieldChangedEventArgs eventArgs)
+    {
+        Logger.LogDebug("Filter changed {FilterName}", eventArgs.FieldIdentifier.FieldName);
+        ActiveFilters = ViewModel.GetActiveFilters();
+    }
+}

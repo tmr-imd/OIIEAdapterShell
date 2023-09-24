@@ -1,0 +1,74 @@
+
+@using AdapterServer.Data
+@using System.Text.Json
+@using AbstractMessage = TaskQueueing.ObjectModel.Models.AbstractMessage
+@using PublishedMessage = TaskQueueing.ObjectModel.Models.Publication
+
+<div class="grid grid-cols-4 gap-2">
+
+    <h3>Code</h3>
+    <h3>Type</h3>
+    <h3>Location</h3>
+    <h3>Owner</h3>
+
+    <div>@Structure?.Code</div>
+    <div>@Structure?.Type</div>
+    <div>@Structure?.Location</div>
+    <div>@Structure?.Owner</div>
+
+    <h3>Condition</h3>
+    <h3>Inspector</h3>
+    <div />
+    <div />
+
+    <div>@Structure?.Condition</div>
+    <div>@Structure?.Inspector</div>
+    <div />
+    <div />
+
+</div>
+
+@code {
+    [Parameter]
+    public PublishedMessage Message { get; set; } = null!;
+    private string? RawContent { get; set; } = null;
+
+    private StructureAsset? Structure { get; set; } = null;
+    // public IEnumerable<StructureAsset> StructureAssets { get; set; } = Enumerable.Empty<StructureAsset>();
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (Message.MediaType == "application/json")
+        {
+            DeserializeStructure(Message);
+        }
+        else if (Message.Content.RootElement.ValueKind == JsonValueKind.String)
+        {
+            DeserializeBOD(Message);
+        }
+
+        return base.OnParametersSetAsync();
+    }
+
+    private void DeserializeStructure(PublishedMessage message)
+    {
+        var structure = message.Content.Deserialize<NewStructureAsset>();
+        Structure = structure?.Data;
+    }
+
+    private void DeserializeBOD(AbstractMessage message)
+    {
+        RawContent = message.Content.Deserialize<string>();
+        if (RawContent is null || RawContent.Contains("ConfirmBOD")) return;
+
+        var bod = new CommonBOD.GenericBodType<Oagis.SyncType, List<StructureAssets>>("SyncStructureAssets", Ccom.Namespace.URI);
+        using (var input = new StringReader(RawContent))
+        {
+            bod = bod.CreateSerializer().Deserialize(input) as CommonBOD.GenericBodType<Oagis.SyncType, List<StructureAssets>>;
+        }
+        if (bod is null) return;
+        
+        var structure = bod.DataArea.Noun.First().StructureAsset.First();
+        Structure = structure;
+    }
+}
