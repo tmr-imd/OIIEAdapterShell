@@ -2,7 +2,7 @@
 
 namespace TaskQueueing.ObjectModel.Models;
 
-public record class Response : AbstractMessage
+public record class Response : AbstractMessage, IMessage
 {
     // RequestId is essential to the identity of the response and means we can
     // lazy load the full Request object only when we need its content.
@@ -12,4 +12,6 @@ public record class Response : AbstractMessage
     public Guid RequestRefId { get; set; }
     [System.ComponentModel.DataAnnotations.Schema.ForeignKey("RequestRefId")]
     public Request Request { get; set; } = null!;
+
+    public virtual string MessageId => ResponseId;
 }

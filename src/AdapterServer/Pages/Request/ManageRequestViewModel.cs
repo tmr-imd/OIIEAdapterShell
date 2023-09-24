@@ -71,7 +71,7 @@ public class ManageRequestViewModel : ManageSessionViewModel
         }
         catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
         {
-            await channel.CreateChannel<RequestChannel>(ChannelUri, "Test");
+            await channel.CreateChannel<RequestChannel>(ChannelUri, Topic);
         }
 
         var consumerSession = await consumer.OpenSession(ChannelUri, ListenerUrl);
