@@ -1,14 +1,19 @@
 ﻿@page "/request-response"
-@using AdapterServer.Data;
-@using System.Security.Claims;
-@using TaskQueueing.Persistence;
+@using AdapterServer.Data
+@using System.Security.Claims
+@using TaskQueueing.Persistence
 @using AdapterServer.Components
+@using Notifications
 
 @inject ILogger<Request> Logger
 
 @inject RequestViewModel viewModel
 @inject NavigationManager navigation
 @inject JobContextFactory factory
+@inject ClaimsPrincipal principal
+@inject INotificationService NotificationService
+
+@implements IAsyncDisposable
 
 <PageTitle>Request/Response - Adapter Shell</PageTitle>
 
@@ -158,10 +163,27 @@
     private bool notReady => viewModel.SessionId == "";
     private string error = "";
     private string channelName = "request-response";
+    private string connectionId = "";
 
     [Parameter]
     [SupplyParameterFromQuery]
     public string? Edit { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        connectionId = await NotificationService.RegisterLocal("request-message-update", async n => {
+            using var context = await factory.CreateDbContext(principal);
+            await viewModel.Load(context);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await base.OnInitializedAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await NotificationService.Unregister(connectionId);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -169,8 +191,8 @@
 
         await InvokeAsync(StateHasChanged);
 
-        using var context = await factory.CreateDbContext( new ClaimsPrincipal() );
-        await viewModel.Load( context );
+        using var context = await factory.CreateDbContext(principal);
+        await viewModel.Load(context);
 
         await base.OnParametersSetAsync();
     }

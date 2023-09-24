@@ -18,6 +18,7 @@ using AdapterServer.Extensions;
 using System.Text.Json;
 using Transformation;
 using Transformation.Extensions;
+using Notifications;
 
 namespace AdapterServer.Pages.Request;
 
@@ -26,7 +27,8 @@ public class ProcessGetShowStructuresJob : ProcessRequestResponseJob<XDocument, 
     private BODReader? _bodReader = null;
     private StructureAssetsFilter? _filter = null;
 
-    public ProcessGetShowStructuresJob(JobContextFactory factory, ClaimsPrincipal principal) : base(factory, principal)
+    public ProcessGetShowStructuresJob(JobContextFactory factory, ClaimsPrincipal principal, INotificationService notifications)
+        : base(factory, principal, notifications)
     {
     }
 

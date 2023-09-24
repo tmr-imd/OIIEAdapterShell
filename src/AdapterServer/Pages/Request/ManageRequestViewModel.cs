@@ -1,46 +1,32 @@
 ﻿using AdapterServer.Shared;
 using Oiie.Settings;
-using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Xml.Linq;
-using TaskQueueing.Data;
-using TaskQueueing.Jobs;
 using TaskQueueing.Persistence;
+using Microsoft.Extensions.Options;
 
 namespace AdapterServer.Pages.Request;
 
 using MessageTypes = RequestViewModel.MessageTypes;
 
-public class ManageRequestViewModel
+public class ManageRequestViewModel : ManageSessionViewModel
 {
-    public string Endpoint { get; set; } = "";
-
-    public string ChannelUri { get; set; } = "/asset-institute/demo/request-response";
-    public string Topic { get; set; } = "Test Topic";
-    public string ConsumerSessionId { get; set; } = "";
-    public string ProviderSessionId { get; set; } = "";
-
     public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
-    private readonly NavigationManager navigation;
-    private readonly JobContextFactory factory;
-    private readonly ClaimsPrincipal principal;
     private readonly IScheduledJobsConfig<ManageRequestViewModel> jobScheduler;
 
     public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
-        IScheduledJobsConfig<ManageRequestViewModel> jobScheduler)
+        IScheduledJobsConfig<ManageRequestViewModel> jobScheduler, IOptions<ClientConfig> isbmClientConfig)
+        : base(navigation, factory, principal, isbmClientConfig)
     {
-        this.navigation = navigation;
-        this.factory = factory;
-        this.principal = principal;
+        ChannelUri = "/asset-institute/demo/request-response";
         this.jobScheduler = jobScheduler;
     }
 
-    public async Task LoadSettings(SettingsService settings, string channelName)
+    public override async Task LoadSettings(SettingsService settings, string channelName)
     {
         try
         {
@@ -63,7 +49,7 @@ public class ManageRequestViewModel
         }
     }
 
-    public async Task SaveSettings(SettingsService settings, string channelName)
+    public override async Task SaveSettings(SettingsService settings, string channelName)
     {
         var channelSettings = new ChannelSettings
         {
@@ -88,18 +74,11 @@ public class ManageRequestViewModel
             await channel.CreateChannel<RequestChannel>(ChannelUri, Topic);
         }
 
-        var listenerUrl = navigation.ToAbsoluteUri("/api/notifications").AbsoluteUri;
-
-        #if DEBUG
-            // Not great, but okay for now...
-            listenerUrl = listenerUrl.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
-        #endif
-
-        var consumerSession = await consumer.OpenSession(ChannelUri, listenerUrl);
+        var consumerSession = await consumer.OpenSession(ChannelUri, ListenerUrl);
         ConsumerSessionId = consumerSession.Id;
 
         // We're cheating for the demo
-        var providerSession = await provider.OpenSession(ChannelUri, Topic, listenerUrl);
+        var providerSession = await provider.OpenSession(ChannelUri, Topic, ListenerUrl);
         ProviderSessionId = providerSession.Id;
 
         await SaveSettings(settings, channelName);
@@ -122,7 +101,7 @@ public class ManageRequestViewModel
             await provider.CloseSession(ProviderSessionId);
 
         }
-        catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
+        catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault || ex.FaultType == IsbmFaultType.SessionFault)
         {
         }
 

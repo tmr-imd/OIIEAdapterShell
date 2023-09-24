@@ -12,6 +12,7 @@ using System.Xml.Linq;
 using AdapterServer.Data;
 using Oiie.Settings;
 using AdapterServer.Extensions;
+using Notifications;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -21,7 +22,8 @@ public class ProcessSyncStructureAssetsJob : ProcessPublicationJob<XDocument>
     private BODReader? _bodReader = null;
     private StructureAsset? _structure = null;
 
-    public ProcessSyncStructureAssetsJob(JobContextFactory factory, ClaimsPrincipal principal) : base(factory, principal)
+    public ProcessSyncStructureAssetsJob(JobContextFactory factory, ClaimsPrincipal principal, INotificationService notifications)
+        : base(factory, principal, notifications)
     {
     }
 

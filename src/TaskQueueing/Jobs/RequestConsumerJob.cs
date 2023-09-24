@@ -7,6 +7,8 @@ using System.Security.Claims;
 using TaskQueueing.ObjectModel.Enums;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
+using Notifications;
+using Notifications.ObjectModel;
 
 namespace TaskQueueing.Jobs;
 
@@ -18,12 +20,14 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
     private readonly IConsumerRequest consumer;
     private readonly JobContextFactory factory;
     private readonly ClaimsPrincipal principal;
+    private readonly INotificationService notifications;
 
-    public RequestConsumerJob(IConsumerRequest consumer, JobContextFactory factory, ClaimsPrincipal principal)
+    public RequestConsumerJob(IConsumerRequest consumer, JobContextFactory factory, ClaimsPrincipal principal, INotificationService notifications)
     {
         this.consumer = consumer;
         this.factory = factory;
         this.principal = principal;
+        this.notifications = notifications;
     }
 
     public async Task<string> PostRequest<T>(string sessionId, T content, string topic, PerformContext ctx) where T : notnull
@@ -47,6 +51,8 @@ public class RequestConsumerJob<TProcessJob, TRequest, TResponse>
 
         await context.SaveChangesAsync();
 
+        _ = notifications.Notify(Scope.Internal, "request-message-update", $"Posted request: {request.Id}", "RequestConsumerJob")
+            .ContinueWith(t => Console.WriteLine(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
         return request.Id;
     }
 

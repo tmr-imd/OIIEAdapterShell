@@ -12,7 +12,11 @@ using Oiie.Settings;
 using System.Text;
 using System.Text.Json;
 using TaskQueueing.ObjectModel.Models;
+using OiieAdminUi.Authorization;
+using System.Net.Security;
+using AdapterServer.Shared;
 using System.Numerics;
+using Notifications.UI;
 
 namespace AdapterServer;
 
@@ -42,9 +46,20 @@ public class Startup
 
         app.UseRouting();
 
-        app.UseHangfireDashboard();
+        app.UseHangfireDashboard(options: new DashboardOptions()
+        {
+            Authorization = new[] { new HangfireDashboardAuthFilter() }
+        });
+
+        // Ensure the certificate validator is instantiated, if provided.
+        var certValidator = app.ApplicationServices.GetService<ICertificateValidator>();
+        if (certValidator is not null && ICertificateValidator.Instance is null)
+        {
+            ICertificateValidator.Instance = certValidator;
+        }
 
         routes.MapBlazorHub();
+        routes.AddNotifications("/app/notifications-hub");
         routes.MapFallbackToPage("/_Host");
 
         routes.MapPut("/api/notifications/{sessionId}/{messageId}", async (string sessionId, string messageId, HttpRequest request, ILogger<Startup> log) =>
@@ -106,7 +121,12 @@ public class Startup
 
         var isbmSection = Configuration.GetSection("Isbm");
         services.Configure<ClientConfig>(isbmSection);
-        services.AddIsbmRestClient(isbmSection);
+        var certificateValidationCallback = services
+            .Where(sd => sd.ServiceType == typeof(RemoteCertificateValidationCallback) && sd.ImplementationInstance is not null)
+            .Select(sd => sd.ImplementationInstance)
+            .Cast<RemoteCertificateValidationCallback?>()
+            .FirstOrDefault();
+        services.AddIsbmRestClient(isbmSection, certificateValidationCallback);
 
         //CIR Config
         services.AddCIRServices(Configuration);
@@ -122,6 +142,8 @@ public class Startup
         services.AddScoped<PublicationViewModel>();
         services.AddScoped<PublicationService>();
         services.AddScoped<ConfirmBODConfigViewModel>();
+
+        services.AddNotifications(Configuration);
     }
 
     private static bool EmptyId(string id)

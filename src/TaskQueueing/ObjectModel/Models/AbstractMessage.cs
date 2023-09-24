@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.ComponentModel.DataAnnotations.Schema;
+using ModelBase.ObjectModel;
 using TaskQueueing.ObjectModel.Enums;
 
 namespace TaskQueueing.ObjectModel.Models;

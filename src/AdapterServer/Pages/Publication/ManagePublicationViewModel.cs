@@ -1,45 +1,34 @@
 ﻿using AdapterServer.Shared;
 using Oiie.Settings;
-using Hangfire;
 using Isbm2Client.Interface;
 using Isbm2Client.Model;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using TaskQueueing.Jobs;
 using TaskQueueing.Persistence;
+using Microsoft.Extensions.Options;
 
 namespace AdapterServer.Pages.Publication;
 
 using MessageTypes = PublicationViewModel.MessageTypes;
 
-public class ManagePublicationViewModel
+public class ManagePublicationViewModel : ManageSessionViewModel
 {
-    public string Endpoint { get; set; } = "";
-
-    public string ChannelUri { get; set; } = "/asset-institute/server/pub-sub";
-    public string Topic { get; set; } = "Test Topic";
-    public string ConsumerSessionId { get; set; } = "";
-    public string ProviderSessionId { get; set; } = "";
     public string ConfirmationSessionId { get; set; } = "";
 
     public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
-    private readonly NavigationManager navigation;
-    private readonly JobContextFactory factory;
-    private readonly ClaimsPrincipal principal;
     private readonly IScheduledJobsConfig<ManagePublicationViewModel> jobScheduler;
 
     public ManagePublicationViewModel(NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
-        IScheduledJobsConfig<ManagePublicationViewModel> jobScheduler)
+        IScheduledJobsConfig<ManagePublicationViewModel> jobScheduler, IOptions<ClientConfig> isbmClientConfig)
+        : base(navigation, factory, principal, isbmClientConfig)
     {
-        this.navigation = navigation;
-        this.factory = factory;
-        this.principal = principal;
+        ChannelUri = "/asset-institute/server/pub-sub";
         this.jobScheduler = jobScheduler;
     }
 
-    public async Task Load(SettingsService settings, string channelName)
+    public override async Task LoadSettings(SettingsService settings, string channelName)
     {
         try
         {
@@ -63,7 +52,7 @@ public class ManagePublicationViewModel
         }
     }
 
-    public async Task Save(SettingsService settings, string channelName)
+    public override async Task SaveSettings(SettingsService settings, string channelName)
     {
         var channelSettings = new PublicationSettings
         {
@@ -89,24 +78,17 @@ public class ManagePublicationViewModel
             await channel.CreateChannel<PublicationChannel>(ChannelUri, "Test");
         }
 
-        var listenerUrl = navigation.ToAbsoluteUri("/api/notifications").AbsoluteUri;
-
-        #if DEBUG
-            // Not great, but okay for now...
-            listenerUrl = listenerUrl.Replace(navigation.BaseUri, "http://host.docker.internal:5060/");
-        #endif
-
-        var consumerSession = await consumer.OpenSession(ChannelUri, Topic, listenerUrl);
+        var consumerSession = await consumer.OpenSession(ChannelUri, Topic, ListenerUrl);
         ConsumerSessionId = consumerSession.Id;
 
         // We're cheating for the demo
         var providerSession = await provider.OpenSession(ChannelUri);
         ProviderSessionId = providerSession.Id;
 
-        var confirmationSession = await consumer.OpenSession(ChannelUri, "ConfirmBOD", listenerUrl);
+        var confirmationSession = await consumer.OpenSession(ChannelUri, "ConfirmBOD", ListenerUrl);
         ConfirmationSessionId = confirmationSession.Id;
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
         jobScheduler.ScheduleJobs(Topic, ProviderSessionId, ConsumerSessionId, (MessageType, ConfirmationSessionId));
@@ -126,7 +108,7 @@ public class ManagePublicationViewModel
             await provider.CloseSession(ProviderSessionId);
 
         }
-        catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault)
+        catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault || ex.FaultType == IsbmFaultType.SessionFault)
         {
         }
 
@@ -134,8 +116,9 @@ public class ManagePublicationViewModel
 
         ConsumerSessionId = "";
         ProviderSessionId = "";
+        ConfirmationSessionId = "";
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
     }
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
@@ -154,8 +137,9 @@ public class ManagePublicationViewModel
 
         ConsumerSessionId = "";
         ProviderSessionId = "";
+        ConfirmationSessionId = "";
 
-        await Save(settings, channelName);
+        await SaveSettings(settings, channelName);
     }
 
     private async Task AddOrUpdateStoredSession()

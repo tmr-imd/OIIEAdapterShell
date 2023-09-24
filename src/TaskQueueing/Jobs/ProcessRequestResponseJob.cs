@@ -6,6 +6,8 @@ using System.Text.Json;
 using TaskQueueing.ObjectModel;
 using TaskQueueing.ObjectModel.Models;
 using TaskQueueing.Persistence;
+using Notifications;
+using Notifications.ObjectModel;
 
 namespace TaskQueueing.Jobs;
 
@@ -17,11 +19,13 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
 {
     private readonly JobContextFactory factory;
     private readonly ClaimsPrincipal principal;
+    private readonly INotificationService notifications;
 
-    public ProcessRequestResponseJob(JobContextFactory factory, ClaimsPrincipal principal)
+    public ProcessRequestResponseJob(JobContextFactory factory, ClaimsPrincipal principal, INotificationService notifications)
     {
         this.factory = factory;
         this.principal = principal;
+        this.notifications = notifications;
     }
 
     public async Task ProcessRequest(string sessionId, string requestId, TRequest content, PerformContext ctx)
@@ -34,6 +38,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         {
             request.Failed = true;
             await context.SaveChangesAsync();
+            notifyListeners();
             return;
         }
 
@@ -42,6 +47,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         
         request.Processing = true;
         await context.SaveChangesAsync();
+        notifyListeners();
     }
 
     public async Task ProcessResponse(string requestId, string responseId, PerformContext ctx)
@@ -60,6 +66,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         {
             onDeserializationFailure(response.Content, response, context, onError);
             await context.SaveChangesAsync();
+            notifyListeners();
             return;
         }
 
@@ -67,6 +74,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         {
             response.Failed = true;
             await context.SaveChangesAsync();
+            notifyListeners();
             return;
         }
 
@@ -74,6 +82,7 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
         response.Request.Processed = response.Processed;
         response.Request.Failed = !response.Processed;
         await context.SaveChangesAsync();
+        notifyListeners();
     }
 
     /// <summary>
@@ -114,6 +123,11 @@ public abstract class ProcessRequestResponseJob<TRequest, TResponse>
     protected virtual void onDeserializationFailure(JsonDocument content, Response response, IJobContext context, ValidationDelegate<Response> errorCallback)
     {
         errorCallback(new MessageError(ErrorSeverity.Error, $"Unable to deserialize the response content as {typeof(TResponse).Name}"), response, context);
+    }
+
+    protected virtual void notifyListeners()
+    {
+        _ = notifications.Notify(Scope.Internal, "request-message-update", "Request/response processed", "ProcessRequestResponseJob");
     }
 
     protected abstract Task<bool> validate(TRequest content, Request request, IJobContext context, ValidationDelegate<Request> errorCallback);
