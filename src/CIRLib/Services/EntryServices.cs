@@ -65,13 +65,13 @@ public class EntryServices : CommonServices
                 );
             if (!string.IsNullOrWhiteSpace(categoryId))
             {
-                TempQuery.Where(
+                TempQuery = TempQuery.Where(
                     joinResult => joinResult.Category.CategoryId.Contains(categoryId)
                 );
             }
             if (!string.IsNullOrWhiteSpace(categorySourceID))
             {
-                TempQuery.Where(
+                TempQuery = TempQuery.Where(
                     joinResult => joinResult.Category.CategorySourceId.Contains(categorySourceID)
                 );
             }
@@ -170,6 +170,8 @@ public class EntryServices : CommonServices
             );
         }
 
+        // Since CIRId takes precedence over entryId.
+        // If CIRId is filtered, filter with only CIRId .
         if (!string.IsNullOrWhiteSpace(entryId) && !string.IsNullOrWhiteSpace(CIRId))
         {
             Query = Query.Where
@@ -177,6 +179,7 @@ public class EntryServices : CommonServices
                 joinResult => joinResult.CIRId.Contains(CIRId)
             );
         }
+        //When CIRId is not filtered, filter with entryId if present.
         else if (!string.IsNullOrWhiteSpace(entryId) && string.IsNullOrWhiteSpace(CIRId))
         {
             Query = Query.Where
@@ -184,6 +187,7 @@ public class EntryServices : CommonServices
                 joinResult => joinResult.IdInSource.Contains(entryId)
             );
         }
+        // Since CIRId takes precedence over entry Id
         else if (!string.IsNullOrWhiteSpace(CIRId) && string.IsNullOrWhiteSpace(entryId))
         {
             Query = Query.Where(
@@ -191,16 +195,7 @@ public class EntryServices : CommonServices
             );
         }
 
-        var entryList = Query.FirstOrDefault();
-        if(entryList != null && entryList.CIRId !=null)
-        {
-            return dbContext.Entry.Where(item => item.CIRId.Equals(entryList.CIRId)).ToList();
-        }
-        else
-        {
-            return Query.ToList();
-        }
-        
+        return Query.ToList();
     }
     public void CreateNewEntry(ObjModels.Entry newEntry, CIRLibContext dbContext)
     {
@@ -255,10 +250,19 @@ public class EntryServices : CommonServices
         EntryObj.Inactive = updateEntry.Inactive;
         dbContext.SaveChanges();
     }
+    
     public void DeleteEntryById(Guid Id, CIRLibContext DbContext)
     {
         var DelRegObj = DbContext.Entry.Where(item => item.Id.Equals(Id)).First();
         DbContext.Entry.Remove(DelRegObj);
         DbContext.SaveChanges();
+    }
+
+    public void UpdateCIRIdInEntry(string CIRId, ObjModels.Entry updateEntry, CIRLibContext dbContext = null!)
+    {
+        var EntryObj = dbContext.Entry.Where(item => item.Id.Equals(updateEntry.Id)).First();
+
+        EntryObj.CIRId = CIRId;
+        dbContext.SaveChanges();
     }
 }
