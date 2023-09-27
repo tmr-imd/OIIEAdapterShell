@@ -46,7 +46,7 @@ public class JobSchedulerForPubStructures : IScheduledJobsConfig<ManagePublicati
         return convertedData;
     }
 
-    public void UnscheduleJobs()
+    public void UnscheduleJobs(string? topic = "")
     {
         RecurringJob.RemoveIfExists(POLL_STRUCTURES_JOB_ID);
         RecurringJob.RemoveIfExists(CONFIRM_JOB_ID);
