@@ -37,7 +37,7 @@ public class JobSchedulerForStructures : IScheduledJobsConfig<ManageRequestViewM
         }
     }
 
-    public void UnscheduleJobs()
+    public void UnscheduleJobs(string? topic = "")
     {
         RecurringJob.RemoveIfExists(CHECK_REQUESTS_JOB_ID);
         RecurringJob.RemoveIfExists(CHECK_RESPONSES_JOB_ID);

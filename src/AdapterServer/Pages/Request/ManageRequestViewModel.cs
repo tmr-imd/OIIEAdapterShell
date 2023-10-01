@@ -91,7 +91,7 @@ public class ManageRequestViewModel : ManageSessionViewModel
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
     {
-        jobScheduler.UnscheduleJobs();
+        jobScheduler.UnscheduleJobs(Topic);
 
         try
         {
@@ -115,7 +115,7 @@ public class ManageRequestViewModel : ManageSessionViewModel
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
-        jobScheduler.UnscheduleJobs();
+        jobScheduler.UnscheduleJobs(Topic);
 
         try
         {

@@ -16,5 +16,5 @@ public interface IScheduledJobsConfig<Target> where Target : class
     /// <summary>
     /// Removes the jobs configured via @ScheduleJobs.
     /// </summary>
-    public void UnscheduleJobs();
+    public void UnscheduleJobs(string? topic="");
 }
