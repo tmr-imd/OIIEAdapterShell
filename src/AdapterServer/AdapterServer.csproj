@@ -39,6 +39,7 @@
     <ProjectReference Include="..\OiieSettings\OiieSettings.csproj" />
     <ProjectReference Include="..\OiieAdminUi\OiieAdminUi.csproj" />
     <ProjectReference Include="..\Notifications.UI\Notifications.UI.csproj" />
+    <ProjectReference Include="..\AuthenticationExtension\AuthenticationExtension.csproj" />
   </ItemGroup>
 
 	<Target Name="CheckForNpm" BeforeTargets="BuildCSS">

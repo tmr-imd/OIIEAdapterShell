@@ -19,6 +19,8 @@ using OiieAdminUi.Authorization;
 using System.Net.Security;
 using AdapterServer.Shared;
 using Notifications.UI;
+using Microsoft.AspNetCore.Authentication;
+using AuthenticationExtesion.Support;
 
 namespace AdapterServer;
 
@@ -37,16 +39,35 @@ public class Startup
         if (!env.IsDevelopment())
         {
             app.UseExceptionHandler("/Error");
+            app.UseForwardedHeaders(); // must be before UseHsts
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
 
             // In dev plain http helps us avoid certificate issues with the 
             app.UseHttpsRedirection();
         }
+        else
+        {
+            app.UseForwardedHeaders();
+        }
 
         app.UseStaticFiles();
 
         app.UseRouting();
+
+        if (env.IsDevelopment())
+        {
+            // Add a middleware that injects AWS Load Balancer style HTTP headers for Authorization
+            app.Use(async (context, next) =>
+            {
+                context.Request.Headers["x-example"] = "Fake Header";
+                await next(context);
+            });
+        }
+
+        // Authentication for all, but exclude notification route?
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         app.UseHangfireDashboard(options: new DashboardOptions()
         {
@@ -121,6 +142,11 @@ public class Startup
         services.AddRazorPages();
         services.AddServerSideBlazor();
 
+        services.Configure<ForwardedHeadersOptions>(opts =>
+        {
+            // Configure header fowarding for load balancers/proxies
+        });
+
         var isbmSection = Configuration.GetSection("Isbm");
         services.Configure<ClientConfig>(isbmSection);
         var certificateValidationCallback = services
@@ -146,6 +172,8 @@ public class Startup
         services.AddScoped<ConfirmBODConfigViewModel>();
 
         services.AddNotifications(Configuration);
+
+        services.AddTransient<IClaimsTransformation, UserGroupToRoleClaimsTransformation>();
     }
 
     private static bool EmptyId(string id)

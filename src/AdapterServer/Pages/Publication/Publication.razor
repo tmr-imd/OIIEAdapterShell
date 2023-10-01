@@ -150,6 +150,9 @@
 <PublicationList />
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+
     bool working;
     private bool posted;
     private bool notReady => viewModel.SessionId == "";
@@ -192,6 +195,12 @@
     private void HandleSubmit()
     {
         Logger.LogInformation("HandleSubmit called");
+        if (!authenticationState.Result.User.IsInRole("FakeAdmin"))
+        {
+            error = "You do not have FakeAdmin privileges.";
+            StateHasChanged();
+            return;
+        }
 
         working = true;
         posted = false;

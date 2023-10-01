@@ -57,6 +57,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notifications.UI", "src\Not
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelBase", "src\ModelBase\ModelBase.csproj", "{9D87413C-A564-4D92-B1B4-2AEFE521F49A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthenticationExtension", "src\AuthenticationExtension\AuthenticationExtension.csproj", "{D41168AB-5358-44FC-98E9-525CDEA05A7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -139,6 +141,10 @@ Global
 		{9D87413C-A564-4D92-B1B4-2AEFE521F49A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D87413C-A564-4D92-B1B4-2AEFE521F49A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D87413C-A564-4D92-B1B4-2AEFE521F49A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D41168AB-5358-44FC-98E9-525CDEA05A7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D41168AB-5358-44FC-98E9-525CDEA05A7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D41168AB-5358-44FC-98E9-525CDEA05A7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D41168AB-5358-44FC-98E9-525CDEA05A7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -168,6 +174,7 @@ Global
 		{7F435AFF-35F1-454B-8954-242E9DA7DC69} = {55B3199C-8526-4B89-8CFD-C706AE7EFA7F}
 		{D91A4664-79A2-46A4-A301-2893EAB5595A} = {E315CC81-1F19-4BFC-8620-985988E85838}
 		{9D87413C-A564-4D92-B1B4-2AEFE521F49A} = {E315CC81-1F19-4BFC-8620-985988E85838}
+		{D41168AB-5358-44FC-98E9-525CDEA05A7C} = {E315CC81-1F19-4BFC-8620-985988E85838}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F5A6E8E2-8254-42CF-9FB4-BDFB9B2CB3FD}
