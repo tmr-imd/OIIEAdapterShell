@@ -86,7 +86,15 @@ public class NotificationService : INotificationService
     public async Task<string> RegisterLocal(string topic, Action<Notification> callback, params string[] todo)
     {
         var hubConnection = new HubConnectionBuilder()
-            .WithUrl(_hubUrl)
+            .WithUrl(_hubUrl, options =>
+            {
+                // TODO: For authentication and authorization purposes
+                // If we can pass through the credentials, or supply an internal token
+                // with the same claims then we do not need to completely exclude
+                // internal notifications-hub from the authentication pipeline
+                options.AccessTokenProvider = () => Task.FromResult<string?>(null);
+                // options.ClientCertificates
+            })
             // .WithAutomaticReconnect()
             .Build();
 

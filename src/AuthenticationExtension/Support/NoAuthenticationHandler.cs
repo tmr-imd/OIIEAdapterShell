@@ -28,3 +28,20 @@ public class NoAuthenticationHandler : AuthenticationHandler<AuthenticationSchem
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, this.Scheme.Name)));
     }
 }
+
+public static class NoAuthenticationDefaults
+{
+    public const string AuthenticationScheme = "NoAuthentication";
+}
+
+public static class AuthenticationBuilderExtensions
+{
+    public static AuthenticationBuilder AddNoAuthenticationScheme(this AuthenticationBuilder builder, Action<AuthenticationSchemeOptions> configureOptions)
+    {
+        return builder
+            .AddScheme<AuthenticationSchemeOptions, NoAuthenticationHandler>(
+                NoAuthenticationDefaults.AuthenticationScheme,
+                opts => configureOptions(opts)
+            );
+    }
+}

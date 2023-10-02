@@ -11,6 +11,7 @@
 @inject JobContextFactory factory
 @inject ClaimsPrincipal principal
 @inject INotificationService NotificationService
+@inject IAuthorizationService AuthorizationService
 
 @implements IAsyncDisposable
 
@@ -192,19 +193,25 @@
         await base.OnParametersSetAsync();
     }
 
-    private void HandleSubmit()
+    private async void HandleSubmit()
     {
         Logger.LogInformation("HandleSubmit called");
-        if (!authenticationState.Result.User.IsInRole("FakeAdmin"))
+        if (authenticationState is not null) await authenticationState;
+        @* if (!authenticationState?.Result.User.IsInRole("FakeAdmin") ?? false) *@
+        @* Poliy-based authorization example *@
+        var authResult = await AuthorizationService.AuthorizeAsync(authenticationState?.Result.User, "AdministratorsOnly");
+        if (!authResult.Succeeded)
         {
-            error = "You do not have FakeAdmin privileges.";
-            StateHasChanged();
+            error = $"You do not have FakeAdmin privileges. {authResult.Failure.FailureReasons}";
+            await InvokeAsync(StateHasChanged);
+            @* StateHasChanged(); *@
             return;
         }
 
         working = true;
         posted = false;
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
+        @* StateHasChanged(); *@
         error = "";
 
         try
@@ -221,7 +228,8 @@
         finally
         {
             working = false;
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
+            @* StateHasChanged(); *@
         }
     }
 }

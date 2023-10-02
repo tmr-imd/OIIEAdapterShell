@@ -21,6 +21,7 @@ using AdapterServer.Shared;
 using Notifications.UI;
 using Microsoft.AspNetCore.Authentication;
 using AuthenticationExtesion.Support;
+using AuthenticationExtesion.AWS;
 
 namespace AdapterServer;
 
@@ -58,11 +59,7 @@ public class Startup
         if (env.IsDevelopment())
         {
             // Add a middleware that injects AWS Load Balancer style HTTP headers for Authorization
-            app.Use(async (context, next) =>
-            {
-                context.Request.Headers["x-example"] = "Fake Header";
-                await next(context);
-            });
+            app.UseInjectLoadBalancerHeaders();
         }
 
         // Authentication for all, but exclude notification route?

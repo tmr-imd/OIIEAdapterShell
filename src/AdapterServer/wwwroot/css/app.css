@@ -956,8 +956,8 @@ a.menu.active:hover {
   z-index: 10;
 }
 
-.z-\[99999\] {
-  z-index: 99999;
+.z-\[999\] {
+  z-index: 999;
 }
 
 .col-span-2 {

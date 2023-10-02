@@ -14,7 +14,7 @@ public static class AuthenticationBuilderExtensions
         return builder
             .AddScheme<LoadBalancerAuthenticationOptions, LoadBalancerAuthenticationHandler>(
                 AwsLoadBalancerDefaults.AuthenticationScheme,
-                opts => { configureOptions(opts); }
+                opts => configureOptions(opts)
             );
     }
 }

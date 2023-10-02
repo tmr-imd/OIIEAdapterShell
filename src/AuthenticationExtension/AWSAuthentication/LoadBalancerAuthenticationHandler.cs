@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -22,9 +23,19 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         Logger.LogInformation("Authenticiation with {Scheme}@{Endpoint}: {User}", 
-            Scheme.Name, Request.HttpContext.GetEndpoint()?.DisplayName ?? "No display name",
+            Scheme.Name,
+            Request.HttpContext.GetEndpoint()?.DisplayName ?? "No display name",
             Request.Headers["x-example"]);
         Logger.LogWarning("Not yet implemented, returning failure.");
+
+        // if (Request.Headers["x-example"] == "Fake Header")
+        // {
+        //     var identity = new ClaimsIdentity(this.Scheme.Name);
+        //     identity.AddClaim(new Claim(ClaimTypes.Name, "Fake Header"));
+        //     var principal = new ClaimsPrincipal(identity);
+        //     return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, this.Scheme.Name)));
+        // }
+
         return Task.FromResult(AuthenticateResult.Fail("AWS LoadBalancer Authentication not yet implemented."));
     }
 
