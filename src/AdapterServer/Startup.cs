@@ -132,6 +132,7 @@ public class Startup
         // Add the processing server as IHostedService
         services.AddHangfireServer(opts => opts.Queues = hangfireQueues);
 
+        // TODO: remove this artificially introduced claims principal
         services.AddScoped(x => JobContextHelper.PrincipalFromString("AdapterServer"));
         services.AddSingleton(new JobContextFactory(Configuration));
 
@@ -143,6 +144,10 @@ public class Startup
         {
             // Configure header fowarding for load balancers/proxies
         });
+
+        // For testing authentication in development mode.
+        var injectSection = Configuration.GetSection(InjectLoadBalancerHeadersMiddleware.InjectLoadBalancerHeadersConfigKey);
+        if (injectSection.GetChildren().Any()) services.Configure<InjectLoadBalancerHeadersOptions>(injectSection);
 
         var isbmSection = Configuration.GetSection("Isbm");
         services.Configure<ClientConfig>(isbmSection);

@@ -23,7 +23,7 @@ public class LoadBalancerAuthenticationOptions : AuthenticationSchemeOptions
     /// </summary>
     public string? RedirectUrlOnChallenge { get; set; }
 
-    public string AwsRegion { get; set; } = "";
+    public string? AwsRegion { get; set; }
 
     /// <summary>
     /// URI (file or HTTP(S)) at which the public key can be retrieved.
@@ -33,9 +33,11 @@ public class LoadBalancerAuthenticationOptions : AuthenticationSchemeOptions
     /// </remarks>
     public string? PublicKeyUri { get; set; }
 
-    public string ValidIssuer { get; set; } = null!;
+    public string? ValidIssuerForAccessToken { get; set; }
 
-    public string[] ValidAudiences { get; set; } = Array.Empty<string>(); // ValidAudience appears to be a required parameter
+    public string? ValidIssuerForClaimsToken { get; set; }
+
+    public string[] ValidAudiences { get; set; } = Array.Empty<string>();
     
     [DefaultValue(new [] {"ES256"})]
     public string[] ValidAlgorithms { get; set; } = new[] { "ES256" }; // AWS Docs say this is it, but in case the change
@@ -78,7 +80,8 @@ internal sealed class LoadBalancerAuthenticationConfigureOptions : IConfigureNam
         options.RedirectUrlOnChallenge = config[nameof(options.RedirectUrlOnChallenge)] ?? options.RedirectUrlOnChallenge;
         options.ValidAlgorithms = algorithms.Any() ? algorithms.ToArray() : options.ValidAlgorithms;
         options.ValidAudiences = audiences.Any() ? audiences.ToArray() : options.ValidAudiences;
-        options.ValidIssuer = config[nameof(options.ValidIssuer)] ?? options.ValidIssuer;
+        options.ValidIssuerForAccessToken = config[nameof(options.ValidIssuerForAccessToken)] ?? options.ValidIssuerForAccessToken;
+        options.ValidIssuerForClaimsToken = config[nameof(options.ValidIssuerForClaimsToken)] ?? options.ValidIssuerForClaimsToken;
     }
 
     public void Configure(LoadBalancerAuthenticationOptions options)
@@ -134,7 +137,10 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             Scheme.Name,
             Request.HttpContext.GetEndpoint()?.DisplayName ?? "Unknown endpoint",
             oidcIdentity);
-        Logger.LogTrace("Access token details: {AccessToken}", oidcAccessToken);
+
+        var handler = new JsonWebTokenHandler();
+        Logger.LogTrace("Access token details: {AccessToken}", oidcAccessToken.Split(".").Select(e => Base64UrlEncoder.Decode(e)));
+        Logger.LogTrace("Claims token details: {ClaimsToken}", oidcClaimsData.Split(".").Select(e => Base64UrlEncoder.Decode(e)));
 
         var oidcClaims = await DecodeAwsJwt(oidcClaimsData);
 
@@ -152,15 +158,8 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
 
         // TODO: Verify the issue of the oidcAccessToken (which should be the original OIDC Identity Provider)
 
-        // if (Request.Headers["x-example"] == "Fake Header")
-        // {
-        //     var identity = new ClaimsIdentity(this.Scheme.Name);
-        //     identity.AddClaim(new Claim(ClaimTypes.Name, "Fake Header"));
-        //     var principal = new ClaimsPrincipal(identity);
-        // }
-
         Logger.LogInformation("Successfully authenticated {Name} ({Id})",
-            principal.Identity?.Name, principal.FindFirstValue(ClaimTypes.NameIdentifier));
+            principal.Identity?.Name, principal.FindFirstValue(JwtRegisteredClaimNames.Sub));
         return AuthenticateResult.Success(new AuthenticationTicket(principal, this.Scheme.Name));
     }
 
@@ -180,7 +179,7 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
         Logger.LogTrace("Validating token\n{Token}", jwtHeaders);
 
         var result = handler.ValidateToken(encodedJwt, new TokenValidationParameters {
-            ValidIssuer = Options.ValidIssuer,
+            ValidIssuer = Options.ValidIssuerForClaimsToken,
             ValidAudiences = Options.ValidAudiences,
             ValidAlgorithms = Options.ValidAlgorithms,
             IssuerSigningKey = publicKey

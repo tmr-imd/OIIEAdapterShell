@@ -199,10 +199,10 @@
         if (authenticationState is not null) await authenticationState;
         @* if (!authenticationState?.Result.User.IsInRole("FakeAdmin") ?? false) *@
         @* Poliy-based authorization example *@
-        var authResult = await AuthorizationService.AuthorizeAsync(authenticationState?.Result.User, "AdministratorsOnly");
+        var authResult = await AuthorizationService.AuthorizeAsync(authenticationState?.Result?.User, "AdministratorsOnly");
         if (!authResult.Succeeded)
         {
-            error = $"You do not have FakeAdmin privileges. {authResult.Failure.FailureReasons}";
+            error = $"You do not have FakeAdmin privileges. {authResult.Failure?.FailureReasons}";
             await InvokeAsync(StateHasChanged);
             @* StateHasChanged(); *@
             return;
