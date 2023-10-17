@@ -1,0 +1,35 @@
+# Docker-compose file for showing a demo OIIE Adapter.
+#
+# Mounting an external volume for the files is optional. 
+#
+# Other compose files should be applied on top of this file.
+
+version: '3.4'
+
+services:
+  demo-adapter:
+    image: ghcr.io/tmr-imd/oiie-adapter-shell:dev
+    # image: ghcr.io/tmr-imd/oiie-deployments:demo-oiie-adapter-shell
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    configs:
+      - source: appsettings_json
+        target: /app/appsettings.Development.json
+        mode: 0440
+      - source: public_key
+        target: /app/AuthenticationExtensionJwtGen/pub_key.txt
+        mode: 0440
+    volumes: 
+      - demo-data:/app/Data
+
+configs:
+  appsettings_json:
+    file: src/AdapterServer/appsettings.docker.json
+  public_key:
+    file: src/AuthenticationExtensionJwtGen/pub_key.txt
+
+volumes: 
+  demo-data:

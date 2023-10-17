@@ -139,8 +139,14 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             oidcIdentity);
 
         var handler = new JsonWebTokenHandler();
-        Logger.LogTrace("Access token details: {AccessToken}", oidcAccessToken.Split(".").Select(e => Base64UrlEncoder.Decode(e)));
-        Logger.LogTrace("Claims token details: {ClaimsToken}", oidcClaimsData.Split(".").Select(e => Base64UrlEncoder.Decode(e)));
+        Logger.LogTrace("Access token details: {AccessToken}", oidcAccessToken.Split(".").Select(e => Base64UrlEncoder.Decode(e)).Take(2));
+        Logger.LogTrace("Claims token details: {ClaimsToken}", oidcClaimsData.Split(".").Select(e => Base64UrlEncoder.Decode(e)).Take(2));
+
+        if (string.IsNullOrWhiteSpace(oidcAccessToken) || string.IsNullOrWhiteSpace(oidcIdentity) || string.IsNullOrWhiteSpace(oidcClaimsData))
+        {
+            Logger.LogWarning("No AWS Load Balancer HTTP Headers set: {Headers}", Request.Headers.Keys);
+            return AuthenticateResult.NoResult();
+        }
 
         var oidcClaims = await DecodeAwsJwt(oidcClaimsData);
 
@@ -228,7 +234,7 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             // Assume it is a file path if it does not start with the 'file:' scheme
             return Options.PublicKeyUri.StartsWith("file:") ?
                 new Uri(Options.PublicKeyUri) :
-                new Uri($"file:///{Path.GetFullPath(Options.PublicKeyUri)}");
+                new Uri($"file:///{Path.GetFullPath(Options.PublicKeyUri).TrimStart('/')}");
         }
 
         var url = PUBLIC_KEY_ENDPOINT_PATTERN.Replace("{region}", Options.AwsRegion).Replace("{key-id}", encryptedToken.Kid);
@@ -244,7 +250,10 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
         if (uri.IsFile)
         {
             // More for testing and development, but could also be key pinning.
-            keyString = await File.ReadAllTextAsync(uri.LocalPath);
+            // Since Uri.LocalPath actually always provides a Windows path (i.e., with backslashes)
+            var filePath = Path.Combine(uri.Segments.Select(p => Uri.UnescapeDataString(p)).ToArray());
+            Logger.LogInformation("Converted file path {Path}", filePath);
+            keyString = await File.ReadAllTextAsync(filePath);
         }
         else
         {
