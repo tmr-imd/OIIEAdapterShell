@@ -40,7 +40,7 @@ var accessTokenPath = "access_token.txt";
 // Create new public key using same algorithm as AWS Load Balancer (ES256)
 var rawKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
 var publicKeyBytes = rawKey.ExportSubjectPublicKeyInfo();
-var encoded = PemEncoding.Write("EC PUBLIC KEY", publicKeyBytes);
+var encoded = PemEncoding.Write("PUBLIC KEY", publicKeyBytes);
 File.WriteAllText(claimsKeyPath, new string (encoded));
 Console.WriteLine("Claims token public key written to: {0}", claimsKeyPath);
 // Console.WriteLine("{0}\n", new string (encoded));
@@ -104,11 +104,14 @@ Console.WriteLine("Decoded claims token headers {0}", decodedJwtHeaders);
 var decodedPayload = Base64UrlEncoder.Decode(jwtHeaders.EncodedPayload);
 Console.WriteLine("Decoded claims token payload {0}", decodedPayload);
 
+var importedClaimsKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+importedClaimsKey.ImportFromPem(new string(encoded));
+
 var validationResult = tokenHandler.ValidateToken(claimsToken, new TokenValidationParameters
 {
     ValidIssuer = Options.ClaimsDataIssuer,
     ValidateAudience = false,
-    IssuerSigningKey = claimsSecurityKey
+    IssuerSigningKey = new ECDsaSecurityKey(importedClaimsKey)
 });
 
 if (!validationResult.IsValid) throw new Exception("Claims token verification failed with generated keys");
