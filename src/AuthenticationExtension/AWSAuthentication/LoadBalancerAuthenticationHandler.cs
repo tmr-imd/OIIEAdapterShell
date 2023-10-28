@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-// using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Encodings.Web;
@@ -23,24 +22,89 @@ public class LoadBalancerAuthenticationOptions : AuthenticationSchemeOptions
     /// </summary>
     public string? RedirectUrlOnChallenge { get; set; }
 
+    /// <summary>
+    /// AWS Region used to infer the load balancer's public key URL.
+    /// </summary>
+    /// <remarks>
+    /// The public key at the derived URI is expected to be in PEM format.
+    /// The LoadBalancerPublicKeyUri overrides this value.
+    /// Is this one necessary if we have put the dynamic key-id bit into the other parameter?
+    /// </remarks>
     public string? AwsRegion { get; set; }
 
     /// <summary>
-    /// URI (file or HTTP(S)) at which the public key can be retrieved.
+    /// URI (file or HTTP(S)) at which the public key for the claims token can be retrieved.
+    /// If the value includes a the text '{key-id}' it will be replaced with the kid of the JWT's header.
     /// </summary>
     /// <remarks>
     /// The public key at the URI is expected to be in PEM format.
     /// </remarks>
-    public string? PublicKeyUri { get; set; }
+    public string? LoadBalancerPublicKeyUri { get; set; }
 
-    public string? ValidIssuerForAccessToken { get; set; }
+    /// <summary>
+    /// URI (file or HTTP(S)) at which the public key(s) for the access token can be retrieved.
+    /// </summary>
+    /// <remarks>
+    /// The location is expected to be a valid JSON Web Key Set (JWKS) document.
+    /// </remarks>
+    public string? IdPJwksUri { get; set; }
 
-    public string? ValidIssuerForClaimsToken { get; set; }
+    /// <summary>
+    /// List of strings identifier the issuers that will be considered valid for the access token.
+    /// </summary>
+    /// <remarks>
+    /// The JSON may have a single string value or an array of string values.
+    /// </remarks>
+    public string[] ValidIssuersForAccessToken { get; set; } = Array.Empty<string>();
 
+    /// <summary>
+    /// List of strings identifier the issuers that will be considered valid for the access token.
+    /// </summary>
+    /// <remarks>
+    /// The JSON may have a single string value or an array of string values.
+    /// </remarks>
+    public string[] ValidIssuersForClaimsToken { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// List of audiences that will be considered valid for the access token.
+    /// If no value is given (empty array), no audience validation will be performed.
+    /// </summary>
+    /// <remarks>
+    /// The JSON may have a single string value or an array of string values.
+    /// </remarks>
     public string[] ValidAudiences { get; set; } = Array.Empty<string>();
-    
+
+    /// <summary>
+    /// The OAuth2/OIDC Application/Cient ID configured with the Identity Provider.
+    /// </summary>
+    /// <remarks>
+    /// Helps protect against against reusing tokens captured from a nother application.
+    /// If configured and no appid/azp claim is included in the token, it will be considered an error.
+    /// </remarks>
+    public string? ApplicationId { get; set; }
+
+    /// <summary>
+    /// The Tenant ID associated with the Identity Provided: IdP specific, e.g., Active Directory.
+    /// </summary>
+    public Guid? TenantId { get; set; }
+
+    /// <summary>
+    /// List of valid algorithms for the claims token.
+    /// </summary>
+    /// <remarks>
+    /// AWS Docs say it is always ES256, but may change in the future.
+    /// </remarks>
     [DefaultValue(new [] {"ES256"})]
-    public string[] ValidAlgorithms { get; set; } = new[] { "ES256" }; // AWS Docs say this is it, but in case the change
+    public string[] ValidClaimsTokenAlgorithms { get; set; } = new[] { "ES256" };
+    
+    /// <summary>
+    /// List of valid algorithms for the access token.
+    /// </summary>
+    /// <remarks>
+    /// Identity provider dependent. By default only supporting 2 most common at the moment.
+    /// </remarks>
+    [DefaultValue(new [] {"RS256", "ES256"})]
+    public string[] ValidAccessTokenAlgorithms { get; set; } = new[] { "RS256", "ES256" };
 }
 
 internal sealed class LoadBalancerAuthenticationConfigureOptions : IConfigureNamedOptions<LoadBalancerAuthenticationOptions>
@@ -62,10 +126,11 @@ internal sealed class LoadBalancerAuthenticationConfigureOptions : IConfigureNam
 
         if (config is null || !config.GetChildren().Any()) return;
 
-        var algorithms = config.GetSection(nameof(options.ValidAlgorithms)).GetChildren().Select(c => c.Value);
-        var audiences = config.GetSection(nameof(options.ValidAudiences)).GetChildren().Select(c => c.Value);
-        // Do we want/need multiple possible issuers similar to JwtBearer authentication?
-        // var issuers = config.GetSection(nameof(options.ValidAlgorithms)).GetChildren().Select(c => c.Value);
+        var claimsTokenAlgorithms = GetValueOrChildren(config.GetSection(nameof(options.ValidClaimsTokenAlgorithms)));
+        var accessTokenAlgorithms = GetValueOrChildren(config.GetSection(nameof(options.ValidAccessTokenAlgorithms)));
+        var audiences = GetValueOrChildren(config.GetSection(nameof(options.ValidAudiences)));
+        var accessTokenIssuers = GetValueOrChildren(config.GetSection(nameof(options.ValidIssuersForAccessToken)));
+        var claimsTokenIssuers = GetValueOrChildren(config.GetSection(nameof(options.ValidIssuersForClaimsToken)));
 
         // Merge the options with the configuration
         options.AwsRegion = config[nameof(options.AwsRegion)] ?? options.AwsRegion;
@@ -76,17 +141,26 @@ internal sealed class LoadBalancerAuthenticationConfigureOptions : IConfigureNam
         options.ForwardForbid = config[nameof(options.ForwardForbid)] ?? options.ForwardForbid;
         options.ForwardSignIn = config[nameof(options.ForwardSignIn)] ?? options.ForwardSignIn;
         options.ForwardSignOut = config[nameof(options.ForwardSignOut)] ?? options.ForwardSignOut;
-        options.PublicKeyUri = config[nameof(options.PublicKeyUri)] ?? options.PublicKeyUri;
+        options.LoadBalancerPublicKeyUri = config[nameof(options.LoadBalancerPublicKeyUri)] ?? options.LoadBalancerPublicKeyUri;
+        options.IdPJwksUri = config[nameof(options.IdPJwksUri)] ?? options.IdPJwksUri;
         options.RedirectUrlOnChallenge = config[nameof(options.RedirectUrlOnChallenge)] ?? options.RedirectUrlOnChallenge;
-        options.ValidAlgorithms = algorithms.Any() ? algorithms.ToArray() : options.ValidAlgorithms;
+        options.ApplicationId = config[nameof(options.ApplicationId)] ?? options.ApplicationId;
+        options.TenantId = Guid.TryParse(config[nameof(options.TenantId)], out var guid) ? guid : options.TenantId;
+        options.ValidClaimsTokenAlgorithms = claimsTokenAlgorithms.Any() ? claimsTokenAlgorithms.ToArray() : options.ValidClaimsTokenAlgorithms;
+        options.ValidAccessTokenAlgorithms = accessTokenAlgorithms.Any() ? accessTokenAlgorithms.ToArray() : options.ValidAccessTokenAlgorithms;
         options.ValidAudiences = audiences.Any() ? audiences.ToArray() : options.ValidAudiences;
-        options.ValidIssuerForAccessToken = config[nameof(options.ValidIssuerForAccessToken)] ?? options.ValidIssuerForAccessToken;
-        options.ValidIssuerForClaimsToken = config[nameof(options.ValidIssuerForClaimsToken)] ?? options.ValidIssuerForClaimsToken;
+        options.ValidIssuersForAccessToken = accessTokenIssuers.Any() ? accessTokenIssuers.ToArray() : options.ValidIssuersForAccessToken;
+        options.ValidIssuersForClaimsToken = claimsTokenIssuers.Any() ? claimsTokenIssuers.ToArray() : options.ValidIssuersForClaimsToken;
     }
 
     public void Configure(LoadBalancerAuthenticationOptions options)
     {
         Configure(Options.DefaultName, options);
+    }
+
+    private static IEnumerable<string> GetValueOrChildren(IConfigurationSection section)
+    {
+        return section.Exists() ? new string[] { section.Value } : section.GetChildren().Select(c => c.Value);
     }
 }
 
@@ -120,6 +194,30 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
 
     private const string SIGNER_PATTERN = "arn:aws:elasticloadbalancing:{region-code}:{account-id}:loadbalancer/app/{load-balancer-name}/{load-balancer-id}";
     private const string PUBLIC_KEY_ENDPOINT_PATTERN = "https://public-keys.auth.elb.{region}.amazonaws.com/{key-id}";
+    private const string RoleTypeClaimName = "roles";
+
+    private TokenValidationParameters ClaimsTokenValidationParameters => new()
+    {
+        ValidIssuers = Options.ValidIssuersForClaimsToken,
+        ValidateAudience = false,
+        ValidAlgorithms = Options.ValidClaimsTokenAlgorithms,
+        ValidateLifetime = true,
+        RequireExpirationTime = true,
+        RequireSignedTokens = true,
+        AuthenticationType = AwsLoadBalancerDefaults.AuthenticationScheme
+    };
+
+    private TokenValidationParameters AccessTokenValidationParameters => new()
+    {
+        ValidIssuers = Options.ValidIssuersForAccessToken,
+        ValidateAudience = Options.ValidAudiences.Any(),
+        ValidAudiences = Options.ValidAudiences,
+        ValidAlgorithms = Options.ValidAccessTokenAlgorithms,
+        ValidateLifetime = true,
+        RequireExpirationTime = true,
+        RequireSignedTokens = true,
+        AuthenticationType = AwsLoadBalancerDefaults.AuthenticationScheme
+    };
 
     public LoadBalancerAuthenticationHandler(IOptionsMonitor<LoadBalancerAuthenticationOptions> options,
         ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
@@ -148,7 +246,7 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             return AuthenticateResult.NoResult();
         }
 
-        var oidcClaims = await DecodeAwsJwt(oidcClaimsData);
+        var oidcClaims = await DecodeAwsJwt(oidcClaimsData, ClaimsTokenValidationParameters);
 
         if (!oidcClaims.IsAuthenticated || !oidcClaims.Claims.Any())
         {
@@ -169,102 +267,103 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
         return AuthenticateResult.Success(new AuthenticationTicket(principal, this.Scheme.Name));
     }
 
-    private async Task<ClaimsIdentity> DecodeAwsJwt(string encodedJwt)
+    private async Task<ClaimsIdentity> DecodeAwsJwt(string encodedJwt, TokenValidationParameters validationParameters)
     {
-        // The manual way (matches example in AWS documentation)
-        // var encodedJwtHeaders = encodedJwt.Split(".").First();
-        // var decodedJwtHeaders = Base64UrlEncoder.Decode(encodedJwtHeaders);
-
-        // Using the C# libraries (I am assuming it does the base64Url decoding)
         var handler = new JsonWebTokenHandler();
 
         var jwtHeaders = handler.ReadJsonWebToken(encodedJwt);
         var keyUri = GetPublicKeyUri(jwtHeaders);
         var publicKey = await GetPublicKey(keyUri);
 
+        if (publicKey is null) return new ClaimsIdentity();
+        validationParameters.IssuerSigningKey = publicKey;
+
         Logger.LogTrace("Validating token\n{Token}", jwtHeaders);
 
-        var result = handler.ValidateToken(encodedJwt, new TokenValidationParameters {
-            ValidIssuer = Options.ValidIssuerForClaimsToken,
-            ValidAudiences = Options.ValidAudiences,
-            ValidAlgorithms = Options.ValidAlgorithms,
-            IssuerSigningKey = publicKey
-        });
+        var result = handler.ValidateToken(encodedJwt, validationParameters);
 
         if (result.IsValid && result.SecurityToken is JsonWebToken token)
         {
             Logger.LogTrace(
                 "AWS Load Balancer provided claims token is valid for {Subj} - {Name}",
-                result.ClaimsIdentity.FindFirst(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value,
-                result.ClaimsIdentity.Name
+                token.Subject,
+                token.GetClaim(JwtRegisteredClaimNames.Name).Value
             );
-            return result.ClaimsIdentity;
+            var claimsIdentity = result.ClaimsIdentity;
+            claimsIdentity = new ClaimsIdentity(claimsIdentity.Claims, claimsIdentity.AuthenticationType, JwtRegisteredClaimNames.Name, RoleTypeClaimName)
+            {
+                Label = claimsIdentity.Label,
+                BootstrapContext = claimsIdentity.BootstrapContext
+            };
+            return claimsIdentity;
         }
         else
         {
             Logger.LogWarning(result.Exception, "AWS Load Balancer provided claims token is invalid");
             return new ClaimsIdentity();
         }
-
-        // var handler = new JwtSecurityTokenHandler();
-        // var jwtHeaders = handler.ReadJwtToken(encodedJwt);
-        // var keyUri = GetPublicKeyUri(jwtHeaders);
-        // var publicKey = await GetPublicKey(keyUri);
-        // var principal = handler.ValidateToken(encodedJwt, new TokenValidationParameters() {
-        //     IssuerSigningKey = publicKey
-        // }, out var decodedJwt);
-        // using var scope = Logger.BeginScope("AWS JWT - Comparing principal vs. JWT");
-        // Logger.LogInformation("ClaimsPrincipal {Principal}", principal);
-        // Logger.LogInformation("JWT Content {JWT}", decodedJwt);
-        // return principal.Identity as ClaimsIdentity;
     }
 
-    // private Uri GetPublicKeyUri(JwtSecurityToken encryptedToken)
-    // {
-    //     if (Options.PublicKeyUri is not null) return new Uri(Options.PublicKeyUri);
-
-    //     var url = PUBLIC_KEY_ENDPOINT_PATTERN.Replace("{region}", Options.AwsRegion).Replace("{key-id}", encryptedToken.Header.Kid);
-    //     return new Uri(url);
-    // }
-
-    private Uri GetPublicKeyUri(JsonWebToken encryptedToken)
+    private Uri GetPublicKeyUri(JsonWebToken jwt)
     {
-        if (Options.PublicKeyUri is not null)
-        {
-            // Assume it is a file path if it does not start with the 'file:' scheme
-            return Options.PublicKeyUri.StartsWith("file:") ?
-                new Uri(Options.PublicKeyUri) :
-                new Uri($"file:///{Path.GetFullPath(Options.PublicKeyUri).TrimStart('/')}");
-        }
+        var url = string.IsNullOrWhiteSpace(Options.LoadBalancerPublicKeyUri) ? PUBLIC_KEY_ENDPOINT_PATTERN : Options.LoadBalancerPublicKeyUri;
+        url = url.Replace("{region}", Options.AwsRegion).Replace("{key-id}", jwt.Kid);
 
-        var url = PUBLIC_KEY_ENDPOINT_PATTERN.Replace("{region}", Options.AwsRegion).Replace("{key-id}", encryptedToken.Kid);
-        return new Uri(url);
+        // Assume it is a file path if it does not start with the 'file:', 'http:', or 'https:' schemes
+        return url.StartsWith("file:") || url.StartsWith("http:") || url.StartsWith("https:") ?
+            new Uri(url) :
+            new Uri($"file:///{Path.GetFullPath(url).TrimStart('/')}");
     }
 
-    private async Task<SecurityKey> GetPublicKey(Uri uri)
+    private async Task<SecurityKey?> GetPublicKey(Uri uri)
     {
         Logger.LogInformation("AWS JWT Processing - Reading Public Key from {URI}", uri);
-        // TODO Error handling
         // TODO: key pinning/caching
-        string keyString;
-        if (uri.IsFile)
+        string keyString = uri.IsFile ? await GetPublicKeyFromFile(uri) : await GetPublicKeyFromHttp(uri);
+
+        Logger.LogTrace("Downloaded public key:\n{KeyData}", keyString);
+
+        if (string.IsNullOrWhiteSpace(keyString))
         {
-            // More for testing and development, but could also be key pinning.
-            // Since Uri.LocalPath actually always provides a Windows path (i.e., with backslashes)
-            var filePath = Path.Combine(uri.Segments.Select(p => Uri.UnescapeDataString(p)).ToArray());
-            Logger.LogInformation("Converted file path {Path}", filePath);
-            keyString = await File.ReadAllTextAsync(filePath);
-        }
-        else
-        {
-            using var client = new HttpClient();
-            keyString = await client.GetStringAsync(uri.AbsoluteUri);
+            Logger.LogError("No public key data retrieved {URL}", uri);
+            return null;
         }
 
-        Logger.LogInformation("Downloaded public key:\n{KeyData}", keyString);
-        var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        key.ImportFromPem(keyString);
-        return new ECDsaSecurityKey(key);
+        try
+        {
+            var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            key.ImportFromPem(keyString);
+            return new ECDsaSecurityKey(key);
+        }
+        catch (ArgumentException ex)
+        {
+            Logger.LogError(ex, "Error reading public key data content. Expecting unencrypted PEM Public Key format.");
+            return null;
+        }
+    }
+
+    private async Task<string> GetPublicKeyFromFile(Uri uri)
+    {
+        // More for testing and development, but could also be key pinning.
+        // Since Uri.LocalPath actually always provides a Windows path (i.e., with backslashes)
+        var filePath = Path.Combine(uri.Segments.Select(p => Uri.UnescapeDataString(p)).ToArray());
+        Logger.LogInformation("Converted file path {Path}", filePath);
+        string keyString = await File.ReadAllTextAsync(filePath);
+        return keyString;
+    }
+
+    private async Task<string> GetPublicKeyFromHttp(Uri uri)
+    {
+        try
+        {
+            using var client = new HttpClient();
+            return await client.GetStringAsync(uri.AbsoluteUri);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error reading public key from HTTP: {URL}", uri.AbsoluteUri);
+            return "";
+        }
     }
 
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
