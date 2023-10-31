@@ -499,7 +499,7 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
         try
         {
             if (Options.TenantId is not null) VerifyAccessTokenTenantId(accessClaims);
-            if (string.IsNullOrWhiteSpace(Options.ApplicationId)) VerifyAccessTokenApplicationId(accessClaims);
+            if (!string.IsNullOrWhiteSpace(Options.ApplicationId)) VerifyAccessTokenApplicationId(accessClaims);
             return true;
         }
         catch (Exception ex)
