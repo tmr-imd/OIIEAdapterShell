@@ -459,3 +459,8 @@ src/AdapterServer/Data/hangfire.db*
 **/*.db*
 src/CIRLib/Data/CIRLib.db*
 src/**/*.db*
+src/**/access_jwks.json
+src/**/access_pub_key.pem
+src/**/access_token.txt
+src/**/claims_pub_key.pem
+src/**/claims_token.txt

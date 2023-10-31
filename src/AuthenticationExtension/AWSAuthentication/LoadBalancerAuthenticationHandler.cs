@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -105,6 +106,14 @@ public class LoadBalancerAuthenticationOptions : AuthenticationSchemeOptions
     /// </remarks>
     [DefaultValue(new [] {"RS256", "ES256"})]
     public string[] ValidAccessTokenAlgorithms { get; set; } = new[] { "RS256", "ES256" };
+
+    public override void Validate()
+    {
+        base.Validate();
+        if (string.IsNullOrWhiteSpace(IdPJwksUri)) throw new ValidationException($"{nameof(LoadBalancerAuthenticationOptions)}.{nameof(IdPJwksUri)} must not be null or empty");
+        if (ValidClaimsTokenAlgorithms.Single() != "ES256") throw new ValidationException($"{nameof(LoadBalancerAuthenticationOptions)}.{nameof(ValidClaimsTokenAlgorithms)} contains unsupported algorithms {string.Join(", ", ValidClaimsTokenAlgorithms.Except(new[] {"ES256"}))}");
+        if (ValidAccessTokenAlgorithms.Except(new[] { "RS256", "ES256" }).Any()) throw new ValidationException($"{nameof(LoadBalancerAuthenticationOptions)}.{nameof(ValidAccessTokenAlgorithms)} contains unsupported algorithms {string.Join(", ", ValidAccessTokenAlgorithms.Except(new[] {"RS256", "ES256"}))}");
+    }
 }
 
 internal sealed class LoadBalancerAuthenticationConfigureOptions : IConfigureNamedOptions<LoadBalancerAuthenticationOptions>
@@ -160,7 +169,7 @@ internal sealed class LoadBalancerAuthenticationConfigureOptions : IConfigureNam
 
     private static IEnumerable<string> GetValueOrChildren(IConfigurationSection section)
     {
-        return section.Exists() ? new string[] { section.Value } : section.GetChildren().Select(c => c.Value);
+        return section.Value != null ? new string[] { section.Value } : section.GetChildren().Select(c => c.Value);
     }
 }
 
@@ -194,7 +203,9 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
 
     private const string SIGNER_PATTERN = "arn:aws:elasticloadbalancing:{region-code}:{account-id}:loadbalancer/app/{load-balancer-name}/{load-balancer-id}";
     private const string PUBLIC_KEY_ENDPOINT_PATTERN = "https://public-keys.auth.elb.{region}.amazonaws.com/{key-id}";
-    private const string RoleTypeClaimName = "roles";
+    private const string RoleTypeClaimType = "roles";
+    private const string TenantIdClaimType = "tid";
+    private const string AppIdClaimType = "appid";
 
     private TokenValidationParameters ClaimsTokenValidationParameters => new()
     {
@@ -246,7 +257,7 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             return AuthenticateResult.NoResult();
         }
 
-        var oidcClaims = await DecodeAwsJwt(oidcClaimsData, ClaimsTokenValidationParameters);
+        var oidcClaims = await DecodeAwsJwt(oidcClaimsData, ClaimsTokenValidationParameters, GetClaimsPublicKeyUri);
 
         if (!oidcClaims.IsAuthenticated || !oidcClaims.Claims.Any())
         {
@@ -258,22 +269,37 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             return AuthenticateResult.Fail("Identity header value does not match 'sub' claim of the claims token.");
         }
 
+        oidcClaims.AddClaim(new Claim(ClaimTypes.NameIdentifier, oidcIdentity));
         var principal = new ClaimsPrincipal(oidcClaims);
 
-        // TODO: Verify the issue of the oidcAccessToken (which should be the original OIDC Identity Provider)
+        var accessClaims = await DecodeAwsJwt(oidcAccessToken, AccessTokenValidationParameters, GetAccessTokenKeyUri);
+        // validate extra Access Token specific claims (ApplicationId, TenantId)
+        if (!accessClaims.IsAuthenticated || !accessClaims.Claims.Any())
+        {
+            return AuthenticateResult.Fail("Invalid access token.");
+        }
+        else if (!VerifyAdditionalAccessTokenRequirements(accessClaims))
+        {
+            return AuthenticateResult.Fail("Invalid access token (additional requirements failed verification).");
+        }
+
+        // TODO: Should we add all the claims or only the 'roles'/'groups' claims?
+        principal.AddIdentity(accessClaims);
 
         Logger.LogInformation("Successfully authenticated {Name} ({Id})",
             principal.Identity?.Name, principal.FindFirstValue(JwtRegisteredClaimNames.Sub));
         return AuthenticateResult.Success(new AuthenticationTicket(principal, this.Scheme.Name));
     }
 
-    private async Task<ClaimsIdentity> DecodeAwsJwt(string encodedJwt, TokenValidationParameters validationParameters)
+    private async Task<ClaimsIdentity> DecodeAwsJwt(string encodedJwt,
+            TokenValidationParameters validationParameters,
+            Func<JsonWebToken, Uri> PublicKeyResolver)
     {
         var handler = new JsonWebTokenHandler();
 
         var jwtHeaders = handler.ReadJsonWebToken(encodedJwt);
-        var keyUri = GetPublicKeyUri(jwtHeaders);
-        var publicKey = await GetPublicKey(keyUri);
+        var keyUri = PublicKeyResolver(jwtHeaders);
+        var publicKey = await GetPublicKey(keyUri, jwtHeaders);
 
         if (publicKey is null) return new ClaimsIdentity();
         validationParameters.IssuerSigningKey = publicKey;
@@ -290,7 +316,7 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
                 token.GetClaim(JwtRegisteredClaimNames.Name).Value
             );
             var claimsIdentity = result.ClaimsIdentity;
-            claimsIdentity = new ClaimsIdentity(claimsIdentity.Claims, claimsIdentity.AuthenticationType, JwtRegisteredClaimNames.Name, RoleTypeClaimName)
+            claimsIdentity = new ClaimsIdentity(claimsIdentity.Claims, claimsIdentity.AuthenticationType, JwtRegisteredClaimNames.Name, RoleTypeClaimType)
             {
                 Label = claimsIdentity.Label,
                 BootstrapContext = claimsIdentity.BootstrapContext
@@ -304,7 +330,7 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
         }
     }
 
-    private Uri GetPublicKeyUri(JsonWebToken jwt)
+    private Uri GetClaimsPublicKeyUri(JsonWebToken jwt)
     {
         var url = string.IsNullOrWhiteSpace(Options.LoadBalancerPublicKeyUri) ? PUBLIC_KEY_ENDPOINT_PATTERN : Options.LoadBalancerPublicKeyUri;
         url = url.Replace("{region}", Options.AwsRegion).Replace("{key-id}", jwt.Kid);
@@ -315,7 +341,19 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             new Uri($"file:///{Path.GetFullPath(url).TrimStart('/')}");
     }
 
-    private async Task<SecurityKey?> GetPublicKey(Uri uri)
+    private Uri GetAccessTokenKeyUri(JsonWebToken jwt)
+    {
+        // Future option may be to construct the JWKS uri from the issuer, but could be ureliable
+        if (string.IsNullOrWhiteSpace(Options.IdPJwksUri)) return new Uri("", UriKind.Relative);
+        var url = Options.IdPJwksUri;
+
+        // Assume it is a file path if it does not start with the 'file:', 'http:', or 'https:' schemes
+        return url.StartsWith("file:") || url.StartsWith("http:") || url.StartsWith("https:") ?
+            new Uri(url) :
+            new Uri($"file:///{Path.GetFullPath(url).TrimStart('/')}");
+    }
+
+    private async Task<SecurityKey?> GetPublicKey(Uri uri, JsonWebToken jwt)
     {
         Logger.LogInformation("AWS JWT Processing - Reading Public Key from {URI}", uri);
         // TODO: key pinning/caching
@@ -329,15 +367,17 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             return null;
         }
 
-        try
+        if (PemEncoding.TryFind(keyString, out var pemInfo))
         {
-            var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-            key.ImportFromPem(keyString);
-            return new ECDsaSecurityKey(key);
+            return ReadPemPublicKey(keyString[pemInfo.Label], keyString[pemInfo.Base64Data]);
         }
-        catch (ArgumentException ex)
+        else if (keyString.TrimStart().StartsWith('{'))
         {
-            Logger.LogError(ex, "Error reading public key data content. Expecting unencrypted PEM Public Key format.");
+            return ReadFromJwks(keyString, jwt.Kid);
+        }
+        else
+        {
+            Logger.LogError("Error reading public key data content. Expecting PEM Public Key or Json Web Key Set file.");
             return null;
         }
     }
@@ -363,6 +403,143 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
         {
             Logger.LogError(ex, "Error reading public key from HTTP: {URL}", uri.AbsoluteUri);
             return "";
+        }
+    }
+
+    private SecurityKey? ReadPemPublicKey(string pemLabel, string pemData)
+    {
+        if (pemLabel != "PUBLIC KEY")
+        {
+            Logger.LogError("Error reading public key data content. Expecting PEM Public Key, found {PemLabel}", pemLabel);
+            return null;
+        }
+
+        var decoded = Convert.FromBase64String(pemData);
+        var publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(decoded, out var _);
+
+        if (publicKey.GetECDsaPublicKey() is ECDsa ecdsa)
+        {
+            return new ECDsaSecurityKey(ecdsa);
+        }
+        else if (publicKey.GetRSAPublicKey() is RSA rsa)
+        {
+            return new RsaSecurityKey(rsa);
+        }
+
+        return null;
+    }
+
+    private SecurityKey? ReadFromJwks(string json, string keyId)
+    {
+        try
+        {
+            var jwks = JsonWebKeySet.Create(json);
+            var jwk = jwks.Keys.Where(k => k.KeyId == keyId).SingleOrDefault() ?? throw new Exception($"No matching Kid (Key Id): {keyId}.");
+
+            if (!string.IsNullOrWhiteSpace(jwk.Alg) && (!jwk.IsSupportedAlgorithm(jwk.Alg) || !Options.ValidAccessTokenAlgorithms.Contains(jwk.Alg)))
+                throw new Exception($"Unsupported algorithm {jwk.Alg}");
+
+            if (!string.IsNullOrWhiteSpace(jwk.Alg) && jwk.Use != JsonWebKeyUseNames.Sig)
+                throw new Exception("Key use is not for signatures ('sig')");
+
+            if (jwk.AdditionalData.ContainsKey("issuer") && !Options.ValidIssuersForAccessToken.Contains(jwk.AdditionalData["issuer"]))
+                throw new Exception($"Key issuer is not one of the valid issuers for access tokens: {jwk.AdditionalData["issuer"]}");
+
+            return jwk.X5c.Any() ? GetKeyFromCertificateChain(jwk) : GetKeyFromParameters(jwk);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error reading public key data content from JWKS.");
+            return null;
+        }
+    }
+
+    private static SecurityKey GetKeyFromParameters(JsonWebKey jwk) =>
+        jwk.Kty switch
+        {
+            JsonWebAlgorithmsKeyTypes.EllipticCurve => new ECDsaSecurityKey(ECDsa.Create(new ECParameters
+            {
+                // TODO: confirm compaitbility of the JsonWebKey Crv values and the 'Friendly Names' of ECCurve.
+                Curve = ECCurve.CreateFromFriendlyName(jwk.Crv),
+                Q = new ECPoint {
+                    X = Convert.FromBase64String(jwk.X),
+                    Y = Convert.FromBase64String(jwk.Y)
+                }
+            })),
+            JsonWebAlgorithmsKeyTypes.RSA => new RsaSecurityKey(new RSAParameters
+            {
+                Exponent = Convert.FromBase64String(jwk.E),
+                Modulus = Convert.FromBase64String(jwk.N)
+            }),
+            _ => throw new Exception($"Unexpected key type/algorithm family: expected RSA or EC but got {jwk.Kty}"),
+        };
+
+    private static SecurityKey GetKeyFromCertificateChain(JsonWebKey jwk)
+    {
+        var certificateChain = new X509Certificate2Collection(jwk.X5c.Select(c => new X509Certificate2(Convert.FromBase64String(c))).ToArray());
+        // The simple verify does not make it clear why the failure occurs, so is not useful.
+        // if (!certificateChain[0].Verify()) throw new Exception("JWKS Certificate Chain failed verification.");
+
+        if (certificateChain[0].GetRSAPublicKey() is RSA rsa)
+        {
+            return new RsaSecurityKey(rsa);
+        }
+        else if (certificateChain[0].GetECDsaPublicKey() is ECDsa ecdsa)
+        {
+            return new ECDsaSecurityKey(ecdsa);
+        }
+        else
+        {
+            throw new Exception("JWKS Certificate does not contain an RSA nor ECDsa public key.");
+        }
+    }
+
+    private bool VerifyAdditionalAccessTokenRequirements(ClaimsIdentity accessClaims)
+    {
+        try
+        {
+            if (Options.TenantId is not null) VerifyAccessTokenTenantId(accessClaims);
+            if (string.IsNullOrWhiteSpace(Options.ApplicationId)) VerifyAccessTokenApplicationId(accessClaims);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Access token failed validation.");
+            return false;
+        }
+    }
+
+    private void VerifyAccessTokenTenantId(ClaimsIdentity accessClaims)
+    {
+        if (accessClaims.FindFirst(c => c.Type == TenantIdClaimType) is Claim tenantId)
+        {
+            var isGuid = Guid.TryParse(tenantId.Value, out var tenantGuid);
+            if (!isGuid) throw new Exception($"Tenant ID claim ('{TenantIdClaimType}') is not a valid GUID");
+            if (Options.TenantId != tenantGuid) throw new Exception($"Tenant ID ('{TenantIdClaimType}') claim does not match. Received {tenantGuid}");
+
+            var issuer = accessClaims.FindFirst(c => c.Type == JwtRegisteredClaimNames.Iss)?.Value ?? throw new Exception("Access token issuer not available in resulting claims.");
+            var issuerUri = new Uri(issuer);
+            string tenantIdString = Options.TenantId.ToString()!;
+            if (issuerUri.Segments.Last() == tenantIdString || issuerUri.Segments.TakeLast(2).SequenceEqual(new string[] {tenantIdString, "v2.0"}))
+                throw new Exception($"Access token issuer does not include expected Tenant ID. Received {issuer}");
+        }
+        else
+        {
+            throw new Exception($"Tenant ID ('{TenantIdClaimType}') claim is missing");
+        }
+    }
+
+    private void VerifyAccessTokenApplicationId(ClaimsIdentity accessClaims)
+    {
+        // Application ID 'appid' 'azp'
+        if (accessClaims.FindFirst(c => c.Type == JwtRegisteredClaimNames.Azp || c.Type == AppIdClaimType) is Claim appId)
+        {
+            if (appId.Value != Options.ApplicationId)
+                throw new Exception($"Application/Client ID ('{AppIdClaimType}' or '{JwtRegisteredClaimNames.Azp}') does not match expected. Received {appId.Value}");
+        }
+        else
+        {
+            throw new Exception($"Application/Client ID ('{AppIdClaimType}' or '{JwtRegisteredClaimNames.Azp}') is missing");
         }
     }
 
