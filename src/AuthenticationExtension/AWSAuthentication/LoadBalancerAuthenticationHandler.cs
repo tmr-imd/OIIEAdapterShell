@@ -6,6 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -207,6 +208,25 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
     private const string TenantIdClaimType = "tid";
     private const string AppIdClaimType = "appid";
 
+    /// <summary>
+    /// Time after which a cached security expires (regardless of accesses.)
+    /// </summary>
+    /// <remarks>
+    /// AWS recommendation for the load balancer public keys is 24 hours, so
+    /// we use that across everything.
+    /// </remarks>
+    private readonly TimeSpan CacheExpiryDuration = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// A local cache in which to store public keys for signature verification.
+    /// This cache may be shared, so is unsuitabled for caching private keys.
+    /// </summary>
+    /// <remarks>
+    /// Note that a customised adapter startup may have to call AddMemoryCache
+    /// to the serivces if not done implicitly by the addition of another service.
+    /// </remarks>
+    private readonly IMemoryCache keyCache;
+
     private TokenValidationParameters ClaimsTokenValidationParameters => new()
     {
         ValidIssuers = Options.ValidIssuersForClaimsToken,
@@ -231,9 +251,10 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
     };
 
     public LoadBalancerAuthenticationHandler(IOptionsMonitor<LoadBalancerAuthenticationOptions> options,
-        ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
+        ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, IMemoryCache cache)
         : base(options, logger, encoder, clock)
     {
+        keyCache = cache;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -355,8 +376,14 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
 
     private async Task<SecurityKey?> GetPublicKey(Uri uri, JsonWebToken jwt)
     {
+        if (keyCache.TryGetValue<SecurityKey>(jwt.Kid, out var cachedKey))
+        {
+            Logger.LogDebug("Found public key '{Kid}' in cache.", jwt.Kid);
+            return cachedKey;
+        }
+
         Logger.LogInformation("AWS JWT Processing - Reading Public Key from {URI}", uri);
-        // TODO: key pinning/caching
+
         string keyString = uri.IsFile ? await GetPublicKeyFromFile(uri) : await GetPublicKeyFromHttp(uri);
 
         Logger.LogTrace("Downloaded public key:\n{KeyData}", keyString);
@@ -367,19 +394,24 @@ public class LoadBalancerAuthenticationHandler : AuthenticationHandler<LoadBalan
             return null;
         }
 
+        SecurityKey? result;
         if (PemEncoding.TryFind(keyString, out var pemInfo))
         {
-            return ReadPemPublicKey(keyString[pemInfo.Label], keyString[pemInfo.Base64Data]);
+            result = ReadPemPublicKey(keyString[pemInfo.Label], keyString[pemInfo.Base64Data]);
         }
         else if (keyString.TrimStart().StartsWith('{'))
         {
-            return ReadFromJwks(keyString, jwt.Kid);
+            result = ReadFromJwks(keyString, jwt.Kid);
         }
         else
         {
             Logger.LogError("Error reading public key data content. Expecting PEM Public Key or Json Web Key Set file.");
             return null;
         }
+
+        if (result is not null) keyCache.Set(jwt.Kid, result, CacheExpiryDuration);
+
+        return result;
     }
 
     private async Task<string> GetPublicKeyFromFile(Uri uri)
