@@ -21,6 +21,8 @@ public record class Entry : ModelObject
     // and object loading can be avoided.
     public string CategoryId { get; set; } = "";
     public string RegistryId { get; set; } = "";
+    public string ParentEntityId { get; set; } = "";
+    public string ChildEntityId { get; set; } = "";
     
     public ICollection<Property> Property {get; set;} = new List<Property>();
 

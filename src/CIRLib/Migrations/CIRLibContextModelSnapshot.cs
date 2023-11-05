@@ -83,6 +83,10 @@ namespace CIRLib.Migrations
                     b.Property<Guid>("CategoryRefId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ChildEntityId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CreatedBy")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -93,7 +97,7 @@ namespace CIRLib.Migrations
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("EntryDescription")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -109,6 +113,10 @@ namespace CIRLib.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentEntityId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -173,10 +181,6 @@ namespace CIRLib.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PropertyId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PropertyValue")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

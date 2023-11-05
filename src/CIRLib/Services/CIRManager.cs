@@ -8,12 +8,6 @@ namespace CIRServices;
 public class CIRManager
 {
     public static CIRLibContextFactory Factory {get; set;} = new CIRLibContextFactory();
-    private static ILogger<CIRManager> _logger;
-
-    public CIRManager(ILogger<CIRManager> logger)
-    {
-        _logger = logger;
-    }
 
     public static void AddRegistries(DataModel.RegistryDef newRegObj, CIRLibContext? dbContext = null)
     {
@@ -96,14 +90,6 @@ public class CIRManager
 
         foreach(DataModel.EntryDef newEntryObj in newEntryObjs)
         {
-            if(string.IsNullOrWhiteSpace(newEntryObj.IdInSource)
-                || string.IsNullOrWhiteSpace(newEntryObj.CategoryId)
-                || string.IsNullOrWhiteSpace(newEntryObj.RegistryId))
-            {
-                _logger.LogInformation("Creating Placeholder Category and Registry as the Category and Registry details were not present.");
-
-            }
-            
             var eService = new EntryServices();       
             eService.CreateNewEntry(newEntryObj, dbContext);
         }

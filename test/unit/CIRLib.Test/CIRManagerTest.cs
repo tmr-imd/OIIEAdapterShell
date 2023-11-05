@@ -60,16 +60,16 @@ public class CIRManagerTest
     public void AddEntriesTestSingleObject()
     {   
         var dummyIdInSource = Guid.NewGuid().ToString();
-        var newEntryObj = new DataModel.EntryDef()
-            {
+        var newEntryObj = new List<DataModel.EntryDef>{
+            new DataModel.EntryDef(){
                 IdInSource =  dummyIdInSource,
                 SourceId = "NetworkCat",
                 CategoryId = "CatOfBridges",
                 RegistryId = "Bridge",
                 CIRId = "CIRGroup1"
-            };
+            }};
         var dbContext = new MockContextFactory().GetDbContext();
-        CIRManager.AddEntries(newEntryObj: newEntryObj, dbContext:dbContext);
+        CIRManager.AddEntries(newEntryObjs: newEntryObj, dbContext:dbContext);
 
         var AssertEntryObj = dbContext.Entry.Where(item => item.IdInSource.Equals(dummyIdInSource));
         Assert.Single(AssertEntryObj);
