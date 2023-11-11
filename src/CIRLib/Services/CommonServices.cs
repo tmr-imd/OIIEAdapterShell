@@ -34,7 +34,7 @@ public class CommonServices
             throw new Exception(" Exception: "+ex);
         }
     }
-    public static ObjModels.Category? CheckIfCategoryExists(string categoryId, CIRLibContext dbContext, string action)
+    public static ObjModels.Category? CheckIfCategoryExists(string categoryId, CIRLibContext dbContext, string action, string? categorySourceId = null)
     {
         try
         {
@@ -42,7 +42,9 @@ public class CommonServices
             {
                 throw new Exception("Please provide a valid CategoryId.");
             }
-            var catObj = dbContext.Category.SingleOrDefault(item => item.CategoryId.Equals(categoryId));
+            var catObj = categorySourceId is null ?
+                dbContext.Category.SingleOrDefault(item => item.CategoryId.Equals(categoryId))
+                : dbContext.Category.SingleOrDefault(item => item.CategoryId.Equals(categoryId) && item.CategorySourceId == categorySourceId);
             if(catObj == null)
             {
                 if(action == "update")

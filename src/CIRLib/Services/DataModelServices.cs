@@ -60,6 +60,8 @@ public class EntryDef
     [Required]
     public string CategoryId { get; set; } = null!;
     [Required]
+    public string CategorySourceId { get; set; } = null!;
+    [Required]
     public string RegistryId {get; set; } = null!;
     public static implicit operator ObjModels.Entry(EntryDef viewModel)
     {
@@ -89,7 +91,6 @@ public class PropertyDef
     public Guid Id { get; set; }
     [Required]
     public string PropertyId { get; set; } = "";
-    public string PropertyValue { get; set; } = "";
     public string DataType { get; set; } = "";
     [Required]
     public string EntryIdInSource { get; set; } = "";
@@ -98,8 +99,36 @@ public class PropertyDef
     [Required]
     public string Value { get; set; } = "";
 
-    [Required]
     public string UnitOfMeasure { get; set; } = "";
+
+    public static implicit operator ObjModels.Property(PropertyDef viewModel)
+    {
+        var property = new ObjModels.Property
+        {
+            PropertyId = viewModel.PropertyId,
+            EntryIdInSource = viewModel.EntryIdInSource,
+            DataType = viewModel.DataType,
+        };
+
+        // Add the value if there is one
+        if (!string.IsNullOrWhiteSpace(viewModel.Value))
+        {
+            property.PropertyValues.Add(viewModel);
+        }
+
+        return property;
+    }
+
+    public static implicit operator ObjModels.PropertyValue(PropertyDef viewModel)
+    {
+        return new ObjModels.PropertyValue
+        {
+            PropertyId = viewModel.PropertyId,
+            Key = viewModel.Key,
+            UnitOfMeasure = viewModel.UnitOfMeasure,
+            Value = viewModel.Value,
+        };
+    }
 
     public override string ToString()
     {

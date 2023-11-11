@@ -1,0 +1,45 @@
+@using AuthenticationExtesion.Support
+@using CIRLib.ObjectModel.Models
+
+<div>
+    <button type="button" @onclick="OnClick" class="inline-flex gap-x-2 w-full hover:font-semibold">
+        <svg class="-mr-1 h-6 w-6 text-gray-400 @(IsExpanded ? "rotate-0" : "-rotate-90")" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+        </svg>
+        @System.CategorySourceId
+    </button>
+
+    <div class="ml-4 @(IsExpanded ? "" : "hidden")">
+        @foreach (var role in System.Entries)
+        {
+            <RoleSelector Role="@role" IsSelected="@(SelectedIds.Contains(role.IdInSource))" OnClicked="ParentOnChildSelected"/>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Category System { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<Entry> ParentOnChildSelected { get; set; }
+    
+    [Parameter]
+    public IEnumerable<string> SelectedIds { get; set; } = Array.Empty<string>();
+
+    private bool IsExpanded { get; set; } = false;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (SelectedIds.Any() && !IsExpanded) IsExpanded = true;
+        return base.OnParametersSetAsync();
+    }
+
+    private void OnClick()
+    {
+        Console.WriteLine("{0} Collapse or expand?? {1} -> {2}", System.CategorySourceId, IsExpanded, !IsExpanded);
+        IsExpanded = !IsExpanded;
+    }
+}
+
+

@@ -1,7 +1,9 @@
-﻿<CascadingAuthenticationState>
+<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly"
-        AdditionalAssemblies="new[] { typeof(CIRLib.UI.Pages.ManageCIRLib).Assembly }
-    ">
+        AdditionalAssemblies="new[] {
+            typeof(CIRLib.UI.Pages.ManageCIRLib).Assembly,
+            typeof(OiieAdminUi.Pages.RoleMappingsPage).Assembly
+    }">
         <Found Context="routeData">
             <AuthorizeRouteView Resource="@routeData" RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />

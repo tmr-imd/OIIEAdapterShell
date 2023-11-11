@@ -179,10 +179,6 @@ namespace CIRLib.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("PropertyValue")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<Guid?>("RegistryId")
                         .HasColumnType("TEXT");
 

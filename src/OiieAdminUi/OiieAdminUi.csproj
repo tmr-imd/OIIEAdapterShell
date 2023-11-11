@@ -17,4 +17,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.14" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AuthenticationExtension\AuthenticationExtension.csproj" />
+  </ItemGroup>
+
 </Project>

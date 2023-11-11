@@ -98,7 +98,6 @@ namespace CIRLib.Migrations
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     PropertyId = table.Column<string>(type: "TEXT", nullable: false),
-                    PropertyValue = table.Column<string>(type: "TEXT", nullable: false),
                     DataType = table.Column<string>(type: "TEXT", nullable: false),
                     EntryRefId = table.Column<Guid>(type: "TEXT", nullable: false),
                     EntryIdInSource = table.Column<string>(type: "TEXT", nullable: false),

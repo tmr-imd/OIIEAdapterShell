@@ -148,7 +148,7 @@ public class CategoryServices : CommonServices
         return Query.ToList();
     }
 
-    public void CreateNewCategory(ObjModels.Category newCategory, CIRLibContext dbContext )
+    public ObjModels.Category CreateNewCategory(ObjModels.Category newCategory, CIRLibContext dbContext )
     {
         var registryObjExists = CheckIfRegistryExists(newCategory.RegistryId, dbContext, "create");
         if(registryObjExists == null)
@@ -170,6 +170,7 @@ public class CategoryServices : CommonServices
         newCategory.Id = Guid.NewGuid();
         dbContext.Category.Add(newCategory);
         dbContext.SaveChanges();
+        return newCategory;
     }
     public void UpdateCategory(Guid id, ObjModels.Category updateCategory, CIRLibContext dbContext )
     {

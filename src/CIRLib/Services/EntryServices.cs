@@ -197,7 +197,7 @@ public class EntryServices : CommonServices
 
         return Query.ToList();
     }
-    public void CreateNewEntry(ObjModels.Entry newEntry, CIRLibContext dbContext)
+    public ObjModels.Entry CreateNewEntry(ObjModels.Entry newEntry, CIRLibContext dbContext)
     {
         var registryObjExists = CheckIfRegistryExists(newEntry.RegistryId, dbContext, "create");
         if(registryObjExists == null)
@@ -217,7 +217,7 @@ public class EntryServices : CommonServices
             newEntry.Registry = registryObjExists;
         }
 
-        var categoryObjExists = CheckIfCategoryExists(newEntry.CategoryId, dbContext, "create");
+        var categoryObjExists = CheckIfCategoryExists(newEntry.CategoryId, dbContext, "create", newEntry.SourceId);
         if(categoryObjExists == null)
         {
             //If Category does not exists, we create one.
@@ -239,6 +239,7 @@ public class EntryServices : CommonServices
         newEntry.Id = Guid.NewGuid();
         dbContext.Entry.Add(newEntry);
         dbContext.SaveChanges();
+        return newEntry;
     }
 
     public void UpdateEntry(Guid Id, ObjModels.Entry updateEntry, CIRLibContext dbContext = null!)

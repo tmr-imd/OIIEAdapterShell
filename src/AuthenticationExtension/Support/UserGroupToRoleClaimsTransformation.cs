@@ -10,15 +10,16 @@ public class UserGroupToRoleClaimsTransformation : IClaimsTransformation
         Console.WriteLine("!!! Adding FakeAdmin role claim for {0}", principal.Identity?.Name);
         // TODO: probably need such a thing to translate AD groups into the local roles for authorization.
         ClaimsIdentity claimsIdentity = new();
+        claimsIdentity.Label ??= "Mapped Roles";
         var claimType = ClaimTypes.Role;
-        if ((principal.Identity?.IsAuthenticated ?? false) &&
+        if (principal.Identities.Any(i => i.IsAuthenticated) &&
             !principal.HasClaim(claim => claim.Type == claimType && claim.Value == "FakeAdmin"))
         {
             // ensure we do not add a duplicate claim
             claimsIdentity.AddClaim(new Claim(claimType, "FakeAdmin"));
+            principal.AddIdentity(claimsIdentity);
         }
 
-        principal.AddIdentity(claimsIdentity);
         return Task.FromResult(principal);
     }
 }

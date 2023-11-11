@@ -71,7 +71,7 @@ public class PropertyServices : CommonServices
     public void CreateNewProperty(ObjModels.Property newProperty, CIRLibContext dbContext)
     {            
         var entryObjExists = CheckIfEntryExists(newProperty.EntryIdInSource, dbContext, "create");
-        if(entryObjExists == null)
+        if (entryObjExists == null)
         {
             //We expect a valid EntryIdInSource to be provided.
             //Otherwise, we error out.
@@ -79,15 +79,33 @@ public class PropertyServices : CommonServices
             // We can create an Entry on the fly but the CategoryRefId and RegistryRefId is not available.
             throw new ArgumentException("EntryIdInSource is not Valid.");
         }
-        else
-        {
-            newProperty.Entry = entryObjExists;
-        }
-        
+
+        newProperty.Entry = entryObjExists;
         newProperty.Id = Guid.NewGuid();
         dbContext.Property.Add(newProperty);
         dbContext.SaveChanges();
     }
+
+    public ObjModels.Property FindOrCreateNewProperty(ObjModels.Property newProperty, CIRLibContext dbContext)
+    {
+        var entryObjExists = CheckIfEntryExists(newProperty.EntryIdInSource, dbContext, "create") ?? throw new ArgumentException("EntryIdInSource is not Valid.");
+
+        var property = dbContext.Entry(entryObjExists)
+            .Collection(e => e.Property)
+            .Query()
+            .Where(p => p.PropertyId == newProperty.PropertyId)
+            .Include(p => p.PropertyValues)
+            .SingleOrDefault();
+
+        if (property is not null) return property;
+
+        newProperty.Entry = entryObjExists;
+        newProperty.Id = Guid.NewGuid();
+        dbContext.Property.Add(newProperty);
+        dbContext.SaveChanges();
+        return newProperty;
+    }
+
     public void UpdateProperty(Guid Id, ObjModels.Property updateProperty, CIRLibContext dbContext)
     {
         _ = CheckIfRegistryExists(updateProperty.Entry.Category.Registry.RegistryId, dbContext, "update");

@@ -143,26 +143,29 @@ public class RegistryServices: CommonServices
         return Query.ToList();
     }
 
-    public void CreateNewRegistry(ObjModels.Registry RegistryObj, CIRLibContext dbContext )
-    {   
-        var registryExists = CheckIfRegistryExists(RegistryObj.RegistryId, dbContext, "create");
-        if(registryExists == null)
+    public ObjModels.Registry CreateNewRegistry(ObjModels.Registry registryObj, CIRLibContext dbContext)
+    {
+        var registryExists = CheckIfRegistryExists(registryObj.RegistryId, dbContext, "create");
+        if (registryExists == null)
         {
-            RegistryObj.Id = Guid.NewGuid();
-            dbContext.Registry.Add(RegistryObj);
+            registryObj.Id = Guid.NewGuid();
+            dbContext.Registry.Add(registryObj);
             dbContext.SaveChanges();
+            return registryObj;
         }
         else
         {
             throw new Exception("Registry exists in CIR Cache.");
         }
     }
+    
     public void UpdateRegistry(Guid Id, ObjModels.Registry updateRegistry, CIRLibContext DbContext )
     {
         var RegObj = DbContext.Registry.Where(item => item.Id.Equals(Id)).First();
         RegObj.Description = updateRegistry.Description;
         DbContext.SaveChanges();
     }
+    
     public void DeleteRegistryById(Guid Id, CIRLibContext DbContext)
     {    
        var DelRegObj = DbContext.Registry.Where(item => item.Id.Equals(Id)).First(); 

@@ -15,23 +15,20 @@ public class CIRManager
         _logger = logger;
     }
 
-    public static void AddRegistries(DataModel.RegistryDef newRegObj, CIRLibContext? dbContext = null)
+    public static ObjModels.Registry AddRegistries(DataModel.RegistryDef newRegObj, CIRLibContext? dbContext = null)
     {
         if(string.IsNullOrWhiteSpace(newRegObj.RegistryId)){
             throw new ArgumentException("Mandatory field RegistryId not provided.");
         }
-        if (dbContext is null)
-        {
-            //dbContext will always be assigned here.
-            //For Testing, dbContext will be passed from the Test function.
-            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
-        }
+        //dbContext will always be assigned here.
+        //For Testing, dbContext will be passed from the Test function.
+        dbContext ??= Factory.CreateDbContext(new ClaimsPrincipal()).Result;
 
         var rService = new RegistryServices();
-        rService.CreateNewRegistry(newRegObj, dbContext);
+        return rService.CreateNewRegistry(newRegObj, dbContext);
     }
 
-    public static void AddCategories(DataModel.CategoryDef newCatObj, CIRLibContext? dbContext = null)
+    public static ObjModels.Category AddCategories(DataModel.CategoryDef newCatObj, CIRLibContext? dbContext = null)
     {
         if(string.IsNullOrWhiteSpace(newCatObj.CategoryId)){
             throw new ArgumentException("Mandatory field CategoryId not provided.");
@@ -40,16 +37,13 @@ public class CIRManager
         {
             throw new ArgumentException("Mandatory field RegistryId not provided.");
         }
-        
-        if (dbContext is null)
-        {
-            //dbContext will always be assigned here.
-            //For Testing, dbContext will be passed from the Test function.
-            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
-        }
+
+        //dbContext will always be assigned here.
+        //For Testing, dbContext will be passed from the Test function.
+        dbContext ??= Factory.CreateDbContext(new ClaimsPrincipal()).Result;
 
         var cService = new CategoryServices();
-        cService.CreateNewCategory(newCatObj, dbContext);
+        return cService.CreateNewCategory(newCatObj, dbContext);
     }
 
 
@@ -83,34 +77,33 @@ public class CIRManager
         propertyValueKey, CIRId, dbContext: dbContext);
     }
 
-    public static void AddEntries(IEnumerable<DataModel.EntryDef> newEntryObjs, CIRLibContext? dbContext = null)
+    public static IEnumerable<ObjModels.Entry> AddEntries(IEnumerable<DataModel.EntryDef> newEntryObjs, CIRLibContext? dbContext = null)
     {
-        List<string> errorMessages = new List<string>();
-            
-        if (dbContext is null)
-        {
-            //This will always be null initially.
-            //Added this to support dbContext passing for testing only.
-            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
-        }
+        List<string> errorMessages = new();
 
-        foreach(DataModel.EntryDef newEntryObj in newEntryObjs)
-        {
+        //This will always be null initially.
+        //Added this to support dbContext passing for testing only.
+        dbContext ??= Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+
+        var results = newEntryObjs.Select(newEntryObj => {
             if(string.IsNullOrWhiteSpace(newEntryObj.IdInSource)
                 || string.IsNullOrWhiteSpace(newEntryObj.CategoryId)
+                || string.IsNullOrWhiteSpace(newEntryObj.CategorySourceId)
                 || string.IsNullOrWhiteSpace(newEntryObj.RegistryId))
             {
                 _logger.LogInformation("Creating Placeholder Category and Registry as the Category and Registry details were not present.");
-
             }
             
-            var eService = new EntryServices();       
-            eService.CreateNewEntry(newEntryObj, dbContext);
-        }
-        if(errorMessages.Count != 0)
+            var eService = new EntryServices();
+            return eService.CreateNewEntry(newEntryObj, dbContext);
+        });
+
+        if (errorMessages.Count != 0)
         {
-            throw new ArgumentException(string.Join(" ",errorMessages));
+            throw new ArgumentException(string.Join(" ", errorMessages));
         }
+
+        return results;
     }
     
     public static void AddProperties(DataModel.PropertyDef newPropObj, CIRLibContext? dbContext = null)
@@ -119,6 +112,8 @@ public class CIRManager
     }
     public static void AddProperties(IEnumerable<DataModel.PropertyDef> newPropObjs, CIRLibContext? dbContext = null)
     {
+        var pService = new PropertyServices();
+        var pvService = new PropertyValueServices();
         List<string> errorMessages = new List<string>();
 
         if (dbContext is null)
@@ -132,9 +127,9 @@ public class CIRManager
         {
             if(string.IsNullOrWhiteSpace(newPropObj.PropertyId) ||
             string.IsNullOrWhiteSpace(newPropObj.EntryIdInSource) ||
-            string.IsNullOrWhiteSpace(newPropObj.Value) || string.IsNullOrWhiteSpace(newPropObj.UnitOfMeasure))
+            string.IsNullOrWhiteSpace(newPropObj.Value))
             {
-                errorMessages.Add("PropertyId, EntryIdInSource, Property Value, UnitOfMeasure are mandatory fields!");
+                errorMessages.Add("PropertyId, EntryIdInSource, Property Value are mandatory fields!");
                 errorMessages.Add("Mandatory fields not provided for: "+ newPropObj);
                 continue;
             }
@@ -148,32 +143,15 @@ public class CIRManager
             }
             else
             {
-                //Extracting PropertyModel and PropertyValueModel from Property DataModel.
-                var propModelObj = new ObjModels.Property()
+
+                var property = pService.FindOrCreateNewProperty(newProperty: newPropObj, dbContext: dbContext);
+                
+                if (!property.PropertyValues.Any(pv => pv.Key == newPropObj.Key && pv.UnitOfMeasure == newPropObj.UnitOfMeasure && pv.Value == newPropObj.Value))
                 {
-                    PropertyId = newPropObj.PropertyId,
-                    EntryIdInSource = newPropObj.EntryIdInSource,
-                    DataType = newPropObj.DataType
-                };
-
-                var pService = new PropertyServices();       
-                pService.CreateNewProperty(newProperty: propModelObj, dbContext: dbContext);
-
-                var propValueModelObj = new ObjModels.PropertyValue()
-                {
-                    Key = newPropObj.Key,
-                    Value = newPropObj.Value,
-                    UnitOfMeasure = newPropObj.UnitOfMeasure,
-                    PropertyId = newPropObj.PropertyId,
-                    Property =  propModelObj
-                };
-
-                var pvService = new PropertyValueServices();       
-                pvService.CreateNewPropertyValue(propertyValueObj: propValueModelObj, propertyObj: propModelObj,
-                    dbContext: dbContext);
-
+                    pvService.CreateNewPropertyValue(propertyValueObj: newPropObj, propertyObj: property,
+                        dbContext: dbContext);
+                }
             }
-            
         }
 
         if(errorMessages.Count != 0)

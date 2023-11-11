@@ -1,0 +1,80 @@
+@page "/admin/roles"
+@attribute [Authorize(Policy = DefaultAuthorizationPolicy.AUTHORIZATION_POLICY_NAME)]
+
+@using System.Security.Claims
+@using AuthenticationExtesion.Support
+@using CIRLib.ObjectModel.Models
+@using OiieAdminUi.Components
+
+@inject IAuthorizationService AuthorizationService
+
+<PageTitle>User Role Mappings</PageTitle>
+
+<h1>User Role Mappings</h1>
+
+<div class="flex flex-row flex-wrap gap-4">
+    <div class="flex flex-col gap-2 flex-1 w-full rounded-md px-3 py-2 ring-1 ring-inset ring-gray-300">
+        @foreach (var system in Systems)
+        {
+            <CollapsibleSystem System="@system" SelectedIds="@(new string[] { SelectedRole?.IdInSource }.Where(r => r is not null))" ParentOnChildSelected="OnRoleSelected" />
+        }
+    </div>
+    <div class="flex flex-col gap-2 auto-row-min flex-1 w-full rounded-md px-3 py-2 ring-1 ring-inset ring-gray-300">
+        @foreach (var system in Systems.Except(new[] { SelectedRole?.Category }))
+        {
+            <CollapsibleSystem System="@system" SelectedIds="@(MappedRoles.Select(r => r.IdInSource))" ParentOnChildSelected="OnMappingSelected" />
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+    
+    private IEnumerable<Category> Systems { get; set; } = Array.Empty<Category>();
+    
+    private Entry? SelectedRole { get; set; } = null;
+
+    private IEnumerable<Entry> MappedRoles { get; set; } = Array.Empty<Entry>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await GetUser();
+        RoleMappingExtensions.InitialiseRoleMappings(user);
+        Systems = RoleMappingExtensions.GetSystems(user);
+        await base.OnInitializedAsync();
+    }
+
+    private async void OnRoleSelected(Entry role)
+    {
+        SelectedRole = role;
+        MappedRoles = RoleMappingExtensions.GetRoleMappings(role, await GetUser());
+    }
+
+    private async void OnMappingSelected(Entry role)
+    {
+        if (SelectedRole is null)
+        {
+            if (MappedRoles.Any()) MappedRoles = Array.Empty<Entry>();
+            return;
+        }
+
+        if (MappedRoles.Any(r => r.Id == role.Id))
+        {
+            RoleMappingExtensions.RemoveRoleMapping(SelectedRole, role, await GetUser());
+            MappedRoles = MappedRoles.ExceptBy(new[] {role.Id}, e => e.Id);
+        }
+        else
+        {
+            RoleMappingExtensions.AddRoleMapping(SelectedRole, role, await GetUser());
+            MappedRoles = MappedRoles.Append(role);
+        }
+    }
+
+    private async Task<ClaimsPrincipal> GetUser()
+    {
+        if (AuthenticationState is null) throw new Exception("No authentication state. Missing CascadingAuthenticationState component in hierarchy?");
+        if (!AuthenticationState.IsCompleted) await AuthenticationState;
+        return AuthenticationState.Result.User;
+    }
+}
