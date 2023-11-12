@@ -19,12 +19,16 @@ using OiieAdminUi.Authorization;
 using System.Net.Security;
 using AdapterServer.Shared;
 using Notifications.UI;
-using Microsoft.AspNetCore.Authentication;
-using AuthenticationExtesion.Support;
 using AuthenticationExtesion.AWS;
+using AuthenticationExtesion.Extensions;
 
 namespace AdapterServer;
 
+/// <summary>
+/// Old-style Startup class to allow capture of common configuration for
+/// OIIE Adapters. OIIE Adapters for specific back-end systems can provide
+/// dedicated configuration in Program(.cs) and call the Startup methods.
+/// </summary>
 public class Startup
 {
     protected IConfigurationRoot Configuration { get; }
@@ -78,7 +82,8 @@ public class Startup
             ICertificateValidator.Instance = certValidator;
         }
 
-        routes.MapBlazorHub();
+        app.UseUserServiceMiddleware();
+
         routes.AddNotifications("/app/notifications-hub");
         routes.MapFallbackToPage("/_Host");
 
@@ -132,7 +137,9 @@ public class Startup
         // Add the processing server as IHostedService
         services.AddHangfireServer(opts => opts.Queues = hangfireQueues);
 
-        // TODO: remove this artificially introduced claims principal
+        services.AddUserServices();
+
+        // TODO: remove this artificially introduced claims principal (utilise the UserService instead)
         services.AddScoped(x => JobContextHelper.PrincipalFromString("AdapterServer"));
         services.AddSingleton(new JobContextFactory(Configuration));
 
@@ -158,7 +165,7 @@ public class Startup
             .FirstOrDefault();
         services.AddIsbmRestClient(isbmSection, certificateValidationCallback);
 
-        //CIR Config
+        // CIR Config
         services.AddCIRServices(Configuration);
 
         services.AddScoped<SettingsService>();
@@ -175,7 +182,7 @@ public class Startup
 
         services.AddNotifications(Configuration);
 
-        services.AddTransient<IClaimsTransformation, UserGroupToRoleClaimsTransformation>();
+        services.AddRoleMappingServices();
     }
 
     private static bool EmptyId(string id)
