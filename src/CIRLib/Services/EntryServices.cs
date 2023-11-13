@@ -242,13 +242,14 @@ public class EntryServices : CommonServices
         return newEntry;
     }
 
-    public void UpdateEntry(Guid Id, ObjModels.Entry updateEntry, CIRLibContext dbContext = null!)
+    public void UpdateEntry(Guid id, ObjModels.Entry updateEntry, CIRLibContext dbContext = null!)
     {
-        var EntryObj = dbContext.Entry.Where(item => item.Id.Equals(Id)).First();
-        
-        EntryObj.Name = updateEntry.Name;
-        EntryObj.Description = updateEntry.Description;
-        EntryObj.Inactive = updateEntry.Inactive;
+        var entryObj = dbContext.Entry.Find(id);
+        if (entryObj is null) return;
+
+        entryObj.Name = updateEntry.Name;
+        entryObj.Description = updateEntry.Description;
+        entryObj.Inactive = updateEntry.Inactive;
         dbContext.SaveChanges();
     }
     

@@ -7,6 +7,7 @@
 @using OiieAdminUi.Components
 
 @inject IAuthorizationService AuthorizationService
+@inject RoleMappingService RoleMappingsAccess
 
 <PageTitle>User Role Mappings</PageTitle>
 
@@ -16,13 +17,21 @@
     <div class="flex flex-col gap-2 flex-1 w-full rounded-md px-3 py-2 ring-1 ring-inset ring-gray-300">
         @foreach (var system in Systems)
         {
-            <CollapsibleSystem System="@system" SelectedIds="@(new string[] { SelectedRole?.IdInSource }.Where(r => r is not null))" ParentOnChildSelected="OnRoleSelected" />
+            <CollapsibleSystem System="@system" SelectedIds="@(SelectedRole is null || SelectedRole.CategoryRefId != system.Id ? Array.Empty<string>() : new string[] { SelectedRole.IdInSource })" ParentOnChildSelected="OnRoleSelected" />
         }
+    </div>
+    <div class="group relative self-center">
+        <span aria-hidden="true">
+            <svg class="h-8 w-8 text-teal-500"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round">  <circle cx="12" cy="12" r="10" />  <polyline points="12 16 16 12 12 8" />  <line x1="8" y1="12" x2="16" y2="12" /></svg>
+        </span>
+        <span class="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 px-2 py-1 text-sm font-medium text-white bg-teal-500 rounded shadow after:content-[' '] after:absolute after:top-full after:left-1/2 after:ml-[-4px] after:border-4 after:border-t-teal-500 after:border-x-transparent after:border-b-transparent after:bg-transparent">
+            Maps To
+        </span>
     </div>
     <div class="flex flex-col gap-2 auto-row-min flex-1 w-full rounded-md px-3 py-2 ring-1 ring-inset ring-gray-300">
         @foreach (var system in Systems.Except(new[] { SelectedRole?.Category }))
         {
-            <CollapsibleSystem System="@system" SelectedIds="@(MappedRoles.Select(r => r.IdInSource))" ParentOnChildSelected="OnMappingSelected" />
+            <CollapsibleSystem System="@system" SelectedIds="@(MappedRoles.Where(r => r.CategoryRefId == system.Id).Select(r => r.IdInSource))" ParentOnChildSelected="OnMappingSelected" />
         }
     </div>
 </div>
@@ -40,15 +49,16 @@
     protected override async Task OnInitializedAsync()
     {
         var user = await GetUser();
-        RoleMappingExtensions.InitialiseRoleMappings(user);
-        Systems = RoleMappingExtensions.GetSystems(user);
+        // TODO, move this elsewhere
+        RoleMappingService.InitialiseRoleMappings(user);
+        Systems = RoleMappingsAccess.GetSystems();
         await base.OnInitializedAsync();
     }
 
     private async void OnRoleSelected(Entry role)
     {
         SelectedRole = role;
-        MappedRoles = RoleMappingExtensions.GetRoleMappings(role, await GetUser());
+        MappedRoles = RoleMappingsAccess.GetRoleMappings(role);
     }
 
     private async void OnMappingSelected(Entry role)
@@ -61,12 +71,12 @@
 
         if (MappedRoles.Any(r => r.Id == role.Id))
         {
-            RoleMappingExtensions.RemoveRoleMapping(SelectedRole, role, await GetUser());
+            RoleMappingsAccess.RemoveRoleMapping(SelectedRole, role);
             MappedRoles = MappedRoles.ExceptBy(new[] {role.Id}, e => e.Id);
         }
         else
         {
-            RoleMappingExtensions.AddRoleMapping(SelectedRole, role, await GetUser());
+            RoleMappingsAccess.AddRoleMapping(SelectedRole, role);
             MappedRoles = MappedRoles.Append(role);
         }
     }

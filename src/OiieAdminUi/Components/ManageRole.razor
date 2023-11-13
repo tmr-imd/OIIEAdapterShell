@@ -1,0 +1,167 @@
+@using System.Security.Claims
+@using Microsoft.Extensions.Logging
+@using AuthenticationExtesion.Support
+@using DataModelServices
+@using CIRLib.ObjectModel.Models
+
+@inject IJSRuntime JS
+@inject ILogger<ManageRole> Logger
+@inject NavigationManager NavigationManager
+@inject RoleMappingService RoleMappingsAccess
+
+<PageTitle>Adapter Shell - Manage Role</PageTitle>
+
+<EditForm Model="@viewModel" OnValidSubmit="@HandleValidSubmit" class="contents">
+    <Modal Title="@(RoleId == "new" ? "New Role" : "Update Role")">
+        <HeaderAction>
+            <button class="btn-danger @(RoleId == "new" ? "hidden" : "")" type="button" @onclick="Destroy" @onclick:preventDefault>Delete Role</button>
+        </HeaderAction>
+        <ChildContent>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="grid gap-2">
+                <div>
+                    <label>
+                        <h3 class="col-span-2">Role ID</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.IdInSource" DisplayName="Role ID" disabled="@(RoleId != "new")" @ref="idInputForFocus" />
+                    </label>
+                    <small>The system specific identifier of the role.</small>
+                </div>
+
+                <div>
+                    <label>
+                        <h3>Role Name</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.Name" @ref="nameInputForFocus" />
+                    </label>
+                    <small>The friendly name of the role.</small>
+                </div>
+
+                <div>
+                    <label>
+                        <h3>Role Description</h3>
+                        <InputTextArea type="text" class="form-textarea w-full" @bind-Value="viewModel.Description" />
+                    </label>
+                    <small>Optional description of the role.</small>
+                </div>
+
+            </div>
+        </ChildContent>
+        <Footer>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(RoleId == "new" ? "Add" : "Update")</button>
+            @* <a href="@BackTo" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto">Cancel</a> *@
+            <button type="button" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto" @onclick="Cancel">Cancel</button>
+        </Footer>
+    </Modal>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    [Parameter]
+    public string RoleId { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> RoleIdChanged { get; set; }
+
+    [Parameter]
+    public Guid SystemId { get; set; } = Guid.Empty;
+
+    [Parameter]
+    public string BackTo { get; set; } = null!;
+
+    private EntryDef viewModel = new EntryDef();
+
+    private InputText? idInputForFocus;
+    private InputText? nameInputForFocus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Editing Role ID {}", RoleId);
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RoleId == "new")
+        {
+            var system = RoleMappingsAccess.GetSystems(new Guid[] { SystemId }).FirstOrDefault();
+
+            viewModel = new EntryDef()
+            {
+                IdInSource = "",
+                SourceId = system?.CategorySourceId ?? "Missing category",
+                CategoryId = RoleMappingService.ROLE_MAPPINGS_CATEGORY,
+                CategorySourceId = system?.CategorySourceId ?? "Missing category",
+                RegistryId = RoleMappingService.ROLE_MAPPINGS_REGISTRY,
+                Name = "",
+                SourceOwnerId = "Owning organisation. From config??"
+            };
+        }
+        else
+        {
+            viewModel = RoleMappingsAccess.GetRole(Guid.Parse(RoleId)) ?? viewModel;
+        }
+
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var inputForFocus = RoleId switch
+        {
+            "new" => idInputForFocus,
+            _ => nameInputForFocus
+        };
+        await (inputForFocus?.Element?.FocusAsync() ?? ValueTask.CompletedTask);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (RoleId == "new") RoleMappingsAccess.AddRole(viewModel);
+        else RoleMappingsAccess.UpdateRole(Guid.Parse(RoleId), viewModel);
+
+        Logger.LogInformation("Role Saved ID {}", RoleId);
+        
+        RoleId = "";
+        await RoleIdChanged.InvokeAsync(RoleId);
+        @* NavigationManager.NavigateTo(BackTo); *@
+    }
+
+    private async Task Cancel()
+    {
+        Logger.LogInformation("Cancelling changes to Role ID {}", RoleId);
+
+        RoleId = "";
+        await RoleIdChanged.InvokeAsync(RoleId);
+        @* NavigationManager.NavigateTo(BackTo); *@
+    }
+
+    private async Task Destroy()
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to remove the role '{viewModel.Name}'? All mappings to this role will also be deleted.");
+        if (confirmed)
+        {
+            RoleMappingsAccess.RemoveRole(Guid.Parse(RoleId));
+            Logger.LogInformation("Removed Role ID {}", RoleId);
+        }
+
+        RoleId = "";
+        await RoleIdChanged.InvokeAsync(RoleId);
+        @* NavigationManager.NavigateTo(BackTo); *@
+    }
+
+    private async Task<ClaimsPrincipal> GetUser()
+    {
+        if (AuthenticationState is null) throw new Exception("No authentication state. Missing CascadingAuthenticationState component in hierarchy?");
+        if (!AuthenticationState.IsCompleted) await AuthenticationState;
+        return AuthenticationState.Result.User;
+    }
+}
+
+
+
+

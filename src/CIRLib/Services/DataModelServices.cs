@@ -63,6 +63,7 @@ public class EntryDef
     public string CategorySourceId { get; set; } = null!;
     [Required]
     public string RegistryId {get; set; } = null!;
+
     public static implicit operator ObjModels.Entry(EntryDef viewModel)
     {
         return new ObjModels.Entry
@@ -76,6 +77,23 @@ public class EntryDef
             Inactive = viewModel.Inactive,
             CategoryId = viewModel.CategoryId,
             RegistryId = viewModel.RegistryId
+        };
+    }
+
+    public static implicit operator EntryDef(ObjModels.Entry entry)
+    {
+        return new EntryDef
+        {
+            CategoryId = entry.CategoryId,
+            CategorySourceId = entry.Category.CategorySourceId,
+            CIRId = entry.CIRId,
+            Description = entry.Description,
+            IdInSource = entry.IdInSource,
+            Inactive = entry.Inactive,
+            Name = entry.Name,
+            RegistryId = entry.RegistryId,
+            SourceId = entry.SourceId,
+            SourceOwnerId = entry.SourceOwnerId
         };
     }
 

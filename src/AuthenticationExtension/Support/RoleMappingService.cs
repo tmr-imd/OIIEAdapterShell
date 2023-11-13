@@ -2,22 +2,50 @@ using System.Collections.Immutable;
 using System.Security.Claims;
 using System.Text.Json;
 using CIRLib.ObjectModel.Models;
+using CIRLib.Persistence;
 using CIRServices;
 using DataModelServices;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AuthenticationExtesion.Support;
 
-public static class RoleMappingExtensions
+public class RoleMappingService : IDisposable, IAsyncDisposable
 {
     public const string ROLE_MAPPINGS_REGISTRY = "__internal_role_mappings__";
     public const string ROLE_MAPPINGS_CATEGORY = "__internal_role_mappings__";
     private const string APPLICATION_ADMIN_ROLE = "FakeAdmin";
     private const string MAPPING_PROPERTY_ID = "UnidirectionalMappingID";
 
-    public static void AddRoleMapping(Entry sourceRole, Entry newEquivalence, ClaimsPrincipal principal)
+    private readonly ILogger<RoleMappingService> _logger;
+    private readonly CIRLibContextFactory _factory;
+    private readonly UserService _userService;
+    private ClaimsPrincipal _user;
+    private CIRLibContext _dbContext;
+
+    // TODO: check for change in user and recreate the context
+
+    public RoleMappingService(UserService userService,
+            CIRLibContextFactory factory, ILogger<RoleMappingService> logger)
     {
-        using var dbContext = CIRManager.Factory.CreateDbContext(principal).Result;
+        _userService = userService;
+        _user = _userService.CurrentUser;
+        _logger = logger;
+        _factory = factory;
+        _dbContext = _factory.CreateDbContext(_user).Result;
+    }
+
+    public Entry AddRole(EntryDef newRole)
+    {
+        CheckUserChanged();
+
+        return CIRManager.AddEntries(new EntryDef[] { newRole }, _dbContext).Single();
+    }
+
+    public void AddRoleMapping(Entry sourceRole, Entry newEquivalence)
+    {
+        CheckUserChanged();
 
         CIRManager.AddProperties(new PropertyDef
         {
@@ -29,61 +57,98 @@ public static class RoleMappingExtensions
                 { "IDInSource", newEquivalence.IdInSource },
                 { "SourceID", newEquivalence.SourceId }
             }, JsonSerializerOptions.Default),
-        }, dbContext);
+        }, _dbContext);
     }
 
-    public static IEnumerable<Category> GetSystems(ClaimsPrincipal principal)
+    public IEnumerable<Category> GetSystems(IEnumerable<Guid>? ids = null)
     {
-        using var dbContext = CIRManager.Factory.CreateDbContext(principal).Result;
-        return dbContext.Category
+        CheckUserChanged();
+
+        var query = _dbContext.Category
             .Include(c => c.Entries)
             .ThenInclude(e => e.Property)
             .ThenInclude(p => p.PropertyValues)
-            .Where(c => c.CategoryId == ROLE_MAPPINGS_CATEGORY)
-            .ToImmutableList();
+            .Where(c => c.CategoryId == ROLE_MAPPINGS_CATEGORY);
+
+        if (ids is {}) query = query.Where(c => ids.Contains(c.Id));
+
+        return query.ToImmutableList();
     }
 
-    public static IEnumerable<Entry> GetRoleMappings(Entry sourceRole, ClaimsPrincipal principal)
+    public Entry? GetRole(Guid id)
     {
-        using var dbContext = CIRManager.Factory.CreateDbContext(principal).Result;
-        sourceRole = dbContext.Entry
-            .Where(e => e.Id == sourceRole.Id)
-            .Include(e => e.Property)
-            .ThenInclude(e => e.PropertyValues)
-            .Single();
-        // dbContext.Attach(sourceRole);
-        // dbContext.Entry(sourceRole)
-        //     .Collection(e => e.Property)
-        //     .Query()
-        //     .Where(p => p.PropertyId == MAPPING_PROPERTY_ID)
-        //     .Include(p => p.PropertyValues)
-        //     .Load();
+        CheckUserChanged();
+        return _dbContext.Entry.Find(id);
+    }
 
-        var mappingValues = sourceRole.Property.SingleOrDefault(p => p.PropertyId == MAPPING_PROPERTY_ID)?.PropertyValues
-            .Select(pv => pv.ValueFromJson<Dictionary<string, string>>())
-            .Where(pv => pv is not null)
-            .Select(pv => (pv!["IDInSource"], pv["SourceID"]))
-            .ToArray() ?? Array.Empty<(string, string)>();
-
-        IQueryable<Entry>? query = null;
-        foreach (var mapping in mappingValues)
+    public IEnumerable<Entry> GetRoleMappings(Entry sourceRole)
+    {
+        CheckUserChanged();
+        
+        try
         {
-            var union = (
-                from entry in dbContext.Entry
-                where entry.IdInSource == mapping.Item1 && entry.SourceId == mapping.Item2 && entry.CategoryId == ROLE_MAPPINGS_CATEGORY
-                select entry
-            );
-            query = query is null ? union : query.Concat(union);
-        }
+            sourceRole = _dbContext.Entry
+                .Where(e => e.Id == sourceRole.Id)
+                .Include(e => e.Property)
+                .ThenInclude(e => e.PropertyValues)
+                .Single();
 
-        return query?.AsNoTrackingWithIdentityResolution().ToImmutableArray() ?? Array.Empty<Entry>().ToImmutableArray();
+            var mappingValues = sourceRole.Property.SingleOrDefault(p => p.PropertyId == MAPPING_PROPERTY_ID)?.PropertyValues
+                .Select(pv => pv.ValueFromJson<Dictionary<string, string>>())
+                .Where(pv => pv is not null)
+                .Select(pv => (pv!["IDInSource"], pv["SourceID"]))
+                .ToArray() ?? Array.Empty<(string, string)>();
+
+            IQueryable<Entry>? query = null;
+            foreach (var (idInSource, sourceId) in mappingValues)
+            {
+                var union = (
+                    from entry in _dbContext.Entry
+                    where entry.IdInSource == idInSource && entry.SourceId == sourceId && entry.CategoryId == ROLE_MAPPINGS_CATEGORY
+                    select entry
+                );
+                query = query is null ? union : query.Concat(union);
+            }
+
+            _logger.LogTrace("SQL> {MappedRoles}", _logger.IsEnabled(LogLevel.Trace) ? query?.ToQueryString() : "");
+            return query?.AsNoTrackingWithIdentityResolution().ToImmutableArray() ?? Array.Empty<Entry>().ToImmutableArray();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogDebug(ex, "No role for {SourceRole} (likely was deleted)", sourceRole.IdInSource);
+            return Array.Empty<Entry>();
+        }
     }
 
-    public static void RemoveRoleMapping(Entry sourceRole, Entry deletedEquivalence, ClaimsPrincipal principal)
+    public void RemoveRole(Guid roleId)
     {
-        using var dbContext = CIRManager.Factory.CreateDbContext(principal).Result;
+        CheckUserChanged();
+        
+        var role = _dbContext.Entry.Find(roleId);
+        if (role is null) return; // already removed
+        
+        _dbContext.Remove(role);
+        
+        // Remove all mappings to the role being removed.
+        PropertyValue prop = new ();
+        prop.ValueFromJson(new Dictionary<string, string>
+        {
+            { "IDInSource", role.IdInSource },
+            { "SourceID", role.SourceId }
+        });
+        _dbContext.PropertyValue
+            .Where(pv => pv.Property.PropertyId == MAPPING_PROPERTY_ID && pv.Value == prop.Value)
+            .Select(pv => _dbContext.Remove(pv))
+            .Load();
 
-        var sourceEntry = dbContext.Entry
+        _dbContext.SaveChanges();
+    }
+
+    public void RemoveRoleMapping(Entry sourceRole, Entry deletedEquivalence)
+    {
+        CheckUserChanged();
+
+        var sourceEntry = _dbContext.Entry
             .Where(e => e.Id == sourceRole.Id && 
                 e.Property.Any(p => p.PropertyId == MAPPING_PROPERTY_ID &&
                     p.PropertyValues.Any(pv => pv.Value.Contains(deletedEquivalence.IdInSource))
@@ -102,23 +167,17 @@ public static class RoleMappingExtensions
         };
         var propertyValue = sourceEntry.Property.Where(p => p.PropertyId == MAPPING_PROPERTY_ID)
             .SelectMany(p => p.PropertyValues)
-            .Where(pv => !pv.ValueFromJson<Dictionary<string, string>>().Except(valueMatch).Any())
+            .Where(pv => !pv.ValueFromJson<Dictionary<string, string>>()?.Except(valueMatch).Any() ?? false)
             .First();
 
-        dbContext.Remove(propertyValue);
-        dbContext.SaveChanges();
+        _dbContext.Remove(propertyValue);
+        _dbContext.SaveChanges();
+    }
 
-        // CIRManager.AddProperties(new PropertyDef
-        // {
-        //     PropertyId = MAPPING_PROPERTY_ID,
-        //     EntryIdInSource = sourceRole.IdInSource,
-        //     DataType = "JSON",
-        //     Value = JsonSerializer.Serialize(new Dictionary<string, object>
-        //     {
-        //         { "IDInSource", newEquivalence.IdInSource },
-        //         { "SourceID", newEquivalence.SourceId }
-        //     }, JsonSerializerOptions.Default),
-        // }, dbContext);
+    public void UpdateRole(Guid roleId, EntryDef updatedEntry)
+    {
+        CheckUserChanged();
+        new EntryServices().UpdateEntry(roleId, updatedEntry, _dbContext);
     }
 
     // Data seeding
@@ -212,6 +271,29 @@ public static class RoleMappingExtensions
                     }, JsonSerializerOptions.Default),
                 }, dbContext);
             }
+        }
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _dbContext.Dispose();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        return _dbContext.DisposeAsync();
+    }
+
+    private void CheckUserChanged()
+    {
+        if (_userService.CurrentUser != _user)
+        {
+            _logger.LogInformation("User changed: refreshing DB Context");
+            _user = _userService.CurrentUser;
+            _dbContext.Dispose();
+            _dbContext = _factory.CreateDbContext(_user).Result;
         }
     }
 }
