@@ -150,35 +150,34 @@ public class CategoryServices : CommonServices
 
     public ObjModels.Category CreateNewCategory(ObjModels.Category newCategory, CIRLibContext dbContext )
     {
-        var registryObjExists = CheckIfRegistryExists(newCategory.RegistryId, dbContext, "create");
-        if(registryObjExists == null)
+        var registry = CheckIfRegistryExists(newCategory.RegistryId, dbContext, "create");
+        if(registry == null)
         {
-            //If Registry does not exists, we create one
-            var regObj = new ObjModels.Registry()
+            // If Registry does not exists, we create one
+            registry = new ObjModels.Registry()
             {
                 RegistryId = newCategory.RegistryId,
                 Id = Guid.NewGuid()
             };
-            dbContext.Registry.Add(regObj);
-            newCategory.Registry = regObj;
+            dbContext.Registry.Add(registry);
         }
-        else
-        {
-            newCategory.Registry = registryObjExists;
-        }
+        newCategory.Registry = registry;
 
         newCategory.Id = Guid.NewGuid();
         dbContext.Category.Add(newCategory);
         dbContext.SaveChanges();
         return newCategory;
     }
+
     public void UpdateCategory(Guid id, ObjModels.Category updateCategory, CIRLibContext dbContext )
     {
-        var CategoryObj = dbContext.Category.Where(item => item.Id.Equals(id)).First();
-        CategoryObj.Description = updateCategory.Description;
-        dbContext.SaveChanges();
+        var category = dbContext.Category.Find(id);
+        if (category is null) return;
 
+        category.Description = updateCategory.Description;
+        dbContext.SaveChanges();
     }
+    
     public void DeleteCategoryById(Guid id, CIRLibContext dbContext)
     {    
        var DelCategoryObj = dbContext.Category.Where(item => item.Id.Equals(id)).First(); 

@@ -1,11 +1,14 @@
 @page "/admin/roles"
 @attribute [Authorize(Policy = DefaultAuthorizationPolicy.AUTHORIZATION_POLICY_NAME)]
 
+@using Microsoft.Extensions.Logging
 @using System.Security.Claims
 @using AuthenticationExtesion.Support
 @using CIRLib.ObjectModel.Models
 @using OiieAdminUi.Components
 
+@inject IJSRuntime JS
+@inject ILogger<RoleMappingsPage> Logger
 @inject IAuthorizationService AuthorizationService
 @inject RoleMappingService RoleMappingsAccess
 
@@ -13,11 +16,40 @@
 
 <h1>User Role Mappings</h1>
 
+@if (editSystemId is not null)
+{
+    <ManageSystem @bind-SystemId="EditSystemId" BackTo="/admin/roles" />
+}
+
+<button type="button" @onclick="@(() => EditSystemId = Guid.Empty)" class="btn btn-primary text-xs my-2">
+    <span aria-hidden="true">
+        <svg class="h-4 w-4 self-center -ml-1 mr-1"  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+    </span>
+    <span>Add System</span>
+</button>
+
 <div class="flex flex-row flex-wrap gap-4">
     <div class="flex flex-col gap-2 flex-1 w-full rounded-md px-3 py-2 ring-1 ring-inset ring-gray-300">
         @foreach (var system in Systems)
         {
-            <CollapsibleSystem System="@system" SelectedIds="@(SelectedRole is null || SelectedRole.CategoryRefId != system.Id ? Array.Empty<string>() : new string[] { SelectedRole.IdInSource })" ParentOnChildSelected="OnRoleSelected" />
+            <CollapsibleSystem System="@system" 
+                SelectedIds="@(SelectedRole is null || SelectedRole.CategoryRefId != system.Id ? Array.Empty<string>() : new string[] { SelectedRole.IdInSource })"
+                ParentOnChildSelected="OnRoleSelected">
+                <Actions>
+                    <button type="button" @onclick="@(() => EditSystemId = @system.Id)" @onclick:preventDefault @onclick:stopPropagation
+                            class="btn btn-secondary text-xs px-1 py-1">
+                        <span class="sr-only">Update System Details</span>
+                        <svg class="h-4 w-4" width="24"  height="24"  viewBox="0 0 24 24"  xmlns="http://www.w3.org/2000/svg"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round">  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    </button>
+                    <button type="button" @onclick="@(() => DestroySystem(@system))" @onclick:preventDefault @onclick:stopPropagation
+                            class="btn btn-danger text-xs px-1 py-1">
+                        <span class="sr-only">Remove System</span>
+                        <svg class="h-4 w-4"  fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </Actions>
+            </CollapsibleSystem>
         }
     </div>
     <div class="group relative self-center">
@@ -31,7 +63,10 @@
     <div class="flex flex-col gap-2 auto-row-min flex-1 w-full rounded-md px-3 py-2 ring-1 ring-inset ring-gray-300">
         @foreach (var system in Systems.Except(new[] { SelectedRole?.Category }))
         {
-            <CollapsibleSystem System="@system" SelectedIds="@(MappedRoles.Where(r => r.CategoryRefId == system.Id).Select(r => r.IdInSource))" ParentOnChildSelected="OnMappingSelected" />
+            <CollapsibleSystem
+                System="@system"
+                SelectedIds="@(MappedRoles.Where(r => r.CategoryRefId == system?.Id).Select(r => r.IdInSource))"
+                ParentOnChildSelected="OnMappingSelected" />
         }
     </div>
 </div>
@@ -46,6 +81,18 @@
 
     private IEnumerable<Entry> MappedRoles { get; set; } = Array.Empty<Entry>();
 
+    private Guid? editSystemId = null;
+    private Guid? EditSystemId
+    {
+        get => editSystemId ?? Guid.Empty;
+        set
+        {
+            // There is a better way to do this in AspNetCore 7.0 (bind-...:after callback)
+            editSystemId = value;
+            UpdateSystemsList();
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var user = await GetUser();
@@ -55,13 +102,13 @@
         await base.OnInitializedAsync();
     }
 
-    private async void OnRoleSelected(Entry role)
+    private void OnRoleSelected(Entry role)
     {
         SelectedRole = role;
         MappedRoles = RoleMappingsAccess.GetRoleMappings(role);
     }
 
-    private async void OnMappingSelected(Entry role)
+    private void OnMappingSelected(Entry role)
     {
         if (SelectedRole is null)
         {
@@ -79,6 +126,22 @@
             RoleMappingsAccess.AddRoleMapping(SelectedRole, role);
             MappedRoles = MappedRoles.Append(role);
         }
+    }
+
+    private async Task DestroySystem(Category system)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to remove the system '{system.CategorySourceId}'? All roles and mappings related to this system will be also be removed.");
+        if (confirmed)
+        {
+            RoleMappingsAccess.RemoveSystem(system.Id);
+            Systems = Systems.Except(new[] { system }).ToArray();
+            Logger.LogInformation("Removed System ID {}", system.Id);
+        }
+    }
+
+    private void UpdateSystemsList()
+    {
+        Systems = RoleMappingsAccess.GetSystems();
     }
 
     private async Task<ClaimsPrincipal> GetUser()

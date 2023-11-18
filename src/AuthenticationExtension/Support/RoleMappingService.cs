@@ -24,8 +24,6 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
     private ClaimsPrincipal _user;
     private CIRLibContext _dbContext;
 
-    // TODO: check for change in user and recreate the context
-
     public RoleMappingService(UserService userService,
             CIRLibContextFactory factory, ILogger<RoleMappingService> logger)
     {
@@ -58,6 +56,19 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
                 { "SourceID", newEquivalence.SourceId }
             }, JsonSerializerOptions.Default),
         }, _dbContext);
+    }
+
+    public Category AddSystem(CategoryDef newSystem)
+    {
+        CheckUserChanged();
+
+        return CIRManager.AddCategories(newSystem, _dbContext);
+    }
+
+    public Category? GetSystem(Guid id)
+    {
+        CheckUserChanged();
+        return _dbContext.Category.Find(id);
     }
 
     public IEnumerable<Category> GetSystems(IEnumerable<Guid>? ids = null)
@@ -123,25 +134,30 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
     public void RemoveRole(Guid roleId)
     {
         CheckUserChanged();
-        
+
         var role = _dbContext.Entry.Find(roleId);
         if (role is null) return; // already removed
-        
+
         _dbContext.Remove(role);
-        
+
         // Remove all mappings to the role being removed.
-        PropertyValue prop = new ();
+        RemoveRoleMappingReferencing(role);
+
+        _dbContext.SaveChanges();
+    }
+
+    private void RemoveRoleMappingReferencing(Entry targetRole)
+    {
+        PropertyValue prop = new();
         prop.ValueFromJson(new Dictionary<string, string>
         {
-            { "IDInSource", role.IdInSource },
-            { "SourceID", role.SourceId }
+            { "IDInSource", targetRole.IdInSource },
+            { "SourceID", targetRole.SourceId }
         });
         _dbContext.PropertyValue
             .Where(pv => pv.Property.PropertyId == MAPPING_PROPERTY_ID && pv.Value == prop.Value)
             .Select(pv => _dbContext.Remove(pv))
             .Load();
-
-        _dbContext.SaveChanges();
     }
 
     public void RemoveRoleMapping(Entry sourceRole, Entry deletedEquivalence)
@@ -174,10 +190,34 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
         _dbContext.SaveChanges();
     }
 
+    public void RemoveSystem(Guid systemId)
+    {
+        CheckUserChanged();
+        
+        var system = _dbContext.Category.Find(systemId);
+        if (system is null) return; // already removed
+        
+        // Remove all mappings to the roles being removed, and the roles themselves
+        foreach (var role in system.Entries)
+        {
+            RemoveRoleMappingReferencing(role);
+            _dbContext.Remove(role);
+        }
+
+        _dbContext.Remove(system);
+        _dbContext.SaveChanges();
+    }
+
     public void UpdateRole(Guid roleId, EntryDef updatedEntry)
     {
         CheckUserChanged();
         new EntryServices().UpdateEntry(roleId, updatedEntry, _dbContext);
+    }
+
+    public void UpdateSystem(Guid systemId, CategoryDef updatedCategory)
+    {
+        CheckUserChanged();
+        new CategoryServices().UpdateCategory(systemId, updatedCategory, _dbContext);
     }
 
     // Data seeding

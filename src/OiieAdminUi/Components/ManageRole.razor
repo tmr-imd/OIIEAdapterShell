@@ -88,7 +88,7 @@
         {
             var system = RoleMappingsAccess.GetSystems(new Guid[] { SystemId }).FirstOrDefault();
 
-            viewModel = new EntryDef()
+            viewModel = new EntryDef
             {
                 IdInSource = "",
                 SourceId = system?.CategorySourceId ?? "Missing category",

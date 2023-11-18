@@ -12,11 +12,14 @@
 }
 
 <div>
-    <button type="button" @onclick="OnClick" class="inline-flex gap-x-2 w-full hover:font-semibold">
-        <svg class="-mr-1 h-6 w-6 text-gray-400 @(IsExpanded ? "rotate-0" : "-rotate-90")" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <button type="button" @onclick="OnClick" class="group inline-flex gap-x-2 w-full text-left hover:font-semibold">
+        <svg class="flex-none -mr-1 h-6 w-6 text-gray-400 @(IsExpanded ? "rotate-0" : "-rotate-90")" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
         </svg>
-        @System.CategorySourceId
+        <span class="grow">@System.CategorySourceId <small class="text-gray-400 hidden group-hover:inline-block">@System.Description</small></span>
+        <span class="contents invisible group-hover:visible">
+            @Actions
+        </span>
     </button>
 
     <div class="ml-4 @(IsExpanded ? "" : "hidden")">
@@ -60,6 +63,9 @@
     
     [Parameter]
     public IEnumerable<string> SelectedIds { get; set; } = Array.Empty<string>();
+    
+    [Parameter]
+    public RenderFragment Actions { get; set; } = null!;
 
     private bool IsExpanded { get; set; } = false;
 
@@ -86,5 +92,3 @@
         }
     }
 }
-
-

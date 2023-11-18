@@ -900,6 +900,10 @@ a.menu.active:hover {
   pointer-events: none;
 }
 
+.invisible {
+  visibility: hidden;
+}
+
 .static {
   position: static;
 }
@@ -973,9 +977,18 @@ a.menu.active:hover {
   margin-right: auto;
 }
 
+.my-2 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .my-4 {
   margin-top: 1rem;
   margin-bottom: 1rem;
+}
+
+.-ml-1 {
+  margin-left: -0.25rem;
 }
 
 .-mr-1 {
@@ -1009,6 +1022,10 @@ a.menu.active:hover {
 
 .ml-4 {
   margin-left: 1rem;
+}
+
+.mr-1 {
+  margin-right: 0.25rem;
 }
 
 .mr-2 {
@@ -1075,6 +1092,10 @@ a.menu.active:hover {
   height: 0.25rem;
 }
 
+.h-3 {
+  height: 0.75rem;
+}
+
 .h-4 {
   height: 1rem;
 }
@@ -1087,6 +1108,10 @@ a.menu.active:hover {
   height: 1.5rem;
 }
 
+.h-8 {
+  height: 2rem;
+}
+
 .max-h-\[94vh\] {
   max-height: 94vh;
 }
@@ -1097,6 +1122,10 @@ a.menu.active:hover {
 
 .w-1 {
   width: 0.25rem;
+}
+
+.w-3 {
+  width: 0.75rem;
 }
 
 .w-4 {
@@ -1113,6 +1142,10 @@ a.menu.active:hover {
 
 .w-7 {
   width: 1.75rem;
+}
+
+.w-8 {
+  width: 2rem;
 }
 
 .w-fit {
@@ -1147,6 +1180,10 @@ a.menu.active:hover {
 
 .flex-none {
   flex: none;
+}
+
+.grow {
+  flex-grow: 1;
 }
 
 .-translate-x-1\/2 {
@@ -1553,6 +1590,10 @@ a.menu.active:hover {
   font-weight: 400;
 }
 
+.font-semibold {
+  font-weight: 600;
+}
+
 .not-italic {
   font-style: normal;
 }
@@ -1796,6 +1837,14 @@ a.menu.active:hover {
 
 .hover\:font-semibold:hover {
   font-weight: 600;
+}
+
+.group:hover .group-hover\:visible {
+  visibility: visible;
+}
+
+.group:hover .group-hover\:inline-block {
+  display: inline-block;
 }
 
 .group:hover .group-hover\:opacity-100 {

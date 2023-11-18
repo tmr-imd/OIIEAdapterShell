@@ -30,6 +30,7 @@ public class CategoryDef
 {
     [Required]
     public string CategoryId { get; set; } = "";
+    [Required]
     public string SourceId { get; set; } = "";
     public string Description { get; set; } = "";
     [Required]
@@ -42,6 +43,17 @@ public class CategoryDef
             CategorySourceId = viewModel.SourceId,
             RegistryId = viewModel.RegistryId,
             Description = viewModel.Description
+        };
+    }
+
+    public static implicit operator CategoryDef(ObjModels.Category category)
+    {
+        return new CategoryDef
+        {
+            CategoryId = category.CategoryId,
+            Description = category.Description,
+            RegistryId = category.RegistryId,
+            SourceId = category.CategorySourceId
         };
     }
 }

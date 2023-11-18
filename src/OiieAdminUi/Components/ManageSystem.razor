@@ -1,0 +1,138 @@
+@using System.Security.Claims
+@using Microsoft.Extensions.Logging
+@using AuthenticationExtesion.Support
+@using DataModelServices
+@using CIRLib.ObjectModel.Models
+
+@inject IJSRuntime JS
+@inject ILogger<ManageSystem> Logger
+@inject NavigationManager NavigationManager
+@inject RoleMappingService RoleMappingsAccess
+
+<PageTitle>Adapter Shell - Manage System</PageTitle>
+
+<EditForm Model="@viewModel" OnValidSubmit="@HandleValidSubmit" class="contents">
+    <Modal Title="@(SystemId == Guid.Empty ? "New System" : "Update System")">
+        <HeaderAction>
+            <button class="btn-danger @(SystemId == Guid.Empty ? "hidden" : "")" type="button" @onclick="Destroy" @onclick:preventDefault>Remove System</button>
+        </HeaderAction>
+        <ChildContent>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="grid gap-2">
+                <div>
+                    <label>
+                        <h3 class="col-span-2">System ID</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.SourceId" DisplayName="System ID" disabled="@(SystemId != Guid.Empty)" @ref="idInputForFocus" />
+                    </label>
+                    <small>The source system specific identifier.</small>
+                </div>
+
+                <div>
+                    <label>
+                        <h3>System Name/Description</h3>
+                        <InputText type="text" class="form-input w-full" @bind-Value="viewModel.Description" @ref="nameInputForFocus" />
+                    </label>
+                    <small>Optional name or description of the system.</small>
+                </div>
+
+            </div>
+        </ChildContent>
+        <Footer>
+            <button type="submit" class="btn-primary inline-flex w-full sm:ml-3 sm:w-auto">@(SystemId == Guid.Empty ? "Add" : "Update")</button>
+            <button type="button" class="btn mt-3 sm:mt-0 inline-flex w-full sm:ml-3 sm:w-auto" @onclick="Cancel">Cancel</button>
+        </Footer>
+    </Modal>
+</EditForm>
+
+@code {
+    [Parameter]
+    public Guid? SystemId { get => _systemId; set => _systemId = value ?? Guid.Empty; }
+    private Guid _systemId = Guid.Empty;
+
+    [Parameter]
+    public EventCallback<Guid?> SystemIdChanged { get; set; }
+
+    [Parameter]
+    public string BackTo { get; set; } = null!;
+
+    private CategoryDef viewModel = new CategoryDef();
+
+    private InputText? idInputForFocus;
+    private InputText? nameInputForFocus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Editing System ID {}", _systemId);
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_systemId == Guid.Empty)
+        {
+            viewModel = new CategoryDef
+            {
+                CategoryId = RoleMappingService.ROLE_MAPPINGS_CATEGORY,
+                Description = "",
+                RegistryId = RoleMappingService.ROLE_MAPPINGS_REGISTRY,
+                SourceId = "",
+            };
+        }
+        else
+        {
+            viewModel = RoleMappingsAccess.GetSystem(_systemId) ?? viewModel;
+        }
+
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var inputForFocus = _systemId switch
+        {
+            var guid when guid == Guid.Empty => idInputForFocus,
+            _ => nameInputForFocus
+        };
+        await (inputForFocus?.Element?.FocusAsync() ?? ValueTask.CompletedTask);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (_systemId == Guid.Empty) RoleMappingsAccess.AddSystem(viewModel);
+        else RoleMappingsAccess.UpdateSystem(_systemId, viewModel);
+
+        Logger.LogInformation("System Saved ID {}", _systemId);
+        
+        _systemId = Guid.Empty;
+        await SystemIdChanged.InvokeAsync(null);
+        @* NavigationManager.NavigateTo(BackTo); *@
+    }
+
+    private async Task Cancel()
+    {
+        Logger.LogInformation("Cancelling changes to System ID {}", _systemId);
+
+        _systemId = Guid.Empty;
+        await SystemIdChanged.InvokeAsync(null);
+        @* NavigationManager.NavigateTo(BackTo); *@
+    }
+
+    private async Task Destroy()
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to remove the system '{viewModel.SourceId}'? All roles and mappings related to this system will be also be removed.");
+        if (confirmed)
+        {
+            RoleMappingsAccess.RemoveSystem(_systemId);
+            Logger.LogInformation("Removed System ID {}", _systemId);
+        }
+
+        _systemId = Guid.Empty;
+        await SystemIdChanged.InvokeAsync(null);
+        @* NavigationManager.NavigateTo(BackTo); *@
+    }
+
+}
