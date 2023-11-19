@@ -88,6 +88,7 @@
         set
         {
             // There is a better way to do this in AspNetCore 7.0 (bind-...:after callback)
+            // refer: https://learn.microsoft.com/en-us/aspnet/core/blazor/components/data-binding?view=aspnetcore-7.0
             editSystemId = value;
             UpdateSystemsList();
         }

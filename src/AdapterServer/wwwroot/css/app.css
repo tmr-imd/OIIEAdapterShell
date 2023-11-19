@@ -1843,10 +1843,6 @@ a.menu.active:hover {
   visibility: visible;
 }
 
-.group:hover .group-hover\:inline-block {
-  display: inline-block;
-}
-
 .group:hover .group-hover\:opacity-100 {
   opacity: 1;
 }

@@ -8,11 +8,23 @@ public static class RoleExtensions
     {
         return string.IsNullOrWhiteSpace(role.Name) ?
             (string.IsNullOrWhiteSpace(role.IdInSource) ? "Name/Id Missing" : role.IdInSource)
-             : role.Name;
+            : role.Name;
     }
 
     public static string GetSecondaryName(this Entry role)
     {
         return string.IsNullOrWhiteSpace(role.Name) ? "" : $"({role.IdInSource})";
+    }
+
+    public static string GetPrimaryName(this Category system)
+    {
+        return string.IsNullOrWhiteSpace(system.Description) ?
+            (string.IsNullOrWhiteSpace(system.CategorySourceId) ? "Name/Id Missing" : system.CategorySourceId)
+            : system.Description;
+    }
+
+    public static string GetSecondaryName(this Category system)
+    {
+        return string.IsNullOrWhiteSpace(system.Description) ? "" : $"({system.CategorySourceId})";
     }
 }

@@ -15,8 +15,8 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
 {
     public const string ROLE_MAPPINGS_REGISTRY = "__internal_role_mappings__";
     public const string ROLE_MAPPINGS_CATEGORY = "__internal_role_mappings__";
+    public const string MAPPING_PROPERTY_ID = "UnidirectionalMappingID";
     private const string APPLICATION_ADMIN_ROLE = "FakeAdmin";
-    private const string MAPPING_PROPERTY_ID = "UnidirectionalMappingID";
 
     private readonly ILogger<RoleMappingService> _logger;
     private readonly CIRLibContextFactory _factory;
@@ -74,7 +74,11 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
     public IEnumerable<Category> GetSystems(IEnumerable<Guid>? ids = null)
     {
         CheckUserChanged();
+        return GetSystems(ids, null);
+    }
 
+    private IEnumerable<Category> GetSystems(IEnumerable<Guid>? ids = null, IEnumerable<string>? sourceIds = null, bool readOnly = false)
+    {
         var query = _dbContext.Category
             .Include(c => c.Entries)
             .ThenInclude(e => e.Property)
@@ -82,6 +86,8 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
             .Where(c => c.CategoryId == ROLE_MAPPINGS_CATEGORY);
 
         if (ids is {}) query = query.Where(c => ids.Contains(c.Id));
+        if (sourceIds is {}) query = query.Where(c => sourceIds.Contains(c.CategorySourceId));
+        if (readOnly) query = query.AsNoTrackingWithIdentityResolution();
 
         return query.ToImmutableList();
     }
@@ -129,6 +135,41 @@ public class RoleMappingService : IDisposable, IAsyncDisposable
             _logger.LogDebug(ex, "No role for {SourceRole} (likely was deleted)", sourceRole.IdInSource);
             return Array.Empty<Entry>();
         }
+    }
+
+    public IEnumerable<(Entry Source, Entry Target)> GetRoleMappingsBetweenSystems(string sourceSystemId, string targetSystemId)
+    {
+        using var scope = _logger.BeginScope("Retrieving role mappings from {Source} to {Target}", sourceSystemId, targetSystemId);
+        _logger.LogTrace("Retrieving role mappings from {Source} to {Target}", sourceSystemId, targetSystemId);
+
+        var systems = GetSystems(sourceIds: new string[] { sourceSystemId, targetSystemId }, readOnly: true);
+        _logger.LogTrace("Found {count} systems that matched source and target.", systems.Count());
+        if (systems.Count() != 2) return Array.Empty<(Entry Source, Entry Target)>();
+
+        var sourceSystem = systems.Where(s => s.CategorySourceId == sourceSystemId).Single();
+        var targetSystem = systems.Where(s => s.CategorySourceId == targetSystemId).Single();
+        _logger.LogTrace("Matched Source system {Source}", sourceSystem);
+        _logger.LogTrace("Matched Target system {Target}", targetSystem);
+
+        if (!sourceSystem.Entries.Any(e => e.Property.Any(p => p.PropertyId == MAPPING_PROPERTY_ID)))
+        {
+            _logger.LogTrace("No mapping properties found for source system roles.");
+            return Array.Empty<(Entry Source, Entry Target)>(); // nothing to map
+        }
+
+        var mappings = sourceSystem.Entries
+            .SelectMany(e => e.Property)
+            .Where(p => p.PropertyId == MAPPING_PROPERTY_ID)
+            .SelectMany(p => p.PropertyValues)
+            .Select(pv => new { PropertyValue = pv, Content = pv.ValueFromJson<Dictionary<string, string>>() })
+            .Where(pv => pv.Content is { } value && value["SourceID"] == targetSystemId)
+            .Select(pv => (Source: pv.PropertyValue.Property.Entry, Target: targetSystem.Entries.FirstOrDefault(e => e.IdInSource == pv.Content?["IDInSource"])))
+            .Where(m => m.Target is not null)
+            .Cast<(Entry Source, Entry Target)>();
+
+        _logger.LogTrace("Mappings found {mappings}", mappings);
+
+        return mappings;
     }
 
     public void RemoveRole(Guid roleId)
