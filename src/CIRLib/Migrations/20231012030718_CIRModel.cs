@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CIRLib.Migrations
 {
     /// <inheritdoc />
-    public partial class CIRLibInitialMigrations : Migration
+    public partial class CIRModel : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -70,6 +70,8 @@ namespace CIRLib.Migrations
                     RegistryRefId = table.Column<Guid>(type: "TEXT", nullable: false),
                     CategoryId = table.Column<string>(type: "TEXT", nullable: false),
                     RegistryId = table.Column<string>(type: "TEXT", nullable: false),
+                    ParentEntityId = table.Column<string>(type: "TEXT", nullable: false),
+                    ChildEntityId = table.Column<string>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModifiedBy = table.Column<string>(type: "TEXT", nullable: false),
@@ -98,7 +100,6 @@ namespace CIRLib.Migrations
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     PropertyId = table.Column<string>(type: "TEXT", nullable: false),
-                    PropertyValue = table.Column<string>(type: "TEXT", nullable: false),
                     DataType = table.Column<string>(type: "TEXT", nullable: false),
                     EntryRefId = table.Column<Guid>(type: "TEXT", nullable: false),
                     EntryIdInSource = table.Column<string>(type: "TEXT", nullable: false),

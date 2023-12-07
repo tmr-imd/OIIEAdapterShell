@@ -4,7 +4,7 @@ using ObjModels = CIRLib.ObjectModel.Models;
 namespace DataModelServices;
 
 /**
-    These models are used to populate data for Input to the Interface.
+    These models are used to populate data as Input to the Interface.
 **/
 
 public class RegistryDef
@@ -61,6 +61,9 @@ public class EntryDef
     public string CategoryId { get; set; } = null!;
     [Required]
     public string RegistryId {get; set; } = null!;
+    public string ParentEntityId { get; set; } = "";
+    public string ChildEntityId { get; set; } = "";
+
     public static implicit operator ObjModels.Entry(EntryDef viewModel)
     {
         return new ObjModels.Entry
@@ -73,7 +76,9 @@ public class EntryDef
             Description = viewModel.Description,
             Inactive = viewModel.Inactive,
             CategoryId = viewModel.CategoryId,
-            RegistryId = viewModel.RegistryId
+            RegistryId = viewModel.RegistryId,
+            ParentEntityId = viewModel.ParentEntityId,
+            ChildEntityId = viewModel.ChildEntityId
         };
     }
 
