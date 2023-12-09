@@ -29,7 +29,7 @@ if (Config.GetSection("Roles").Exists())
     Options.Roles = Config.GetSection("Roles").Get<List<string>>();
 }
 
-Console.WriteLine("Using options {0}\n", Options);
+Console.WriteLine("Using options {0}\n", JsonSerializer.Serialize(Options, new JsonSerializerOptions { WriteIndented = true }));
 
 var claimsKeyPath = "claims_pub_key.pem";
 var accessKeyPath = "access_pub_key.pem";
@@ -75,7 +75,7 @@ if (Options.IncludeRolesInUserData)
 {
     foreach (var r in Options.Roles)
     {
-        identity.AddClaim(new Claim("roles", r));
+        identity.AddClaim(new Claim(Options.RolesClaimName, r));
     }
 }
 
@@ -90,6 +90,8 @@ string claimsToken = tokenHandler.CreateToken(new SecurityTokenDescriptor
     NotBefore = null,
     IssuedAt = null,
     Subject = identity,
+    Claims = Options.ClaimsTokenExtra.Payload,
+    AdditionalHeaderClaims = Options.ClaimsTokenExtra.Header,
     SigningCredentials = claimsSigningCredentials
 });
 
@@ -124,7 +126,7 @@ if (!Options.IncludeRolesInUserData)
 {
     foreach (var r in Options.Roles)
     {
-        identity.AddClaim(new Claim("roles", r));
+        identity.AddClaim(new Claim(Options.RolesClaimName, r));
     }
 }
 
@@ -136,7 +138,10 @@ var extraClaims = new Dictionary<string, object>()
 {
     { Options.UseApzForAppId ? "apz" : "appid", Options.ApplicationId },
     { "tid", Options.UseTenantId ? Options.TenantId : null! }
-}.Where(pair => pair.Value is not null).ToDictionary(pair => pair.Key, pair => pair.Value);
+}
+.Where(pair => pair.Value is not null)
+.Union(Options.AccessTokenExtra.Payload)
+.ToDictionary(pair => pair.Key, pair => pair.Value);
 
 string accessToken = tokenHandler.CreateToken(new SecurityTokenDescriptor
 {
@@ -147,6 +152,7 @@ string accessToken = tokenHandler.CreateToken(new SecurityTokenDescriptor
     IssuedAt = now,
     Subject = identity,
     Claims = extraClaims,
+    AdditionalHeaderClaims = Options.AccessTokenExtra.Header,
     SigningCredentials = accessSigningCredentials
 });
 
@@ -203,7 +209,7 @@ var jwks = new Dictionary<string, object>
 
 var json = JsonSerializer.Serialize<Dictionary<string, object>>(jwks, new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 // Console.WriteLine(json);
-File.WriteAllText(accesJwksPath, json, Encoding.UTF8);
+File.WriteAllText(accesJwksPath, json, new UTF8Encoding(false)); // Encoding.UTF-8 defaults to include the BOM which we do not want.
 Console.WriteLine("Access token JWKS written to: {0}", accesJwksPath);
 
 // Double check validation with the X509 certificate
