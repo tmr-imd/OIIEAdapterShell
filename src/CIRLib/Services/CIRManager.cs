@@ -64,7 +64,7 @@ public class CIRManager
 
     public static IEnumerable<ObjModels.Entry> GetEquivalentEntries(string entryId = "", string entrySourceId = "", string registryId = "",
         string categoryId = "", string categorySourceID = "", string propertyId = "",
-        string propertyValueKey = "", string CIRId = "", CIRLibContext? dbContext = null)
+        string propertyValueKey = "", string CIRId = "", string parentEntityId = "", CIRLibContext? dbContext = null)
     {
         if (dbContext is null)
         {
@@ -73,8 +73,8 @@ public class CIRManager
             dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
         }
 
-        return new EntryServices().GetEntriesFromFilters(entryId, entrySourceId, registryId, categoryId, categorySourceID, propertyId ,
-        propertyValueKey, CIRId, dbContext: dbContext);
+        return new EntryServices().GetEntriesFromFilters(entryId, entrySourceId, registryId, categoryId, categorySourceID, propertyId,
+        propertyValueKey, CIRId, parentEntityId, dbContext: dbContext);
     }
 
     public static void AddEntries(IEnumerable<DataModel.EntryDef> newEntryObjs, CIRLibContext? dbContext = null)

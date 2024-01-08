@@ -19,14 +19,16 @@ public class EntryServices : CommonServices
     public List<ObjModels.Entry> GetEntriesFromFilters(
         string entryId = "", string entrySourceId = "", string registryId = "", 
         string categoryId = "", string categorySourceID = "", string propertyId = "",
-        string propertyValueKey = "", string CIRId = "", CIRLibContext dbContext = null!)
+        string propertyValueKey = "", string CIRId = "", string parentEntityId = "",
+        CIRLibContext dbContext = null!)
     {
         IQueryable<ObjModels.Entry> Query = dbContext.Entry;
 
         if(string.IsNullOrWhiteSpace(registryId) && string.IsNullOrWhiteSpace(categoryId) &&
          string.IsNullOrWhiteSpace(entryId) && string.IsNullOrWhiteSpace(entrySourceId) &&
          string.IsNullOrWhiteSpace(propertyId) && string.IsNullOrWhiteSpace(propertyValueKey) &&
-         string.IsNullOrWhiteSpace(CIRId) && string.IsNullOrWhiteSpace(categorySourceID))
+         string.IsNullOrWhiteSpace(CIRId) && string.IsNullOrWhiteSpace(categorySourceID) &&
+         string.IsNullOrWhiteSpace(parentEntityId))
         {   
             //If none of the filters are present we return all records.
             return Query.ToList();
@@ -168,6 +170,11 @@ public class EntryServices : CommonServices
             (
                 joinResult => joinResult.SourceId.Contains(entrySourceId)
             );
+        }
+
+        if (!string.IsNullOrWhiteSpace(parentEntityId))
+        {
+            Query = Query.Where(entry => entry.ParentEntityId.Contains(parentEntityId));
         }
 
         // Since CIRId takes precedence over entryId.
