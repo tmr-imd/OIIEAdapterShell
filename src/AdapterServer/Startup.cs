@@ -25,10 +25,12 @@ namespace AdapterServer;
 public class Startup
 {
     protected IConfigurationRoot Configuration { get; }
+    private IWebHostEnvironment Environment { get; set; }
 
-    public Startup(IConfigurationRoot configuration)
+    public Startup(IConfigurationRoot configuration, IWebHostEnvironment env)
     {
         Configuration = configuration;
+        Environment = env;
     }
 
     public virtual void Configure(IApplicationBuilder app, IEndpointRouteBuilder routes, IWebHostEnvironment env)
@@ -116,7 +118,8 @@ public class Startup
 
         services.AddScoped(x => JobContextHelper.PrincipalFromString("AdapterServer"));
         services.AddSingleton(new JobContextFactory(Configuration));
-
+        
+        services.AddSingleton<IHostEnvironment>(x => this.Environment);
         // Add services to the container.
         services.AddRazorPages();
         services.AddServerSideBlazor();

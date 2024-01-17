@@ -7,7 +7,7 @@ public static class StartupExtensions
 
     public static T UseStartup<T>(this WebApplicationBuilder builder) where T : Startup
     {
-        T startup = Activator.CreateInstance(typeof(T), builder.Configuration) as T ?? throw new Exception($"Unable to instantiate type {typeof(T).FullName}");
+        T startup = Activator.CreateInstance(typeof(T), builder.Configuration, builder.Environment) as T ?? throw new Exception($"Unable to instantiate type {typeof(T).FullName}");
         StartupInstance = startup;
 
         startup.ConfigureServices(builder.Services);
