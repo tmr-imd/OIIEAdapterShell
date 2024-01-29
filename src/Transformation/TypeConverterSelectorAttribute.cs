@@ -43,9 +43,9 @@ public sealed class TypeConverterSelectorAttribute : Attribute
     ///    is bound
     ///    to.</para>
     /// </devdoc>
-    public TypeConverterSelectorAttribute(Type fromType, Type toType)
+    public TypeConverterSelectorAttribute(Type converterType, Type toType)
     {
-        converterTypeName = fromType.AssemblyQualifiedName ?? "";
+        converterTypeName = converterType.AssemblyQualifiedName ?? "";
         toTypeName = toType.AssemblyQualifiedName ?? "";
     }
 
@@ -53,11 +53,11 @@ public sealed class TypeConverterSelectorAttribute : Attribute
     /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class, using 
     ///    the specified type name as the data converter for the object this attribute is bound to.</para>
     /// </devdoc>
-    public TypeConverterSelectorAttribute(string fromTypeName, string toTypeName)
+    public TypeConverterSelectorAttribute(string converterTypeName, string toTypeName)
     {
-        string temp = fromTypeName.ToUpper(CultureInfo.InvariantCulture);
-        Debug.Assert(temp.Contains(".DLL"), "Came across: " + fromTypeName + " . Please remove the .dll extension");
-        converterTypeName = fromTypeName;
+        string temp = converterTypeName.ToUpper(CultureInfo.InvariantCulture);
+        Debug.Assert(temp.Contains(".DLL"), "Came across: " + converterTypeName + " . Please remove the .dll extension");
+        this.converterTypeName = converterTypeName;
 
         temp = toTypeName.ToUpper(CultureInfo.InvariantCulture);
         Debug.Assert(temp.Contains(".DLL"), "Came across: " + toTypeName + " . Please remove the .dll extension");
