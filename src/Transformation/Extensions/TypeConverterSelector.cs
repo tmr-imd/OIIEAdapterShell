@@ -1,37 +1,61 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace Transformation.Extensions;
 
 public static class TypeConverterSelector
 {
+    /// <summary>
+    /// Selects a TypeConverter that can convert the component object into an
+    /// object of the given type. Raises an exception if none can be found.
+    /// </summary>
+    /// <remarks>
+    /// The returned converter my ConvertFrom the type of the component object
+    /// to the given type, or it may ConvertTo the given type: i.e., converter
+    /// attributes on both types are checked for a match.
+    /// </remarks>
+    /// <remarks>
+    /// If a TypeConverterSelectorAttribute is used and there is a condition
+    /// associated, the component object will be tested against the condition
+    /// to ensure that it can be converted.
+    /// </remarks>
+    /// <remarks>
+    /// The TypeConverterSelectorAttribute is checked first, if none are found
+    /// then the standard type converter attribute is checked using
+    /// TypeDescriptor.GetConverter as normal.
+    /// </remarks>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="component"></param>
+    /// <param name="toType"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public static TypeConverter SelectConverter<T>(T component, Type toType)
     {
-        TypeConverter? converter = null;
+        var componentType = typeof(T);
 
-        var fromType = typeof(T);
+        var selectors = SelectorsForType(componentType, toType)
+                        .Concat(SelectorsForType(toType, componentType));
 
-        var selectors = fromType
-            .GetCustomAttributes(typeof(TypeConverterSelectorAttribute), true)
-            .OfType<TypeConverterSelectorAttribute>()
-            .Where(x => x.ToTypeName == toType.AssemblyQualifiedName);
-
-        converter = selectors
-            .Select(x => x.CompatibleConverter(component, toType))
-            .Where(x => x is not null)
-            .LastOrDefault();
+        var converter = selectors
+            .Select(x => x.Selector.CompatibleConverter(component, toType, x.OwningType == componentType))
+            .FirstOrDefault(x => x is not null);
 
         // Fallback to the default GetConverter call
-        converter ??= TypeDescriptor.GetConverter(fromType);
+        converter ??= TypeDescriptor.GetConverter(componentType) is TypeConverter toConverter && toConverter.CanConvertTo(toType) ? toConverter : null;
+        converter ??= TypeDescriptor.GetConverter(toType) is TypeConverter fromConverter && fromConverter.CanConvertFrom(componentType) ? fromConverter : null;
 
-        if (!converter.CanConvertFrom(fromType) || !converter.CanConvertTo(toType))
-        {
-            throw new InvalidOperationException($"Cannot use {converter.GetType().FullName} to convert {fromType.FullName} to ${toType.FullName}");
-        }
-
-        return converter;
+        return converter ?? throw new InvalidOperationException($"No suitable type converter class to convert {componentType.FullName} to {toType.FullName}");
     }
 
-    private static TypeConverter? CompatibleConverter<T>(this TypeConverterSelectorAttribute selector, T component, Type toType)
+    private static IEnumerable<(Type OwningType, TypeConverterSelectorAttribute Selector)> SelectorsForType(Type owningType, Type toType)
+    {
+        return owningType
+            .GetCustomAttributes(typeof(TypeConverterSelectorAttribute), true)
+            .OfType<TypeConverterSelectorAttribute>()
+            .Where(x => x.ToTypeName == toType.AssemblyQualifiedName)
+            .Select(x => (owningType, x));
+    } 
+
+    private static TypeConverter? CompatibleConverter<T>(this TypeConverterSelectorAttribute selector, T component, Type toType, bool componentTypeIsAttributeOwner = true)
     {
         var converterType = Type.GetType(selector.ConverterTypeName);
 
@@ -40,18 +64,20 @@ public static class TypeConverterSelector
             throw new InvalidOperationException($"Either Type {selector.ConverterTypeName} does not exist or the appropriate assembly has not been loaded");
         }
 
-        var converter = (TypeConverter?)Activator.CreateInstance(converterType);
-
-        if (converter != null)
+        if (Activator.CreateInstance(converterType) is TypeConverter converter
+            && converter.CanConvert(typeof(T), toType, componentTypeIsAttributeOwner)
+            && converter.CheckMethodPasses(component, selector.SelectionMethod, selector.SelectionParameter))
         {
-            var canConvert = converter.CanConvertFrom(typeof(T)) && converter.CanConvertTo(toType);
-            var methodPasses = converter.CheckMethodPasses(component, selector.SelectionMethod, selector.SelectionParameter);
-
-            if (canConvert && methodPasses)
-                return converter;
+            return converter;
         }
 
         return null;
+    }
+
+    private static bool CanConvert(this TypeConverter converter, Type componentType, Type toType, bool componentTypeIsAttributeOwner)
+    {
+        return (componentTypeIsAttributeOwner && converter.CanConvertTo(toType))
+                || (!componentTypeIsAttributeOwner && converter.CanConvertFrom(componentType));
     }
 
     public static bool CheckMethodPasses<T>(this TypeConverter converter, T component, string selectionMethod, string selectionParameter)
@@ -71,7 +97,7 @@ public static class TypeConverterSelector
     private static bool InvokeCheckMethod<T>(this TypeConverter converter, T component, string selectionMethod)
     {
         var method = converter.GetType()
-            .GetMethodsBySig(typeof(bool), new[] { typeof(T) })
+            .GetMethodsBySig(typeof(bool), typeof(T))
             .Where(x => x.Name == selectionMethod)
             .FirstOrDefault();
 
@@ -85,7 +111,7 @@ public static class TypeConverterSelector
     private static bool InvokeCheckMethod<T>(this TypeConverter converter, T component, string selectionMethod, string selectionParameter)
     {
         var method = converter.GetType()
-            .GetMethodsBySig(typeof(bool), new[] { typeof(T), typeof(string) })
+            .GetMethodsBySig(typeof(bool), typeof(T), typeof(string))
             .Where(x => x.Name == selectionMethod)
             .FirstOrDefault();
 
