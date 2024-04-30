@@ -265,6 +265,15 @@ public class EntryServices : CommonServices
         DbContext.SaveChanges();
     }
 
+    // Adding this for Testing purpose only,
+    // Need to delete all entries added as part of modelObject from Creation UI.
+    public void DeleteEntriesWithModelKey(string key, CIRLibContext dbContext)
+    {
+        var DelRegObj = dbContext.Entry.Where(x => x.IdInSource.Contains(key)).ToList();
+        dbContext.Entry.RemoveRange(DelRegObj);
+        dbContext.SaveChanges();
+    }
+
     public void UpdateCIRIdInEntry(string CIRId, ObjModels.Entry updateEntry, CIRLibContext dbContext = null!)
     {
         var EntryObj = dbContext.Entry.Where(item => item.Id.Equals(updateEntry.Id)).First();

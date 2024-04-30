@@ -256,4 +256,18 @@ public class CIRManager
         AddEntries(entObj,dbContext);
         AddProperties(propObj,dbContext);
     }
+
+    public static void DeleteEntriesLinkedToModelObject(string modelKey, CIRLibContext? dbContext = null)
+    {
+        if (dbContext is null)
+        {
+            //This will always be null initially.
+            //Added this to support dbContext passing for testing only.
+            dbContext = Factory.CreateDbContext(new ClaimsPrincipal()).Result;
+        }
+
+        var eService = new EntryServices();
+        eService.DeleteEntriesWithModelKey(modelKey, dbContext: dbContext);
+    }
+
 }
