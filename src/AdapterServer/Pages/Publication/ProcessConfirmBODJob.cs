@@ -7,7 +7,7 @@ using PubMessage = TaskQueueing.ObjectModel.Models.Publication;
 
 using CommonBOD;
 using Oagis;
-using System.Xml.Serialization;
+using Ccom.Xml.Serialization;
 using AdapterServer.Data;
 using Oiie.Settings;
 using AdapterServer.Extensions;
@@ -28,7 +28,7 @@ public class ProcessConfirmBODJob : ProcessPublicationJob<string>
 
     protected override Task<bool> process(string content, PubMessage publication, IJobContext context, ValidationDelegate<PubMessage> errorCallback)
     {
-        var serializer = new XmlSerializer(typeof(BODType));
+        var serializer = new XmlCallbackSerializer(typeof(BODType));
         var bodNouns = _bodReader?.Nouns.Select(x => serializer.Deserialize(x.CreateReader())).Cast<BODType>() ?? Enumerable.Empty<BODType>();
         var errors = bodNouns?.SelectMany(
             x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => m.ToMessageError()) ?? Enumerable.Empty<MessageError>()
