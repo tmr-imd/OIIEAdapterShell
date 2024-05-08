@@ -115,6 +115,7 @@ public class ManageRequestViewModel : ManageSessionViewModel
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
+        // TODO: fix this as if there are multiple sessions on a single channel for different things they will not be closed off properly
         jobScheduler.UnscheduleJobs(Topic);
 
         try

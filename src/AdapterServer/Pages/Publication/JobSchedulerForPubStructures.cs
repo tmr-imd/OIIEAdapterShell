@@ -10,28 +10,35 @@ using ConsumerJobBOD = PubSubConsumerJob<ProcessSyncStructureAssetsJob, XDocumen
 using ConfirmJob = PubSubConsumerJob<ProcessConfirmBODJob, string>;
 using MessageTypes = PublicationViewModel.MessageTypes;
 
-public class JobSchedulerForPubStructures : IScheduledJobsConfig<ManagePublicationViewModel>
+public class JobSchedulerForPubStructures : IScheduledJobsConfig<ManagePublicationViewModel<MessageTypes>>
 {
     public const string POLL_STRUCTURES_JOB_ID = "PollNewStructureAssets";
     private const string CONFIRM_JOB_ID = "PollConfirmBOD";
 
-    public void ScheduleJobs<T>(string topic, string providerSessionId, string consumerSessionId, T? data) where T : notnull
+    public IDictionary<string, string> ScheduleJobs<T>(string topic, string providerSessionId, string consumerSessionId, T? data) where T : notnull
     {
+        // TODO: switch to more dynamic job IDs since we are returning them now to be tracked with the sessions.
         var (messageType, confirmationSessionId) = CheckConvertArgs(data);
+        var scheduledJobs = new Dictionary<string, string>();
 
         switch (messageType)
         {
             case MessageTypes.JSON:
                 RecurringJob.AddOrUpdate<ConsumerJobJSON>(POLL_STRUCTURES_JOB_ID, x => x.PollSubscription(consumerSessionId, null!), Cron.Hourly);
+                scheduledJobs[consumerSessionId] = POLL_STRUCTURES_JOB_ID;
                 break;
             case MessageTypes.ExampleBOD:
                 RecurringJob.AddOrUpdate<ConsumerJobBOD>(POLL_STRUCTURES_JOB_ID, x => x.PollSubscription(consumerSessionId, null!), Cron.Hourly);
+                scheduledJobs[consumerSessionId] = POLL_STRUCTURES_JOB_ID;
                 break;
             case MessageTypes.CCOM:
                 throw new Exception("Not yet implemented");
         }
 
         RecurringJob.AddOrUpdate<ConfirmJob>(CONFIRM_JOB_ID, x => x.PollSubscription(confirmationSessionId, null!), Cron.Hourly);
+        scheduledJobs[confirmationSessionId] = CONFIRM_JOB_ID;
+
+        return scheduledJobs;
     }
 
     private (MessageTypes, string) CheckConvertArgs<T>(T? data) where T : notnull
