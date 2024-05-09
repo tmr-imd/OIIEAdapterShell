@@ -10,18 +10,16 @@ using Microsoft.Extensions.Options;
 
 namespace AdapterServer.Pages.Publication;
 
-using MessageTypes = PublicationViewModel.MessageTypes;
-
-public class ManagePublicationViewModel : ManageSessionViewModel
+public class ManagePublicationViewModel<T> : ManageSessionViewModel where T : struct, System.Enum
 {
     public string ConfirmationSessionId { get; set; } = "";
 
-    public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
+    public T MessageType { get; set; } = Enum.GetValues<T>().First();
 
-    private readonly IScheduledJobsConfig<ManagePublicationViewModel> jobScheduler;
+    private readonly IScheduledJobsConfig<ManagePublicationViewModel<T>> jobScheduler;
 
     public ManagePublicationViewModel(NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
-        IScheduledJobsConfig<ManagePublicationViewModel> jobScheduler, IOptions<ClientConfig> isbmClientConfig)
+        IScheduledJobsConfig<ManagePublicationViewModel<T>> jobScheduler, IOptions<ClientConfig> isbmClientConfig)
         : base(navigation, factory, principal, isbmClientConfig)
     {
         ChannelUri = "/asset-institute/server/pub-sub";
@@ -39,12 +37,7 @@ public class ManagePublicationViewModel : ManageSessionViewModel
             ConsumerSessionId = channelSettings.ConsumerSessionId;
             ProviderSessionId = channelSettings.ProviderSessionId;
             ConfirmationSessionId = channelSettings.ConfirmationSessionId;
-            MessageType = channelSettings.MessageType switch
-            {
-                var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
-                var m when m == MessageTypes.CCOM.ToString() => MessageTypes.CCOM,
-                _ => MessageTypes.JSON
-            };
+            MessageType = Enum.GetValues<T>().SingleOrDefault(e => e.ToString() == channelSettings.MessageType, Enum.GetValues<T>().First());
         }
         catch (FileNotFoundException)
         {
@@ -91,22 +84,26 @@ public class ManagePublicationViewModel : ManageSessionViewModel
         await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
-        jobScheduler.ScheduleJobs(Topic, ProviderSessionId, ConsumerSessionId, (MessageType, ConfirmationSessionId));
+        var scheduledJobs = jobScheduler.ScheduleJobs(Topic, ProviderSessionId, ConsumerSessionId, (MessageType, ConfirmationSessionId));
 
-        await AddOrUpdateStoredSession();
+        await AddOrUpdateStoredSession(scheduledJobs);
+
+        // We open both consumer and confirmation sessions, but the scheduler may not actually need both
+        // so we close any that we do not actually need.
+        await CleanupUnusedSessions(scheduledJobs, consumer);
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)
     {
-        jobScheduler.UnscheduleJobs();
+        jobScheduler.UnscheduleJobs(Topic);
 
         try
         {
             await channel.GetChannel(ChannelUri);
 
-            await consumer.CloseSession(ConsumerSessionId);
-            await provider.CloseSession(ProviderSessionId);
-
+            if (!string.IsNullOrWhiteSpace(ConsumerSessionId))      await consumer.CloseSession(ConsumerSessionId);
+            if (!string.IsNullOrWhiteSpace(ProviderSessionId))      await provider.CloseSession(ProviderSessionId);
+            if (!string.IsNullOrWhiteSpace(ConfirmationSessionId))  await consumer.CloseSession(ConfirmationSessionId);
         }
         catch (IsbmFault ex) when (ex.FaultType == IsbmFaultType.ChannelFault || ex.FaultType == IsbmFaultType.SessionFault)
         {
@@ -123,7 +120,8 @@ public class ManagePublicationViewModel : ManageSessionViewModel
 
     public async Task DestroyChannel(IChannelManagement channel, SettingsService settings, string channelName)
     {
-        jobScheduler.UnscheduleJobs();
+        // TODO: fix this as if there are multiple sessions on a single channel for different things they will not be closed off properly
+        jobScheduler.UnscheduleJobs(Topic);
 
         try
         {
@@ -142,47 +140,12 @@ public class ManagePublicationViewModel : ManageSessionViewModel
         await SaveSettings(settings, channelName);
     }
 
-    private async Task AddOrUpdateStoredSession()
+    protected override async Task DeleteStoredSession()
     {
+        await base.DeleteStoredSession();
         using var context = await factory.CreateDbContext(principal);
 
-        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
         var storedConfirmationSession = await context.Sessions.Where(x => x.SessionId == ConfirmationSessionId).FirstOrDefaultAsync();
-
-        if (storedConsumerSession is null)
-        {
-            storedConsumerSession = new TaskQueueing.ObjectModel.Models.Session(ConsumerSessionId, "PollNewStructureAssets");
-            context.Sessions.Add(storedConsumerSession);
-        }
-        else
-        {
-            storedConsumerSession = storedConsumerSession with { RecurringJobId = "PollNewStructureAssets" };
-        }
-
-        if (storedConfirmationSession is null)
-        {
-            storedConfirmationSession = new TaskQueueing.ObjectModel.Models.Session(ConfirmationSessionId, "PollConfirmBOD");
-            context.Sessions.Add(storedConfirmationSession);
-        }
-        else
-        {
-            storedConfirmationSession = storedConfirmationSession with { RecurringJobId = "PollConfirmBOD" };
-        }
-
-        await context.SaveChangesAsync();
-    }
-
-    private async Task DeleteStoredSession()
-    {
-        using var context = await factory.CreateDbContext(principal);
-
-        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
-        var storedConfirmationSession = await context.Sessions.Where(x => x.SessionId == ConfirmationSessionId).FirstOrDefaultAsync();
-
-        if (storedConsumerSession is not null)
-        {
-            context.Sessions.Remove(storedConsumerSession);
-        }
 
         if (storedConfirmationSession is not null)
         {
@@ -190,5 +153,18 @@ public class ManagePublicationViewModel : ManageSessionViewModel
         }
 
         await context.SaveChangesAsync();
+    }
+
+    private async Task CleanupUnusedSessions(IDictionary<string, string> scheduledJobs, IConsumerPublication consumer)
+    {
+        if (!scheduledJobs.ContainsKey(ConsumerSessionId))
+        {
+            await consumer.CloseSession(ConsumerSessionId);
+        }
+
+        if (!scheduledJobs.ContainsKey(ConfirmationSessionId))
+        {
+            await consumer.CloseSession(ConfirmationSessionId);
+        }
     }
 }

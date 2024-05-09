@@ -65,10 +65,16 @@ public class NotificationJob
 
         var recurringJobId = await NotificationService.JobIdFromSession(sessionId, context);
 
-        if (string.IsNullOrWhiteSpace(recurringJobId))
-            return;
+        if (string.IsNullOrWhiteSpace(recurringJobId)) return;
 
         var jobId = RecurringJob.TriggerJob(recurringJobId);
+        if (string.IsNullOrWhiteSpace(jobId))
+        {
+            // must have already triggered/ended due to autoprocessing; run second check immediately to confirm or raise error
+            await SecondCheck(messageId, body);
+            return;
+        }
+
         BackgroundJob.ContinueJobWith<NotificationJob>(jobId, x => x.SecondCheck(messageId, body), JobContinuationOptions.OnAnyFinishedState);
     }
 

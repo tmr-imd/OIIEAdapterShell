@@ -5,7 +5,9 @@
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
 
-@inject ILogger<ManagePublication> Logger
+@typeparam TMessageTypes // type constraints are in associated partial class to avoid annoying errors in editor
+
+@inject ILogger<ManagePublication<TMessageTypes>> Logger
 @inject SettingsService settings
 
 @inject IChannelManagement channel
@@ -16,7 +18,7 @@
 @inject IJSRuntime JS
 @inject ClaimsPrincipal principal
 @inject JobContextFactory factory
-@inject ManagePublicationViewModel viewModel
+@inject ManagePublicationViewModel<TMessageTypes> viewModel
 
 <PageTitle>Manage Publication Channel - Adapter Shell</PageTitle>
 
@@ -57,9 +59,10 @@
                     <label>
                         <h3>Message Type</h3>
                         <InputSelect class="form-input" disabled=@(viewModel.ConsumerSessionId != "") @bind-Value="@viewModel.MessageType">
-                            <option value="@PublicationViewModel.MessageTypes.JSON">Simple JSON</option>
-                            <option value="@PublicationViewModel.MessageTypes.ExampleBOD">Example BOD</option>
-                            @* <option value="@PublicationViewModel.MessageTypes.CCOM">CCOM BOD</option> *@
+                        @foreach (var value in AllowedMessageTypes)
+                        {
+                            <option value="@value">@value.ToString()</option>
+                        }
                         </InputSelect>
                     </label>
                 </div>
@@ -91,6 +94,9 @@
 
     [Parameter]
     public string BackTo { get; set; } = null!;
+
+    [Parameter]
+    public TMessageTypes[] AllowedMessageTypes { get; set; } = Array.Empty<TMessageTypes>();
 
     protected override async Task OnInitializedAsync()
     {

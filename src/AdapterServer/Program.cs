@@ -12,8 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<INavigationConfiguration, NavigationConfiguration>();
 builder.Services.AddSingleton<IScheduledJobsConfig<ManageRequestViewModel>, JobSchedulerForStructures>();
-builder.Services.AddSingleton<IScheduledJobsConfig<ManagePublicationViewModel>, JobSchedulerForPubStructures>();
+builder.Services.AddSingleton<IScheduledJobsConfig<ManagePublicationViewModel<PublicationViewModel.MessageTypes>>, JobSchedulerForPubStructures>();
 
+builder.Services.AddScoped<ManagePublicationViewModel<PublicationViewModel.MessageTypes>>();
+// builder.Services.AddScoped<PublicationViewModel>(); // TODO: to be moved here from Startup
 builder.Services.AddScoped<PublicationDetailViewModel, StructuresPublicationDetailViewModel>();
 builder.Services.AddScoped<RequestResponseDetailViewModel, StructuresRequestResponseDetailViewModel>();
 

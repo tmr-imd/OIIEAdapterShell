@@ -39,7 +39,9 @@ public class NotificationService : INotificationService
         // mechanisms for accessing the URL addresses of the application. We currently use the NavigationManger
         // as for the front-end, but we may actually be able to just use the internal addresses.
         // *Is there a safe default or should we throw an exception?
-        var address = server.Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault() ?? "http://localhost";
+        var address = server.Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault("http://localhost");
+        if (string.IsNullOrWhiteSpace(address) || address.StartsWith("http://0") || address.StartsWith("http://[::")) address = "http://localhost";
+        Console.WriteLine("Notifications Hub connection address {0}", address);
         var uriBuilder = new UriBuilder(address);
         uriBuilder.Path = "/app/notifications-hub";
         _hubUrl = uriBuilder.Uri;

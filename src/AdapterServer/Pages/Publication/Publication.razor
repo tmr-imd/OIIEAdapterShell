@@ -20,7 +20,8 @@
 
 @if ( Edit == "channel" )
 {
-    <ManagePublication ChannelName="@channelName" BackTo="/pub-sub" />
+    <ManagePublication TMessageTypes="PublicationViewModel.MessageTypes" AllowedTypes="@(new[] { PublicationViewModel.MessageTypes.JSON, PublicationViewModel.MessageTypes.ExampleBOD })"
+                        ChannelName="@channelName" BackTo="/pub-sub" />
 }
 
 <EditForm Model="@viewModel" OnSubmit="@HandleSubmit">
@@ -62,7 +63,7 @@
             <InputSelect class="form-input" disabled @bind-Value="@viewModel.MessageType">
                 <option value="@PublicationViewModel.MessageTypes.JSON">Simple JSON</option>
                 <option value="@PublicationViewModel.MessageTypes.ExampleBOD">Example BOD</option>
-                @* <option value="@PublicationViewModel.MessageTypes.CCOM">CCOM BOD</option> *@
+                <option value="@PublicationViewModel.MessageTypes.CCOM">CCOM BOD</option>
             </InputSelect>
         </div>
         <div />
@@ -152,7 +153,7 @@
 @code {
     bool working;
     private bool posted;
-    private bool notReady => viewModel.SessionId == "";
+    private bool notReady => !viewModel.HasSession;
     string error = "";
     private string channelName = "pub-sub";
     private string connectionId = "";
