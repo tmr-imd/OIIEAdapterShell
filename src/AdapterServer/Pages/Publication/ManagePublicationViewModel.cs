@@ -140,33 +140,12 @@ public class ManagePublicationViewModel<T> : ManageSessionViewModel where T : st
         await SaveSettings(settings, channelName);
     }
 
-    private async Task AddOrUpdateStoredSession(IDictionary<string, string> scheduledJobs)
+    protected override async Task DeleteStoredSession()
     {
+        await base.DeleteStoredSession();
         using var context = await factory.CreateDbContext(principal);
 
-        foreach (var (sessionId, jobId) in scheduledJobs)
-        {
-            var storedSession = await context.Sessions.Where(x => x.SessionId == sessionId).FirstOrDefaultAsync();
-
-            if (storedSession is null) storedSession = new(sessionId, jobId);
-            else storedSession = storedSession with { RecurringJobId = jobId }; // not sure when this would actually happen. playing it safe?
-            context.Sessions.Add(storedSession);
-        }
-
-        await context.SaveChangesAsync();
-    }
-
-    private async Task DeleteStoredSession()
-    {
-        using var context = await factory.CreateDbContext(principal);
-
-        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
         var storedConfirmationSession = await context.Sessions.Where(x => x.SessionId == ConfirmationSessionId).FirstOrDefaultAsync();
-
-        if (storedConsumerSession is not null)
-        {
-            context.Sessions.Remove(storedConsumerSession);
-        }
 
         if (storedConfirmationSession is not null)
         {

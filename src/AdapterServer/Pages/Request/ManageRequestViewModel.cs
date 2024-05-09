@@ -84,9 +84,9 @@ public class ManageRequestViewModel : ManageSessionViewModel
         await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
-        jobScheduler.ScheduleJobs(Topic, providerSession.Id, consumerSession.Id, MessageType);
+        var scheduledJobs = jobScheduler.ScheduleJobs(Topic, providerSession.Id, consumerSession.Id, MessageType);
 
-        await AddOrUpdateStoredSession();
+        await AddOrUpdateStoredSession(scheduledJobs);
     }
 
     public async Task CloseSession(IChannelManagement channel, IConsumerRequest consumer, IProviderRequest provider, SettingsService settings, string channelName)
@@ -134,47 +134,12 @@ public class ManageRequestViewModel : ManageSessionViewModel
         await SaveSettings(settings, channelName);
     }
 
-    private async Task AddOrUpdateStoredSession()
+    protected override async Task DeleteStoredSession()
     {
+        await base.DeleteStoredSession();
         using var context = await factory.CreateDbContext(principal);
 
-        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
         var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
-
-        if (storedConsumerSession is null)
-        {
-            storedConsumerSession = new TaskQueueing.ObjectModel.Models.Session(ConsumerSessionId, "CheckForResponses");
-            context.Sessions.Add(storedConsumerSession);
-        }
-        else
-        {
-            storedConsumerSession = storedConsumerSession with { RecurringJobId = "CheckForResponses" };
-        }
-
-        if (storedProviderSession is null)
-        {
-            storedProviderSession = new TaskQueueing.ObjectModel.Models.Session(ProviderSessionId, "CheckForRequests");
-            context.Sessions.Add(storedProviderSession);
-        }
-        else
-        {
-            storedProviderSession = storedProviderSession with { RecurringJobId = "CheckForRequests" };
-        }
-
-        await context.SaveChangesAsync();
-    }
-
-    private async Task DeleteStoredSession()
-    {
-        using var context = await factory.CreateDbContext(principal);
-
-        var storedConsumerSession = await context.Sessions.Where(x => x.SessionId == ConsumerSessionId).FirstOrDefaultAsync();
-        var storedProviderSession = await context.Sessions.Where(x => x.SessionId == ProviderSessionId).FirstOrDefaultAsync();
-
-        if (storedConsumerSession is not null)
-        {
-            context.Sessions.Remove(storedConsumerSession);
-        }
 
         if (storedProviderSession is not null)
         {
