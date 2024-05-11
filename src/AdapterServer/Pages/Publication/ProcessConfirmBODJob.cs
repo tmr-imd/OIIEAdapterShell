@@ -30,21 +30,28 @@ public class ProcessConfirmBODJob : ProcessPublicationJob<string>
     {
         var serializer = new XmlCallbackSerializer(typeof(BODType));
         var bodNouns = _bodReader?.Nouns.Select(x => serializer.Deserialize(x.CreateReader())).Cast<BODType>() ?? Enumerable.Empty<BODType>();
-        var errors = bodNouns?.SelectMany(
-            x => x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => m.ToMessageError()) ?? Enumerable.Empty<MessageError>()
+        var errorsAndWarnings = bodNouns?.SelectMany(
+            x => (x?.BODFailureMessage?.ErrorProcessMessage?.Select(m => m.ToMessageError()) ?? Enumerable.Empty<MessageError>())
+                    .Concat(x?.BODFailureMessage?.WarningProcessMessage?.Select(m => m.ToMessageError(ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>())
+                    .Concat(x?.BODSuccessMessage?.WarningProcessMessage?.Select(m => m.ToMessageError(ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>())
+                    .Concat(x?.PartialBODFailureMessage?.ErrorProcessMessage?.Select(m => m.ToMessageError()) ?? Enumerable.Empty<MessageError>())
+                    .Concat(x?.PartialBODFailureMessage?.WarningProcessMessage?.Select(m => m.ToMessageError(ErrorSeverity.Warning)) ?? Enumerable.Empty<MessageError>())
         ) ?? Enumerable.Empty<MessageError>();
 
         var originalMessageId = (_bodReader?.Verb as ConfirmType)?.OriginalApplicationArea?.BODID?.Value ?? "";
 
+        // TODO: we might want to surface BOD IDs to a field of the AbstractMessage objects
         var originalPublication = context.Publications
             .WherePosted()
-            .Where(x => x.MessageId == originalMessageId)
+            .Where(x => x.Content != null)
+            .Where(x => x.Content.Contains($"BODID>{originalMessageId}</")) // excluding the namespace prefix in case it is something different
+            .Where(x => !x.Topics.Contains("ConfirmBOD"))
             .FirstOrDefault();
 
         if (originalPublication is not null)
         {
-            originalPublication.MessageErrors = originalPublication.MessageErrors is null ? errors : originalPublication.MessageErrors.Concat(errors);
-            originalPublication.Failed = true;
+            originalPublication.MessageErrors = (originalPublication.MessageErrors ?? Array.Empty<MessageError>()).Concat(errorsAndWarnings).ToList();
+            originalPublication.Failed = originalPublication.Failed || originalPublication.MessageErrors.Any(x => x.Severity >= ErrorSeverity.Error);
         }
 
         return Task.FromResult(true);

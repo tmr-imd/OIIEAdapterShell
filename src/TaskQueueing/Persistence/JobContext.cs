@@ -6,6 +6,9 @@ using System.Security.Cryptography;
 using ModelBase.Persistence;
 using ModelBase.Persistence.Configuration;
 using AdapterQueue.Persistence.Configuration;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using System.Text.Json;
+using System.Reflection;
 
 namespace TaskQueueing.Persistence
 {
@@ -48,6 +51,48 @@ namespace TaskQueueing.Persistence
             modelBuilder.Entity<Publication>()
                 .Property(x => x.Topics)
                 .HasConversion<TopicsConverter>();
+
+            modelBuilder.AddContainsFunctionTranslation();
+        }
+    }
+
+    public static class SqlFunctionSupport
+    {
+        internal static void AddContainsFunctionTranslation(this ModelBuilder builder)
+        {
+            foreach (var method in typeof(SqlFunctionSupport).GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                builder.HasDbFunction(method)
+                    .HasTranslation(args => new SqlFunctionExpression(
+                    "instr", // TODO: handle different functions for different DBMSs
+                    new SqlExpression[] {
+                        args[0],
+                        args[1]
+                    },
+                    nullable: false,
+                    argumentsPropagateNullability: new[] { false },
+                    type: typeof(bool),
+                    typeMapping: args[1].TypeMapping
+                    )
+                )
+                .HasParameter("_self").HasStoreType("none");
+            }
+        }
+
+        public static bool Contains(this JsonDocument _self, string _other)
+        {
+            // Do not actually do anything, this is to trick LINQ for DB queries
+            throw new NotSupportedException();
+        }
+
+        public static bool Contains(this IEnumerable<string> _self, string _other)
+        {
+            // This delegates to the normal extension method as this definition will hide it.
+            // (Generic Methods cannot have HasDbFunction defined for them.)
+            // The alternative is to not use HasDbFunction, and remember to always double cast
+            // the property, e.g., `((string)(object)p.Topics).Contains("")`, so that the sQL
+            // can be generated.
+            return Enumerable.Contains(_self, _other);
         }
     }
 }
