@@ -13,7 +13,7 @@ using RequestJobBOD = RequestProviderJob<ProcessGetShowStructuresJob, XDocument,
 using ResponseJobBOD = RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
 using MessageTypes = RequestViewModel.MessageTypes;
 
-public class JobSchedulerForStructures : IScheduledJobsConfig<ManageRequestViewModel>
+public class JobSchedulerForStructures : IScheduledJobsConfig<ManageRequestViewModel<MessageTypes>>
 {
     public const string CHECK_REQUESTS_JOB_ID = "CheckForRequests";
     public const string CHECK_RESPONSES_JOB_ID = "CheckForResponses";

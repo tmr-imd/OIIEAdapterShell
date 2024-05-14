@@ -10,16 +10,14 @@ using Microsoft.Extensions.Options;
 
 namespace AdapterServer.Pages.Request;
 
-using MessageTypes = RequestViewModel.MessageTypes;
-
-public class ManageRequestViewModel : ManageSessionViewModel
+public class ManageRequestViewModel<T> : ManageSessionViewModel where T : struct, System.Enum
 {
-    public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
+    public T MessageType { get; set; } = Enum.GetValues<T>().First();
 
-    private readonly IScheduledJobsConfig<ManageRequestViewModel> jobScheduler;
+    private readonly IScheduledJobsConfig<ManageRequestViewModel<T>> jobScheduler;
 
     public ManageRequestViewModel( NavigationManager navigation, JobContextFactory factory, ClaimsPrincipal principal,
-        IScheduledJobsConfig<ManageRequestViewModel> jobScheduler, IOptions<ClientConfig> isbmClientConfig)
+        IScheduledJobsConfig<ManageRequestViewModel<T>> jobScheduler, IOptions<ClientConfig> isbmClientConfig)
         : base(navigation, factory, principal, isbmClientConfig)
     {
         ChannelUri = "/asset-institute/demo/request-response";
@@ -36,12 +34,7 @@ public class ManageRequestViewModel : ManageSessionViewModel
             Topic = channelSettings.Topic;
             ConsumerSessionId = channelSettings.ConsumerSessionId;
             ProviderSessionId = channelSettings.ProviderSessionId;
-            MessageType = channelSettings.MessageType switch
-            {
-                var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
-                var m when m == MessageTypes.CCOM.ToString() => MessageTypes.CCOM,
-                _ => MessageTypes.JSON
-            };
+            MessageType = Enum.GetValues<T>().SingleOrDefault(e => e.ToString() == channelSettings.MessageType, Enum.GetValues<T>().First());
         }
         catch (FileNotFoundException)
         {
@@ -84,7 +77,7 @@ public class ManageRequestViewModel : ManageSessionViewModel
         await SaveSettings(settings, channelName);
 
         // Setup recurring tasks!
-        var scheduledJobs = jobScheduler.ScheduleJobs(Topic, providerSession.Id, consumerSession.Id, MessageType);
+        var scheduledJobs = jobScheduler.ScheduleJobs(Topic, providerSession.Id, consumerSession.Id, (MessageType, providerSession.Id));
 
         await AddOrUpdateStoredSession(scheduledJobs);
     }

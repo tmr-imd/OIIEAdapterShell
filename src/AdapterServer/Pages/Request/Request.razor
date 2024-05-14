@@ -14,7 +14,8 @@
 
 @if ( Edit == "channel" )
 {
-    <ManageRequest ChannelName="@channelName" BackTo=@($"/request-response") />
+    <ManageRequest TMessageTypes="RequestViewModel.MessageTypes" AllowedTypes="@(new[] { RequestViewModel.MessageTypes.JSON, RequestViewModel.MessageTypes.ExampleBOD })"
+                        ChannelName="@channelName" BackTo="/request-response" />
 }
 
 <EditForm Model="@ViewModel" OnSubmit="@HandleSubmit">

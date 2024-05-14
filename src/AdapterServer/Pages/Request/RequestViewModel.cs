@@ -13,14 +13,8 @@ namespace AdapterServer.Pages.Request;
 using RequestJobJSON = RequestConsumerJob<ProcessStructuresJob, StructureAssetsFilter, RequestStructures>;
 using RequestJobBOD = RequestConsumerJob<ProcessGetShowStructuresJob, XDocument, XDocument>;
 
-public class RequestViewModel
+public class RequestViewModel : AbstractRequestResponseViewModel<RequestViewModel.MessageTypes>
 {
-    public string Endpoint { get; set; } = "";
-    public string ChannelUri { get; set; } = "/asset-institute/server/request-response";
-    public string Topic { get; set; } = "Test Topic";
-    public string SessionId { get; set; } = "";
-
-    public MessageTypes MessageType { get; set; } = MessageTypes.JSON;
 
     public enum MessageTypes
     {
@@ -34,35 +28,8 @@ public class RequestViewModel
     public string FilterCondition { get; set; } = "";
     public string FilterInspector { get; set; } = "";
 
-    private readonly SettingsService settings;
-
-    public RequestViewModel( IOptions<ClientConfig> config, SettingsService settings )
+    public RequestViewModel(IOptions<ClientConfig> config, SettingsService settings) : base(config, settings)
     {
-        Endpoint = config.Value?.EndPoint ?? "";
-
-        this.settings = settings;
-    }
-
-    public async Task LoadSettings(string channelName)
-    {
-        try
-        {
-            var channelSettings = await settings.LoadSettings<ChannelSettings>(channelName);
-
-            ChannelUri = channelSettings.ChannelUri;
-            Topic = channelSettings.Topic;
-            SessionId = channelSettings.ConsumerSessionId;
-            MessageType = channelSettings.MessageType switch
-            {
-                var m when m == MessageTypes.ExampleBOD.ToString() => MessageTypes.ExampleBOD,
-                var m when m == MessageTypes.CCOM.ToString() => MessageTypes.CCOM,
-                _ => MessageTypes.JSON
-            };
-        }
-        catch (FileNotFoundException)
-        {
-            // Just leave things as they are
-        }
     }
 
     public void Request()

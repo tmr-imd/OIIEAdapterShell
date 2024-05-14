@@ -138,7 +138,6 @@ public class Startup
         services.AddScoped<RequestViewModel>();
         services.AddScoped<RequestsListViewModel>();
         services.AddScoped<RequestService>();
-        services.AddScoped<ManageRequestViewModel>();
         services.AddScoped<PublicationListViewModel>();
         services.AddScoped<PublicationViewModel>(); // TODO: to be removed from here and made
         services.AddScoped<PublicationService>();

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TaskQueueing.Persistence;
 using Microsoft.Extensions.Options;
+using AdapterServer.Services;
 
 namespace AdapterServer.Pages.Publication;
 
@@ -95,7 +96,9 @@ public class ManagePublicationViewModel<T> : ManageSessionViewModel where T : st
 
     public async Task CloseSession(IChannelManagement channel, IConsumerPublication consumer, IProviderPublication provider, SettingsService settings, string channelName)
     {
-        jobScheduler.UnscheduleJobs(Topic);
+        using var context = await factory.CreateDbContext(principal);
+        var recurringJobId = await PublicationService.JobIdFromSession(ConsumerSessionId, context);
+        jobScheduler.UnscheduleJobs(recurringJobId);
 
         try
         {

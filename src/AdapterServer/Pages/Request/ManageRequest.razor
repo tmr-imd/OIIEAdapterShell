@@ -5,7 +5,9 @@
 @using System.Security.Claims;
 @using TaskQueueing.Persistence;
 
-@inject ILogger<ManageRequest> Logger
+@typeparam TMessageTypes // type constraints are in associated partial class to avoid annoying errors in editor
+
+@inject ILogger<ManageRequest<TMessageTypes>> Logger
 @inject SettingsService settings
 
 @inject IChannelManagement channel
@@ -16,7 +18,7 @@
 @inject IJSRuntime JS
 @inject ClaimsPrincipal principal
 @inject JobContextFactory factory
-@inject ManageRequestViewModel viewModel
+@inject ManageRequestViewModel<TMessageTypes> viewModel
 
 <PageTitle>Manage Request Channel - Adapter Shell</PageTitle>
 
@@ -57,9 +59,10 @@
                     <label>
                         <h3>Message Type</h3>
                         <InputSelect class="form-input" disabled=@(viewModel.ConsumerSessionId != "") @bind-Value="@viewModel.MessageType">
-                            <option value="@RequestViewModel.MessageTypes.JSON">Simple JSON</option>
-                            <option value="@RequestViewModel.MessageTypes.ExampleBOD">Example BOD</option>
-                            @* <option value="@RequestViewModel.MessageTypes.CCOM">CCOM BOD</option> *@
+                        @foreach (var value in AllowedMessageTypes)
+                        {
+                            <option value="@value">@value.ToString()</option>
+                        }
                         </InputSelect>
                     </label>
                 </div>
@@ -92,6 +95,9 @@
     [Parameter]
     public string BackTo { get; set; } = null!;
 
+    [Parameter]
+    public TMessageTypes[] AllowedMessageTypes { get; set; } = Array.Empty<TMessageTypes>();
+
     protected override async Task OnInitializedAsync()
     {
         await viewModel.LoadSettings( settings, ChannelName );
@@ -99,7 +105,7 @@
         await base.OnInitializedAsync();
     }
 
-    private async Task HandleSubmit()
+    private async Task HandleSubmit() 
     {
         Logger.LogInformation("HandleSubmit called");
 

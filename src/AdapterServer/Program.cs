@@ -11,9 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 // AdapterServer.Startup, or by customising directly in Program.cs
 
 builder.Services.AddSingleton<INavigationConfiguration, NavigationConfiguration>();
-builder.Services.AddSingleton<IScheduledJobsConfig<ManageRequestViewModel>, JobSchedulerForStructures>();
+builder.Services.AddSingleton<IScheduledJobsConfig<ManageRequestViewModel<RequestViewModel.MessageTypes>>, JobSchedulerForStructures>();
 builder.Services.AddSingleton<IScheduledJobsConfig<ManagePublicationViewModel<PublicationViewModel.MessageTypes>>, JobSchedulerForPubStructures>();
 
+builder.Services.AddScoped<ManageRequestViewModel<RequestViewModel.MessageTypes>>();
 builder.Services.AddScoped<ManagePublicationViewModel<PublicationViewModel.MessageTypes>>();
 // builder.Services.AddScoped<PublicationViewModel>(); // TODO: to be moved here from Startup
 builder.Services.AddScoped<PublicationDetailViewModel, StructuresPublicationDetailViewModel>();

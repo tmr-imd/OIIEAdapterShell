@@ -24,4 +24,12 @@ public class PublicationService
             .Where(x => x.Id == publicationId)
             .FirstOrDefaultAsync();
     }
+
+    public static async Task<string?> JobIdFromSession(string sessionId, TaskQueueing.Persistence.JobContext context)
+    {
+        return await context.Sessions
+            .Where(x => x.SessionId == sessionId)
+            .Select(x => x.RecurringJobId)
+            .FirstOrDefaultAsync();
+    }
 }
